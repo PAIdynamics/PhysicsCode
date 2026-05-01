@@ -1,10 +1,10 @@
 {
-  "name": "@opencode-ai/console-function",
+  "name": "@physicscode-ai/console-function",
   "version": "1.14.31",
   "$schema": "https://json.schemastore.org/package.json",
   "private": true,
   "type": "module",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "typecheck": "tsgo --noEmit"
   },
@@ -21,8 +21,8 @@
     "@ai-sdk/openai": "3.0.48",
     "@ai-sdk/openai-compatible": "2.0.37",
     "@hono/zod-validator": "catalog:",
-    "@opencode-ai/console-core": "workspace:*",
-    "@opencode-ai/console-resource": "workspace:*",
+    "@physicscode-ai/console-core": "workspace:*",
+    "@physicscode-ai/console-resource": "workspace:*",
     "@openauthjs/openauth": "0.0.0-20250322224806",
     "ai": "catalog:",
     "hono": "catalog:",

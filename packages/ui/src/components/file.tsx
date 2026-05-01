@@ -1,4 +1,4 @@
-import { sampledChecksum } from "@opencode-ai/core/util/encode"
+import { sampledChecksum } from "@physicscode-ai/core/util/encode"
 import {
   DEFAULT_VIRTUAL_FILE_METRICS,
   type DiffLineAnnotation,

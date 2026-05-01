@@ -1,11 +1,11 @@
 name: "Setup Git Committer"
 description: "Create app token and configure git user"
 inputs:
-  opencode-app-id:
-    description: "OpenCode GitHub App ID"
+  physicscode-app-id:
+    description: "PhysicsCode GitHub App ID"
     required: true
-  opencode-app-secret:
-    description: "OpenCode GitHub App private key"
+  physicscode-app-secret:
+    description: "PhysicsCode GitHub App private key"
     required: true
 outputs:
   token:
@@ -21,8 +21,8 @@ runs:
       id: apptoken
       uses: actions/create-github-app-token@v2
       with:
-        app-id: ${{ inputs.opencode-app-id }}
-        private-key: ${{ inputs.opencode-app-secret }}
+        app-id: ${{ inputs.physicscode-app-id }}
+        private-key: ${{ inputs.physicscode-app-secret }}
         owner: ${{ github.repository_owner }}
 
     - name: Configure git user

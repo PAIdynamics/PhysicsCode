@@ -9,13 +9,13 @@ import path from "path"
 
 import { createClient } from "@hey-api/openapi-ts"
 
-const openapiSource = process.env.OPENCODE_SDK_OPENAPI === "httpapi" ? "httpapi" : "hono"
-const opencode = path.resolve(dir, "../../opencode")
+const openapiSource = process.env.PHYSICSCODE_SDK_OPENAPI === "httpapi" ? "httpapi" : "hono"
+const physicscode = path.resolve(dir, "../../physicscode")
 
 if (openapiSource === "httpapi") {
-  await $`bun dev generate --httpapi > ${dir}/openapi.json`.cwd(opencode)
+  await $`bun dev generate --httpapi > ${dir}/openapi.json`.cwd(physicscode)
 } else {
-  await $`bun dev generate > ${dir}/openapi.json`.cwd(opencode)
+  await $`bun dev generate > ${dir}/openapi.json`.cwd(physicscode)
 }
 
 await createClient({

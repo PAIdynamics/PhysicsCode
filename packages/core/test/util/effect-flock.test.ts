@@ -5,10 +5,10 @@ import path from "path"
 import os from "os"
 import { Cause, Effect, Exit, Layer } from "effect"
 import { testEffect } from "../lib/effect"
-import { AppFileSystem } from "@opencode-ai/core/filesystem"
-import { EffectFlock } from "@opencode-ai/core/util/effect-flock"
-import { Global } from "@opencode-ai/core/global"
-import { Hash } from "@opencode-ai/core/util/hash"
+import { AppFileSystem } from "@physicscode-ai/core/filesystem"
+import { EffectFlock } from "@physicscode-ai/core/util/effect-flock"
+import { Global } from "@physicscode-ai/core/global"
+import { Hash } from "@physicscode-ai/core/util/hash"
 
 function lock(dir: string, key: string) {
   return path.join(dir, Hash.fast(key) + ".lock")

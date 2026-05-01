@@ -1,13 +1,13 @@
 import { Component, Show, createMemo, createResource, onMount, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
-import { Button } from "@opencode-ai/ui/button"
-import { Icon } from "@opencode-ai/ui/icon"
-import { Select } from "@opencode-ai/ui/select"
-import { Switch } from "@opencode-ai/ui/switch"
-import { TextField } from "@opencode-ai/ui/text-field"
-import { Tooltip } from "@opencode-ai/ui/tooltip"
-import { useTheme, type ColorScheme } from "@opencode-ai/ui/theme/context"
-import { showToast } from "@opencode-ai/ui/toast"
+import { Button } from "@physicscode-ai/ui/button"
+import { Icon } from "@physicscode-ai/ui/icon"
+import { Select } from "@physicscode-ai/ui/select"
+import { Switch } from "@physicscode-ai/ui/switch"
+import { TextField } from "@physicscode-ai/ui/text-field"
+import { Tooltip } from "@physicscode-ai/ui/tooltip"
+import { useTheme, type ColorScheme } from "@physicscode-ai/ui/theme/context"
+import { showToast } from "@physicscode-ai/ui/toast"
 import { useParams } from "@solidjs/router"
 import { useLanguage } from "@/context/language"
 import { usePermission } from "@/context/permission"
@@ -491,7 +491,7 @@ export const SettingsGeneral: Component = () => {
           description={
             <>
               {language.t("settings.general.row.theme.description")}{" "}
-              <Link href="https://opencode.ai/docs/themes/">{language.t("common.learnMore")}</Link>
+              <Link href="https://physicscode.ai/docs/themes/">{language.t("common.learnMore")}</Link>
             </>
           }
         >
@@ -775,7 +775,7 @@ export const SettingsGeneral: Component = () => {
           </div>
         </Show>
 
-        <Show when={desktop() && import.meta.env.VITE_OPENCODE_CHANNEL === "beta"}>
+        <Show when={desktop() && import.meta.env.VITE_PHYSICSCODE_CHANNEL === "beta"}>
           <AdvancedSection />
         </Show>
       </div>

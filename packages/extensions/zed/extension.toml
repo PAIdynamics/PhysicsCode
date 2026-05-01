@@ -1,36 +1,36 @@
-id = "opencode"
-name = "OpenCode"
+id = "physicscode"
+name = "PhysicsCode"
 description = "The open source coding agent."
 version = "1.14.31"
 schema_version = 1
 authors = ["Anomaly"]
-repository = "https://github.com/anomalyco/opencode"
+repository = "https://github.com/anomalyco/physicscode"
 
-[agent_servers.opencode]
-name = "OpenCode"
-icon = "./icons/opencode.svg"
+[agent_servers.physicscode]
+name = "PhysicsCode"
+icon = "./icons/physicscode.svg"
 
-[agent_servers.opencode.targets.darwin-aarch64]
-archive = "https://github.com/anomalyco/opencode/releases/download/v1.14.31/opencode-darwin-arm64.zip"
-cmd = "./opencode"
+[agent_servers.physicscode.targets.darwin-aarch64]
+archive = "https://github.com/anomalyco/physicscode/releases/download/v1.14.31/physicscode-darwin-arm64.zip"
+cmd = "./physicscode"
 args = ["acp"]
 
-[agent_servers.opencode.targets.darwin-x86_64]
-archive = "https://github.com/anomalyco/opencode/releases/download/v1.14.31/opencode-darwin-x64.zip"
-cmd = "./opencode"
+[agent_servers.physicscode.targets.darwin-x86_64]
+archive = "https://github.com/anomalyco/physicscode/releases/download/v1.14.31/physicscode-darwin-x64.zip"
+cmd = "./physicscode"
 args = ["acp"]
 
-[agent_servers.opencode.targets.linux-aarch64]
-archive = "https://github.com/anomalyco/opencode/releases/download/v1.14.31/opencode-linux-arm64.tar.gz"
-cmd = "./opencode"
+[agent_servers.physicscode.targets.linux-aarch64]
+archive = "https://github.com/anomalyco/physicscode/releases/download/v1.14.31/physicscode-linux-arm64.tar.gz"
+cmd = "./physicscode"
 args = ["acp"]
 
-[agent_servers.opencode.targets.linux-x86_64]
-archive = "https://github.com/anomalyco/opencode/releases/download/v1.14.31/opencode-linux-x64.tar.gz"
-cmd = "./opencode"
+[agent_servers.physicscode.targets.linux-x86_64]
+archive = "https://github.com/anomalyco/physicscode/releases/download/v1.14.31/physicscode-linux-x64.tar.gz"
+cmd = "./physicscode"
 args = ["acp"]
 
-[agent_servers.opencode.targets.windows-x86_64]
-archive = "https://github.com/anomalyco/opencode/releases/download/v1.14.31/opencode-windows-x64.zip"
-cmd = "./opencode.exe"
+[agent_servers.physicscode.targets.windows-x86_64]
+archive = "https://github.com/anomalyco/physicscode/releases/download/v1.14.31/physicscode-windows-x64.zip"
+cmd = "./physicscode.exe"
 args = ["acp"]

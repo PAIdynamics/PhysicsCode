@@ -1,8 +1,8 @@
 {
-  "name": "@opencode-ai/ui",
+  "name": "@physicscode-ai/ui",
   "version": "1.14.31",
   "type": "module",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "exports": {
     "./package.json": "./package.json",
     "./*": "./src/components/*.tsx",
@@ -43,8 +43,8 @@
   },
   "dependencies": {
     "@kobalte/core": "catalog:",
-    "@opencode-ai/sdk": "workspace:*",
-    "@opencode-ai/core": "workspace:*",
+    "@physicscode-ai/sdk": "workspace:*",
+    "@physicscode-ai/core": "workspace:*",
     "@pierre/diffs": "catalog:",
     "@shikijs/transformers": "3.9.2",
     "@solid-primitives/bounds": "0.1.3",

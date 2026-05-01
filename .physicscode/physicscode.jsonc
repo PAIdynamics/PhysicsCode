@@ -1,0 +1,14 @@
+{
+  "$schema": "https://physicscode.ai/config.json",
+  "provider": {},
+  "permission": {
+    "edit": {
+      "packages/physicscode/migration/*": "deny",
+    },
+  },
+  "mcp": {},
+  "tools": {
+    "github-triage": false,
+    "github-pr-search": false,
+  },
+}

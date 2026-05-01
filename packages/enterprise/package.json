@@ -1,20 +1,20 @@
 {
-  "name": "@opencode-ai/enterprise",
+  "name": "@physicscode-ai/enterprise",
   "version": "1.14.31",
   "private": true,
   "type": "module",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "typecheck": "tsgo --noEmit",
     "dev": "vite dev",
     "build": "vite build",
-    "build:cloudflare": "OPENCODE_DEPLOYMENT_TARGET=cloudflare vite build",
+    "build:cloudflare": "PHYSICSCODE_DEPLOYMENT_TARGET=cloudflare vite build",
     "start": "vite start",
     "shell-prod": "sst shell --target Teams --stage production"
   },
   "dependencies": {
-    "@opencode-ai/core": "workspace:*",
-    "@opencode-ai/ui": "workspace:*",
+    "@physicscode-ai/core": "workspace:*",
+    "@physicscode-ai/ui": "workspace:*",
     "aws4fetch": "^1.0.20",
     "@pierre/diffs": "catalog:",
     "@solidjs/router": "catalog:",

@@ -1,5 +1,5 @@
 {
-  "name": "@opencode-ai/console-mail",
+  "name": "@physicscode-ai/console-mail",
   "version": "1.14.31",
   "dependencies": {
     "@jsx-email/all": "2.2.3",
@@ -18,5 +18,5 @@
     "dev": "email preview emails/templates"
   },
   "type": "module",
-  "license": "MIT"
+  "license": "UNLICENSED"
 }

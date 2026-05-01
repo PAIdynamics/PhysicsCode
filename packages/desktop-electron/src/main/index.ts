@@ -16,20 +16,20 @@ try {
   process.chdir(homedir())
 } catch {}
 
-process.env.OPENCODE_DISABLE_EMBEDDED_WEB_UI = "true"
+process.env.PHYSICSCODE_DISABLE_EMBEDDED_WEB_UI = "true"
 
 const APP_NAMES: Record<string, string> = {
-  dev: "OpenCode Dev",
-  beta: "OpenCode Beta",
-  prod: "OpenCode",
+  dev: "PhysicsCode Dev",
+  beta: "PhysicsCode Beta",
+  prod: "PhysicsCode",
 }
 const APP_IDS: Record<string, string> = {
-  dev: "ai.opencode.desktop.dev",
-  beta: "ai.opencode.desktop.beta",
-  prod: "ai.opencode.desktop",
+  dev: "ai.physicscode.desktop.dev",
+  beta: "ai.physicscode.desktop.beta",
+  prod: "ai.physicscode.desktop",
 }
-const appId = app.isPackaged ? APP_IDS[CHANNEL] : "ai.opencode.desktop.dev"
-app.setName(app.isPackaged ? APP_NAMES[CHANNEL] : "OpenCode Dev")
+const appId = app.isPackaged ? APP_IDS[CHANNEL] : "ai.physicscode.desktop.dev"
+app.setName(app.isPackaged ? APP_NAMES[CHANNEL] : "PhysicsCode Dev")
 app.setAppUserModelId(appId)
 app.setPath("userData", join(app.getPath("appData"), appId))
 const { autoUpdater } = pkg
@@ -50,7 +50,7 @@ import {
   setDockIcon,
 } from "./windows"
 import { drizzle } from "drizzle-orm/node-sqlite/driver"
-import type { Server } from "virtual:opencode-server"
+import type { Server } from "virtual:physicscode-server"
 
 const initEmitter = new EventEmitter()
 let initStep: InitStep = { phase: "server_waiting" }
@@ -81,7 +81,7 @@ function setupApp() {
   }
 
   app.on("second-instance", (_event: Event, argv: string[]) => {
-    const urls = argv.filter((arg: string) => arg.startsWith("opencode://"))
+    const urls = argv.filter((arg: string) => arg.startsWith("physicscode://"))
     if (urls.length) {
       logger.log("deep link received via second-instance", { urls })
       emitDeepLinks(urls)
@@ -111,7 +111,7 @@ function setupApp() {
   }
 
   void app.whenReady().then(async () => {
-    app.setAsDefaultProtocolClient("opencode")
+    app.setAsDefaultProtocolClient("physicscode")
     registerRendererProtocol()
     setDockIcon()
     setupAutoUpdater()
@@ -158,7 +158,7 @@ async function initialize() {
     })
 
     if (needsMigration) {
-      const { Database, JsonMigration } = await import("virtual:opencode-server")
+      const { Database, JsonMigration } = await import("virtual:physicscode-server")
       await JsonMigration.run(drizzle({ client: Database.Client().$client }), {
         progress: (event: { current: number; total: number }) => {
           const percent = Math.round(event.current / event.total) * 100
@@ -179,7 +179,7 @@ async function initialize() {
     server = listener
     serverReady.resolve({
       url,
-      username: "opencode",
+      username: "physicscode",
       password,
     })
 
@@ -293,7 +293,7 @@ function ensureLoopbackNoProxy() {
 }
 
 async function getSidecarPort() {
-  const fromEnv = process.env.OPENCODE_PORT
+  const fromEnv = process.env.PHYSICSCODE_PORT
   if (fromEnv) {
     const parsed = Number.parseInt(fromEnv, 10)
     if (!Number.isNaN(parsed)) return parsed
@@ -318,7 +318,7 @@ async function getSidecarPort() {
 function sqliteFileExists() {
   const xdg = process.env.XDG_DATA_HOME
   const base = xdg && xdg.length > 0 ? xdg : join(homedir(), ".local", "share")
-  return existsSync(join(base, "opencode", "opencode.db"))
+  return existsSync(join(base, "physicscode", "physicscode.db"))
 }
 
 function setupAutoUpdater() {

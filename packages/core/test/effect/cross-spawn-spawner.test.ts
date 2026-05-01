@@ -5,7 +5,7 @@ import path from "node:path"
 import { Effect, Exit, Stream } from "effect"
 import type * as PlatformError from "effect/PlatformError"
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process"
-import { CrossSpawnSpawner } from "@opencode-ai/core/cross-spawn-spawner"
+import { CrossSpawnSpawner } from "@physicscode-ai/core/cross-spawn-spawner"
 import { testEffect } from "../lib/effect"
 
 const live = CrossSpawnSpawner.defaultLayer
@@ -40,7 +40,7 @@ function alive(pid: number) {
 }
 
 async function tmpdir() {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "opencode-core-test-"))
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "physicscode-core-test-"))
   return {
     path: dir,
     async [Symbol.asyncDispose]() {
@@ -381,14 +381,14 @@ describe("cross-spawn spawner", () => {
 
         const out = yield* ChildProcessSpawner.ChildProcessSpawner.use((svc) =>
           svc.string(
-            ChildProcess.make("set", ["OPENCODE_TEST_SHELL"], {
+            ChildProcess.make("set", ["PHYSICSCODE_TEST_SHELL"], {
               shell: true,
               extendEnv: true,
-              env: { OPENCODE_TEST_SHELL: "ok" },
+              env: { PHYSICSCODE_TEST_SHELL: "ok" },
             }),
           ),
         )
-        expect(out).toContain("OPENCODE_TEST_SHELL=ok")
+        expect(out).toContain("PHYSICSCODE_TEST_SHELL=ok")
       }),
     )
 

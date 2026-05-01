@@ -33,7 +33,7 @@ permissions:
 jobs:
   version:
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    if: github.repository == 'anomalyco/opencode'
+    if: github.repository == 'anomalyco/physicscode'
     steps:
       - uses: actions/checkout@v3
         with:
@@ -45,22 +45,22 @@ jobs:
         id: committer
         uses: ./.github/actions/setup-git-committer
         with:
-          opencode-app-id: ${{ vars.OPENCODE_APP_ID }}
-          opencode-app-secret: ${{ secrets.OPENCODE_APP_SECRET }}
+          physicscode-app-id: ${{ vars.PHYSICSCODE_APP_ID }}
+          physicscode-app-secret: ${{ secrets.PHYSICSCODE_APP_SECRET }}
 
-      - name: Install OpenCode
+      - name: Install PhysicsCode
         if: inputs.bump || inputs.version
-        run: bun i -g opencode-ai
+        run: bun i -g physicscode-ai
 
       - id: version
         run: |
           ./script/version.ts
         env:
           GH_TOKEN: ${{ steps.committer.outputs.token }}
-          OPENCODE_BUMP: ${{ inputs.bump }}
-          OPENCODE_VERSION: ${{ inputs.version }}
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          GH_REPO: ${{ (github.ref_name == 'beta' && 'anomalyco/opencode-beta') || github.repository }}
+          PHYSICSCODE_BUMP: ${{ inputs.bump }}
+          PHYSICSCODE_VERSION: ${{ inputs.version }}
+          PHYSICSCODE_API_KEY: ${{ secrets.PHYSICSCODE_API_KEY }}
+          GH_REPO: ${{ (github.ref_name == 'beta' && 'anomalyco/physicscode-beta') || github.repository }}
     outputs:
       version: ${{ steps.version.outputs.version }}
       release: ${{ steps.version.outputs.release }}
@@ -70,7 +70,7 @@ jobs:
   build-cli:
     needs: version
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    if: github.repository == 'anomalyco/opencode'
+    if: github.repository == 'anomalyco/physicscode'
     steps:
       - uses: actions/checkout@v3
         with:
@@ -82,30 +82,30 @@ jobs:
         id: committer
         uses: ./.github/actions/setup-git-committer
         with:
-          opencode-app-id: ${{ vars.OPENCODE_APP_ID }}
-          opencode-app-secret: ${{ secrets.OPENCODE_APP_SECRET }}
+          physicscode-app-id: ${{ vars.PHYSICSCODE_APP_ID }}
+          physicscode-app-secret: ${{ secrets.PHYSICSCODE_APP_SECRET }}
 
       - name: Build
         id: build
         run: |
-          ./packages/opencode/script/build.ts ${{ (github.ref_name == 'beta' && '--sourcemaps') || '' }}
+          ./packages/physicscode/script/build.ts ${{ (github.ref_name == 'beta' && '--sourcemaps') || '' }}
         env:
-          OPENCODE_VERSION: ${{ needs.version.outputs.version }}
-          OPENCODE_RELEASE: ${{ needs.version.outputs.release }}
+          PHYSICSCODE_VERSION: ${{ needs.version.outputs.version }}
+          PHYSICSCODE_RELEASE: ${{ needs.version.outputs.release }}
           GH_REPO: ${{ needs.version.outputs.repo }}
           GH_TOKEN: ${{ steps.committer.outputs.token }}
 
       - uses: actions/upload-artifact@v4
         with:
-          name: opencode-cli
+          name: physicscode-cli
           path: |
-            packages/opencode/dist/opencode-darwin*
-            packages/opencode/dist/opencode-linux*
+            packages/physicscode/dist/physicscode-darwin*
+            packages/physicscode/dist/physicscode-linux*
 
       - uses: actions/upload-artifact@v4
         with:
-          name: opencode-cli-windows
-          path: packages/opencode/dist/opencode-windows*
+          name: physicscode-cli-windows
+          path: packages/physicscode/dist/physicscode-windows*
     outputs:
       version: ${{ needs.version.outputs.version }}
 
@@ -114,7 +114,7 @@ jobs:
       - build-cli
       - version
     runs-on: blacksmith-4vcpu-windows-2025
-    if: github.repository == 'anomalyco/opencode'
+    if: github.repository == 'anomalyco/physicscode'
     env:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -127,15 +127,15 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: opencode-cli-windows
-          path: packages/opencode/dist
+          name: physicscode-cli-windows
+          path: packages/physicscode/dist
 
       - name: Setup git committer
         id: committer
         uses: ./.github/actions/setup-git-committer
         with:
-          opencode-app-id: ${{ vars.OPENCODE_APP_ID }}
-          opencode-app-secret: ${{ secrets.OPENCODE_APP_SECRET }}
+          physicscode-app-id: ${{ vars.PHYSICSCODE_APP_ID }}
+          physicscode-app-secret: ${{ secrets.PHYSICSCODE_APP_SECRET }}
 
       - name: Azure login
         uses: azure/login@v2
@@ -150,9 +150,9 @@ jobs:
           signing-account-name: ${{ env.AZURE_TRUSTED_SIGNING_ACCOUNT_NAME }}
           certificate-profile-name: ${{ env.AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE }}
           files: |
-            ${{ github.workspace }}\packages\opencode\dist\opencode-windows-arm64\bin\opencode.exe
-            ${{ github.workspace }}\packages\opencode\dist\opencode-windows-x64\bin\opencode.exe
-            ${{ github.workspace }}\packages\opencode\dist\opencode-windows-x64-baseline\bin\opencode.exe
+            ${{ github.workspace }}\packages\physicscode\dist\physicscode-windows-arm64\bin\physicscode.exe
+            ${{ github.workspace }}\packages\physicscode\dist\physicscode-windows-x64\bin\physicscode.exe
+            ${{ github.workspace }}\packages\physicscode\dist\physicscode-windows-x64-baseline\bin\physicscode.exe
           exclude-environment-credential: true
           exclude-workload-identity-credential: true
           exclude-managed-identity-credential: true
@@ -168,9 +168,9 @@ jobs:
         shell: pwsh
         run: |
           $files = @(
-            "${{ github.workspace }}\packages\opencode\dist\opencode-windows-arm64\bin\opencode.exe",
-            "${{ github.workspace }}\packages\opencode\dist\opencode-windows-x64\bin\opencode.exe",
-            "${{ github.workspace }}\packages\opencode\dist\opencode-windows-x64-baseline\bin\opencode.exe"
+            "${{ github.workspace }}\packages\physicscode\dist\physicscode-windows-arm64\bin\physicscode.exe",
+            "${{ github.workspace }}\packages\physicscode\dist\physicscode-windows-x64\bin\physicscode.exe",
+            "${{ github.workspace }}\packages\physicscode\dist\physicscode-windows-x64-baseline\bin\physicscode.exe"
           )
 
           foreach ($file in $files) {
@@ -181,12 +181,12 @@ jobs:
           }
 
       - name: Repack Windows CLI archives
-        working-directory: packages/opencode/dist
+        working-directory: packages/physicscode/dist
         shell: pwsh
         run: |
-          Compress-Archive -Path "opencode-windows-arm64\bin\*" -DestinationPath "opencode-windows-arm64.zip" -Force
-          Compress-Archive -Path "opencode-windows-x64\bin\*" -DestinationPath "opencode-windows-x64.zip" -Force
-          Compress-Archive -Path "opencode-windows-x64-baseline\bin\*" -DestinationPath "opencode-windows-x64-baseline.zip" -Force
+          Compress-Archive -Path "physicscode-windows-arm64\bin\*" -DestinationPath "physicscode-windows-arm64.zip" -Force
+          Compress-Archive -Path "physicscode-windows-x64\bin\*" -DestinationPath "physicscode-windows-x64.zip" -Force
+          Compress-Archive -Path "physicscode-windows-x64-baseline\bin\*" -DestinationPath "physicscode-windows-x64-baseline.zip" -Force
 
       - name: Upload signed Windows CLI release assets
         if: needs.version.outputs.release != ''
@@ -195,19 +195,19 @@ jobs:
           GH_TOKEN: ${{ steps.committer.outputs.token }}
         run: |
           gh release upload "v${{ needs.version.outputs.version }}" `
-            "${{ github.workspace }}\packages\opencode\dist\opencode-windows-arm64.zip" `
-            "${{ github.workspace }}\packages\opencode\dist\opencode-windows-x64.zip" `
-            "${{ github.workspace }}\packages\opencode\dist\opencode-windows-x64-baseline.zip" `
+            "${{ github.workspace }}\packages\physicscode\dist\physicscode-windows-arm64.zip" `
+            "${{ github.workspace }}\packages\physicscode\dist\physicscode-windows-x64.zip" `
+            "${{ github.workspace }}\packages\physicscode\dist\physicscode-windows-x64-baseline.zip" `
             --clobber `
             --repo "${{ needs.version.outputs.repo }}"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: opencode-cli-signed-windows
+          name: physicscode-cli-signed-windows
           path: |
-            packages/opencode/dist/opencode-windows-arm64
-            packages/opencode/dist/opencode-windows-x64
-            packages/opencode/dist/opencode-windows-x64-baseline
+            packages/physicscode/dist/physicscode-windows-arm64
+            packages/physicscode/dist/physicscode-windows-x64
+            packages/physicscode/dist/physicscode-windows-x64-baseline
 
   build-tauri:
     needs:
@@ -310,9 +310,9 @@ jobs:
           cd packages/desktop
           bun ./scripts/prepare.ts
         env:
-          OPENCODE_VERSION: ${{ needs.version.outputs.version }}
+          PHYSICSCODE_VERSION: ${{ needs.version.outputs.version }}
           GITHUB_TOKEN: ${{ steps.committer.outputs.token }}
-          OPENCODE_CLI_ARTIFACT: ${{ (runner.os == 'Windows' && 'opencode-cli-windows') || 'opencode-cli' }}
+          PHYSICSCODE_CLI_ARTIFACT: ${{ (runner.os == 'Windows' && 'physicscode-cli-windows') || 'physicscode-cli' }}
           RUST_TARGET: ${{ matrix.settings.target }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_RUN_ID: ${{ github.run_id }}
@@ -339,8 +339,8 @@ jobs:
         id: committer
         uses: ./.github/actions/setup-git-committer
         with:
-          opencode-app-id: ${{ vars.OPENCODE_APP_ID }}
-          opencode-app-secret: ${{ secrets.OPENCODE_APP_SECRET }}
+          physicscode-app-id: ${{ vars.PHYSICSCODE_APP_ID }}
+          physicscode-app-secret: ${{ secrets.PHYSICSCODE_APP_SECRET }}
 
       - name: Build and upload artifacts
         uses: tauri-apps/tauri-action@390cbe447412ced1303d35abe75287949e43437a
@@ -354,8 +354,8 @@ jobs:
           releaseId: ${{ needs.version.outputs.release }}
           tagName: ${{ needs.version.outputs.tag }}
           releaseDraft: true
-          releaseAssetNamePattern: opencode-desktop-[platform]-[arch][ext]
-          repo: ${{ (github.ref_name == 'beta' && 'opencode-beta') || '' }}
+          releaseAssetNamePattern: physicscode-desktop-[platform]-[arch][ext]
+          repo: ${{ (github.ref_name == 'beta' && 'physicscode-beta') || '' }}
           releaseCommitish: ${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ steps.committer.outputs.token }}
@@ -374,7 +374,7 @@ jobs:
         shell: pwsh
         run: |
           $files = @(
-            "${{ github.workspace }}\packages\desktop\src-tauri\sidecars\opencode-cli-${{ matrix.settings.target }}.exe"
+            "${{ github.workspace }}\packages\desktop\src-tauri\sidecars\physicscode-cli-${{ matrix.settings.target }}.exe"
           )
           $files += Get-ChildItem "${{ github.workspace }}\packages\desktop\src-tauri\target\${{ matrix.settings.target }}\release\bundle\nsis\*.exe" | Select-Object -ExpandProperty FullName
 
@@ -389,7 +389,7 @@ jobs:
     needs:
       - build-cli
       - version
-    if: github.repository == 'anomalyco/opencode'
+    if: github.repository == 'anomalyco/physicscode'
     continue-on-error: false
     env:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -475,16 +475,16 @@ jobs:
         id: committer
         uses: ./.github/actions/setup-git-committer
         with:
-          opencode-app-id: ${{ vars.OPENCODE_APP_ID }}
-          opencode-app-secret: ${{ secrets.OPENCODE_APP_SECRET }}
+          physicscode-app-id: ${{ vars.PHYSICSCODE_APP_ID }}
+          physicscode-app-secret: ${{ secrets.PHYSICSCODE_APP_SECRET }}
 
       - name: Prepare
         run: bun ./scripts/prepare.ts
         working-directory: packages/desktop-electron
         env:
-          OPENCODE_VERSION: ${{ needs.version.outputs.version }}
-          OPENCODE_CHANNEL: ${{ (github.ref_name == 'beta' && 'beta') || 'prod' }}
-          OPENCODE_CLI_ARTIFACT: ${{ (runner.os == 'Windows' && 'opencode-cli-windows') || 'opencode-cli' }}
+          PHYSICSCODE_VERSION: ${{ needs.version.outputs.version }}
+          PHYSICSCODE_CHANNEL: ${{ (github.ref_name == 'beta' && 'beta') || 'prod' }}
+          PHYSICSCODE_CLI_ARTIFACT: ${{ (runner.os == 'Windows' && 'physicscode-cli-windows') || 'physicscode-cli' }}
           RUST_TARGET: ${{ matrix.settings.target }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_RUN_ID: ${{ github.run_id }}
@@ -493,7 +493,7 @@ jobs:
         run: bun run build
         working-directory: packages/desktop-electron
         env:
-          OPENCODE_CHANNEL: ${{ (github.ref_name == 'beta' && 'beta') || 'prod' }}
+          PHYSICSCODE_CHANNEL: ${{ (github.ref_name == 'beta' && 'beta') || 'prod' }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.WEB_SENTRY_PROJECT }}
@@ -508,7 +508,7 @@ jobs:
         working-directory: packages/desktop-electron
         timeout-minutes: 60
         env:
-          OPENCODE_CHANNEL: ${{ (github.ref_name == 'beta' && 'beta') || 'prod' }}
+          PHYSICSCODE_CHANNEL: ${{ (github.ref_name == 'beta' && 'beta') || 'prod' }}
           GH_TOKEN: ${{ steps.committer.outputs.token }}
           CSC_LINK: ${{ secrets.APPLE_CERTIFICATE }}
           CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -522,7 +522,7 @@ jobs:
         working-directory: packages/desktop-electron
         timeout-minutes: 60
         env:
-          OPENCODE_CHANNEL: ${{ (github.ref_name == 'beta' && 'beta') || 'prod' }}
+          PHYSICSCODE_CHANNEL: ${{ (github.ref_name == 'beta' && 'beta') || 'prod' }}
 
       - name: Verify signed Windows Electron artifacts
         if: runner.os == 'Windows'
@@ -531,7 +531,7 @@ jobs:
           $files = @()
           $files += Get-ChildItem "${{ github.workspace }}\packages\desktop-electron\dist\*.exe" | Select-Object -ExpandProperty FullName
           $files += Get-ChildItem "${{ github.workspace }}\packages\desktop-electron\dist\*unpacked\*.exe" | Select-Object -ExpandProperty FullName
-          $files += Get-ChildItem "${{ github.workspace }}\packages\desktop-electron\dist\*unpacked\resources\opencode-cli.exe" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+          $files += Get-ChildItem "${{ github.workspace }}\packages\desktop-electron\dist\*unpacked\resources\physicscode-cli.exe" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
 
           foreach ($file in $files | Select-Object -Unique) {
             $sig = Get-AuthenticodeSignature $file
@@ -542,7 +542,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: opencode-electron-${{ matrix.settings.target }}
+          name: physicscode-electron-${{ matrix.settings.target }}
           path: packages/desktop-electron/dist/*
 
       - uses: actions/upload-artifact@v4
@@ -587,23 +587,23 @@ jobs:
         id: committer
         uses: ./.github/actions/setup-git-committer
         with:
-          opencode-app-id: ${{ vars.OPENCODE_APP_ID }}
-          opencode-app-secret: ${{ secrets.OPENCODE_APP_SECRET }}
+          physicscode-app-id: ${{ vars.PHYSICSCODE_APP_ID }}
+          physicscode-app-secret: ${{ secrets.PHYSICSCODE_APP_SECRET }}
 
       - uses: actions/download-artifact@v4
         with:
-          name: opencode-cli
-          path: packages/opencode/dist
+          name: physicscode-cli
+          path: packages/physicscode/dist
 
       - uses: actions/download-artifact@v4
         with:
-          name: opencode-cli-windows
-          path: packages/opencode/dist
+          name: physicscode-cli-windows
+          path: packages/physicscode/dist
 
       - uses: actions/download-artifact@v4
         with:
-          name: opencode-cli-signed-windows
-          path: packages/opencode/dist
+          name: physicscode-cli-signed-windows
+          path: packages/physicscode/dist
 
       - uses: actions/download-artifact@v4
         if: needs.version.outputs.release
@@ -626,14 +626,14 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.AUR_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          git config --global user.email "opencode@sst.dev"
-          git config --global user.name "opencode"
+          git config --global user.email "physicscode@sst.dev"
+          git config --global user.name "physicscode"
           ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts || true
 
       - run: ./script/publish.ts
         env:
-          OPENCODE_VERSION: ${{ needs.version.outputs.version }}
-          OPENCODE_RELEASE: ${{ needs.version.outputs.release }}
+          PHYSICSCODE_VERSION: ${{ needs.version.outputs.version }}
+          PHYSICSCODE_RELEASE: ${{ needs.version.outputs.release }}
           AUR_KEY: ${{ secrets.AUR_KEY }}
           GITHUB_TOKEN: ${{ steps.committer.outputs.token }}
           GH_REPO: ${{ needs.version.outputs.repo }}

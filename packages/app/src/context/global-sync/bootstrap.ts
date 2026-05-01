@@ -9,10 +9,10 @@ import type {
   QuestionRequest,
   Session,
   Todo,
-} from "@opencode-ai/sdk/v2/client"
-import { showToast } from "@opencode-ai/ui/toast"
-import { getFilename } from "@opencode-ai/core/util/path"
-import { retry } from "@opencode-ai/core/util/retry"
+} from "@physicscode-ai/sdk/v2/client"
+import { showToast } from "@physicscode-ai/ui/toast"
+import { getFilename } from "@physicscode-ai/core/util/path"
+import { retry } from "@physicscode-ai/core/util/retry"
 import { batch } from "solid-js"
 import { reconcile, type SetStoreFunction, type Store } from "solid-js/store"
 import type { State, VcsCache } from "./types"
@@ -114,7 +114,7 @@ export const loadProjectsQuery = (
               .then((x) => {
                 return (x.data ?? [])
                   .filter((p) => !!p?.id)
-                  .filter((p) => !!p.worktree && !p.worktree.includes("opencode-test"))
+                  .filter((p) => !!p.worktree && !p.worktree.includes("physicscode-test"))
                   .slice()
                   .sort((a, b) => cmp(a.id, b.id))
               })

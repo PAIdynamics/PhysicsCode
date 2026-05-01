@@ -1,4 +1,4 @@
-import { Resource } from "@opencode-ai/console-resource"
+import { Resource } from "@physicscode-ai/console-resource"
 
 export const logger = {
   metric: (values: Record<string, any>) => {

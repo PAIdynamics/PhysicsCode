@@ -1,9 +1,9 @@
 import { MetaProvider } from "@solidjs/meta"
 import { render } from "solid-js/web"
-import "@opencode-ai/app/index.css"
-import { Font } from "@opencode-ai/ui/font"
-import { Splash } from "@opencode-ai/ui/logo"
-import { Progress } from "@opencode-ai/ui/progress"
+import "@physicscode-ai/app/index.css"
+import { Font } from "@physicscode-ai/ui/font"
+import { Splash } from "@physicscode-ai/ui/logo"
+import { Progress } from "@physicscode-ai/ui/progress"
 import "./styles.css"
 import { createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js"
 import type { InitStep, SqliteMigrationProgress } from "../preload/types"
@@ -24,7 +24,10 @@ render(() => {
     return Math.max(25, Math.min(100, percent()))
   })
 
-  window.api.awaitInitialization((next) => setStep(next as InitStep)).catch(() => undefined)
+  window.api
+    .awaitInitialization((next) => setStep(next as InitStep))
+    .then(() => setStep({ phase: "done" }))
+    .catch(() => undefined)
 
   onMount(() => {
     setLine(0)

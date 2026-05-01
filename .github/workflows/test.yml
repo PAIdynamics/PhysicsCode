@@ -51,8 +51,8 @@ jobs:
 
       - name: Configure git identity
         run: |
-          git config --global user.email "bot@opencode.ai"
-          git config --global user.name "opencode"
+          git config --global user.email "bot@physicscode.ai"
+          git config --global user.name "physicscode"
 
       - name: Cache Turbo
         uses: actions/cache@v4
@@ -66,7 +66,7 @@ jobs:
       - name: Run unit tests
         run: bun turbo test:ci
         env:
-          OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER: ${{ runner.os == 'Windows' && 'true' || 'false' }}
+          PHYSICSCODE_EXPERIMENTAL_DISABLE_FILEWATCHER: ${{ runner.os == 'Windows' && 'true' || 'false' }}
 
       - name: Publish unit reports
         if: always()

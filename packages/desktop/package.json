@@ -1,9 +1,9 @@
 {
-  "name": "@opencode-ai/desktop",
+  "name": "@physicscode-ai/desktop",
   "private": true,
   "version": "1.14.31",
   "type": "module",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "typecheck": "tsgo -b",
     "predev": "bun ./scripts/predev.ts",
@@ -13,8 +13,8 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@opencode-ai/app": "workspace:*",
-    "@opencode-ai/ui": "workspace:*",
+    "@physicscode-ai/app": "workspace:*",
+    "@physicscode-ai/ui": "workspace:*",
     "@sentry/solid": "catalog:",
     "@solid-primitives/i18n": "2.2.1",
     "@solid-primitives/storage": "catalog:",

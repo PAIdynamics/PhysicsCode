@@ -1,9 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "version": "1.14.31",
-  "name": "@opencode-ai/core",
+  "name": "@physicscode-ai/core",
   "type": "module",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "test": "bun test",
@@ -11,7 +11,7 @@
     "typecheck": "tsgo --noEmit"
   },
   "bin": {
-    "opencode": "./bin/opencode"
+    "physicscode": "./bin/physicscode"
   },
   "exports": {
     "./*": "./src/*.ts"

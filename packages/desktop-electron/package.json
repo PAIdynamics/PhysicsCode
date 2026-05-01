@@ -1,13 +1,13 @@
 {
-  "name": "@opencode-ai/desktop-electron",
+  "name": "@physicscode-ai/desktop-electron",
   "private": true,
   "version": "1.14.31",
   "type": "module",
-  "license": "MIT",
-  "homepage": "https://opencode.ai",
+  "license": "UNLICENSED",
+  "homepage": "https://physicscode.ai",
   "author": {
-    "name": "OpenCode",
-    "email": "hello@opencode.ai"
+    "name": "PhysicsCode",
+    "email": "hello@physicscode.ai"
   },
   "scripts": {
     "typecheck": "tsgo -b",
@@ -36,8 +36,8 @@
   "devDependencies": {
     "@actions/artifact": "4.0.0",
     "@lydell/node-pty": "catalog:",
-    "@opencode-ai/app": "workspace:*",
-    "@opencode-ai/ui": "workspace:*",
+    "@physicscode-ai/app": "workspace:*",
+    "@physicscode-ai/ui": "workspace:*",
     "@sentry/solid": "catalog:",
     "@sentry/vite-plugin": "catalog:",
     "@solid-primitives/i18n": "2.2.1",

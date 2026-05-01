@@ -1,6 +1,6 @@
-import { Message, Model, Part, Session, SnapshotFileDiff } from "@opencode-ai/sdk/v2"
-import { fn } from "@opencode-ai/core/util/fn"
-import { iife } from "@opencode-ai/core/util/iife"
+import { Message, Model, Part, Session, SnapshotFileDiff } from "@physicscode-ai/sdk/v2"
+import { fn } from "@physicscode-ai/core/util/fn"
+import { iife } from "@physicscode-ai/core/util/iife"
 import z from "zod"
 import { Storage } from "./storage"
 

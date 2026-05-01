@@ -1,13 +1,13 @@
 import "@/index.css"
 import * as Sentry from "@sentry/solid"
-import { I18nProvider } from "@opencode-ai/ui/context"
-import { DialogProvider } from "@opencode-ai/ui/context/dialog"
-import { FileComponentProvider } from "@opencode-ai/ui/context/file"
-import { MarkedProvider } from "@opencode-ai/ui/context/marked"
-import { File } from "@opencode-ai/ui/file"
-import { Font } from "@opencode-ai/ui/font"
-import { Splash } from "@opencode-ai/ui/logo"
-import { ThemeProvider } from "@opencode-ai/ui/theme/context"
+import { I18nProvider } from "@physicscode-ai/ui/context"
+import { DialogProvider } from "@physicscode-ai/ui/context/dialog"
+import { FileComponentProvider } from "@physicscode-ai/ui/context/file"
+import { MarkedProvider } from "@physicscode-ai/ui/context/marked"
+import { File } from "@physicscode-ai/ui/file"
+import { Font } from "@physicscode-ai/ui/font"
+import { Splash } from "@physicscode-ai/ui/logo"
+import { ThemeProvider } from "@physicscode-ai/ui/theme/context"
 import { MetaProvider } from "@solidjs/meta"
 import { type BaseRouterProps, Navigate, Route, Router } from "@solidjs/router"
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
@@ -71,7 +71,7 @@ function UiI18nBridge(props: ParentProps) {
 
 declare global {
   interface Window {
-    __OPENCODE__?: {
+    __PHYSICSCODE__?: {
       updaterEnabled?: boolean
       deepLinks?: string[]
       wsl?: boolean

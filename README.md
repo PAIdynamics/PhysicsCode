@@ -1,38 +1,60 @@
+<p align="center">
+  <img src="packages/identity/logo-circular.png" alt="physicscode logo" width="120">
+</p>
+
 # physicscode
 
-physicscode is a closed-source agentic AI development product built from the
-OpenCode codebase. It adapts OpenCode's agent workflow for physics-focused code,
-simulation, analysis, and research engineering work.
+physicscode is a closed-source agentic AI coding environment for
+physics-focused software, simulations, analysis, and research engineering.
 
-## Status
+## Install
 
-This repository is an early product fork. Expect names, package metadata,
-distribution channels, and product documentation to change as physicscode takes
-shape.
+Install dependencies from the repository root:
+
+```bash
+bun install
+```
+
+Run the CLI/TUI locally:
+
+```bash
+bun run dev
+```
+
+Run the desktop app locally:
+
+```bash
+bun run dev:desktop
+```
+
+Build the downloadable desktop app:
+
+```bash
+cd packages/desktop-electron
+bun run package:mac
+```
+
+Packaged desktop artifacts are written to `packages/desktop-electron/dist/`.
+On macOS, open the unpacked app directly from
+`packages/desktop-electron/dist/mac-arm64/PhysicsCode Dev.app` or install from
+the generated `physicscode-electron-mac-arm64.dmg`. The `.zip` in the same
+directory is the update/download archive.
+
+Build the CLI executable:
+
+```bash
+cd packages/physicscode
+bun run build
+```
+
+The build outputs platform-specific executables under
+`packages/physicscode/dist/`. Those binaries are the artifacts to publish for
+users who want to download and run physicscode directly.
 
 ## License
 
 Original physicscode materials are proprietary and governed by the root
 [`LICENSE`](./LICENSE).
 
-This product includes OpenCode-derived code and other third-party materials.
-Their notices are preserved in [`Licenses`](./Licenses), including the original
-OpenCode MIT License notice. Third-party software remains governed by its
-applicable third-party license terms.
-
-## Development
-
-The codebase currently keeps much of the original OpenCode workspace structure.
-Use Bun for package scripts and run checks from package directories rather than
-from the repository root.
-
-```bash
-bun install
-cd packages/opencode
-bun typecheck
-```
-
-## Attribution
-
-physicscode is derived from OpenCode. OpenCode is licensed under the MIT License;
-see [`Licenses/OPENCODE-MIT-LICENSE`](./Licenses/OPENCODE-MIT-LICENSE).
+physicscode is derived from OpenCode. The original OpenCode MIT notice and other
+third-party notices are preserved in [`Licenses`](./Licenses).

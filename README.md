@@ -51,6 +51,30 @@ The build outputs platform-specific executables under
 `packages/physicscode/dist/`. Those binaries are the artifacts to publish for
 users who want to download and run physicscode directly.
 
+## VS Code Extension
+
+The VS Code extension lives in `sdks/vscode`. Before publishing a new extension
+build, bump the `version` field in `sdks/vscode/package.json`; the Visual Studio
+Marketplace rejects uploads that reuse an existing version.
+
+Build the VSIX:
+
+```bash
+cd sdks/vscode
+bunx @vscode/vsce package --no-dependencies -o dist/physicscode.vsix
+```
+
+Publish to the Visual Studio Marketplace:
+
+```bash
+bunx @vscode/vsce publish --packagePath dist/physicscode.vsix
+```
+
+The extension publisher id is `paidynamicsch`, so the Marketplace extension id
+is `paidynamicsch.physicscode`. If publishing from a new machine, first run
+`bunx @vscode/vsce login paidynamicsch` and provide a Personal Access Token with
+`Marketplace > Manage` permission.
+
 ## License
 
 Original physicscode materials are proprietary and governed by the root

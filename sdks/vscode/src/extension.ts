@@ -1,6 +1,8 @@
 // This method is called when your extension is deactivated
 export function deactivate() {}
 
+import fs from "node:fs"
+import path from "node:path"
 import * as vscode from "vscode"
 
 const TERMINAL_NAME = "physicscode"
@@ -62,7 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
 
     terminal.show()
-    terminal.sendText(`physicscode --port ${port}`)
+    terminal.sendText(`${quoteShell(await resolveCliPath())} --port ${port}`)
 
     const fileRef = getActiveFile()
     if (!fileRef) {
@@ -133,5 +135,30 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     return filepathWithAt
+  }
+
+  async function resolveCliPath() {
+    const configured = vscode.workspace.getConfiguration("physicscode").get<string>("cliPath")?.trim()
+    if (configured) {
+      return configured
+    }
+
+    const localBinary = path.resolve(
+      context.extensionPath,
+      "../../packages/physicscode/dist/physicscode-darwin-arm64/bin/physicscode",
+    )
+    if (process.platform === "darwin" && process.arch === "arm64" && fs.existsSync(localBinary)) {
+      return localBinary
+    }
+
+    return "physicscode"
+  }
+
+  function quoteShell(value: string) {
+    if (/^[A-Za-z0-9_./:-]+$/.test(value)) {
+      return value
+    }
+
+    return `'${value.replaceAll("'", "'\\''")}'`
   }
 }

@@ -9,6 +9,7 @@ script/**
 bun.lock
 esbuild.js
 vsc-extension-quickstart.md
+PUBLISHING.md
 **/tsconfig.json
 **/eslint.config.mjs
 **/*.map

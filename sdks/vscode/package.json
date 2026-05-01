@@ -1,14 +1,18 @@
 {
   "name": "physicscode",
-  "displayName": "physicscode",
-  "description": "physicscode for VS Code",
-  "version": "1.14.31",
-  "publisher": "sst-dev",
+  "displayName": "PhysicsCode",
+  "description": "Agentic coding with PhysicsCode by PAI Dynamics.",
+  "version": "1.14.33",
+  "publisher": "paidynamicsch",
   "repository": {
     "type": "git",
-    "url": "https://github.com/anomalyco/physicscode"
+    "url": "https://github.com/pai-code/physicscode"
   },
-  "license": "UNLICENSED",
+  "homepage": "https://paidynamics.ch",
+  "bugs": {
+    "url": "https://paidynamics.ch"
+  },
+  "license": "SEE LICENSE IN LICENSE",
   "icon": "images/icon.png",
   "galleryBanner": {
     "color": "#000000",
@@ -78,7 +82,17 @@
         "win": "ctrl+alt+K",
         "linux": "ctrl+alt+K"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "PhysicsCode",
+      "properties": {
+        "physicscode.cliPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the PhysicsCode CLI executable. Leave empty to use the local development binary when available, then fall back to physicscode from PATH."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "bun run package",

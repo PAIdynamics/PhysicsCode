@@ -1037,6 +1037,25 @@ function fromModelsDevModel(provider: ModelsDev.Provider, model: ModelsDev.Model
   }
 }
 
+function rebrandModelsDev(providers: Record<string, ModelsDev.Provider>) {
+  const next = { ...providers }
+  const rebrand = (from: string, to: string, name: string) => {
+    const provider = next[from]
+    if (!provider || next[to]) return
+    next[to] = {
+      ...provider,
+      id: to,
+      name,
+      env: ["PHYSICSCODE_API_KEY", ...provider.env],
+    }
+    delete next[from]
+  }
+
+  rebrand("opencode", "physicscode", "PhysicsCode Zen")
+  rebrand("opencode-go", "physicscode-go", "PhysicsCode Go")
+  return next
+}
+
 export function fromModelsDevProvider(provider: ModelsDev.Provider): Info {
   const models: Record<string, Model> = {}
   for (const [key, model] of Object.entries(provider.models)) {
@@ -1089,7 +1108,7 @@ const layer: Layer.Layer<
         using _ = log.time("state")
         const bridge = yield* EffectBridge.make()
         const cfg = yield* config.get()
-        const modelsDev = yield* Effect.promise(() => ModelsDev.get())
+        const modelsDev = rebrandModelsDev(yield* Effect.promise(() => ModelsDev.get()))
         const database = mapValues(modelsDev, fromModelsDevProvider)
 
         const providers: Record<ProviderID, Info> = {} as Record<ProviderID, Info>

@@ -154,6 +154,13 @@ export function SessionSidePanel(props: {
     layout.fileTree.setTab("all")
   }
 
+  createEffect(() => {
+    if (!fileOpen()) return
+    if (!props.diffsReady()) return
+    if (props.reviewCount() > 0) return
+    showAllFiles()
+  })
+
   const [store, setStore] = createStore({
     activeDraggable: undefined as string | undefined,
   })

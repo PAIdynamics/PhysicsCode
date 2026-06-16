@@ -1,10 +1,14 @@
 #!/usr/bin/env bun
 
-const repo = "anomalyco/physicscode"
+const repo = process.env.GH_REPO ?? process.env.GITHUB_REPOSITORY
 const days = 60
 const msg = `To stay organized issues are automatically closed after ${days} days of no activity. If the issue is still relevant please open a new one.`
 
 const token = process.env.GITHUB_TOKEN
+if (!repo) {
+  console.error("GH_REPO or GITHUB_REPOSITORY environment variable is required")
+  process.exit(1)
+}
 if (!token) {
   console.error("GITHUB_TOKEN environment variable is required")
   process.exit(1)
@@ -53,7 +57,7 @@ async function main() {
       `https://api.github.com/repos/${repo}/issues?state=open&sort=updated&direction=asc&per_page=100&page=${page}`,
       { headers },
     )
-    if (!res.ok) throw new Error(res.statusText)
+    if (!res.ok) throw new Error(`Failed to fetch ${repo} issues: ${res.status} ${res.statusText}`)
 
     const all = (await res.json()) as Issue[]
     if (all.length === 0) break

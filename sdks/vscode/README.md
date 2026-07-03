@@ -15,6 +15,9 @@ The extension launches the CLI with:
 - provider: `paidynamics`
 - model: `paidynamics/gpt-oss-120b-pai`
 - base URL: `https://www.paidynamics.ch/llm/v1`
+- OpenAI-compatible endpoint: `POST https://www.paidynamics.ch/llm/v1/chat/completions`
+- request auth: `Authorization: Bearer <PAI_DYNAMICS_API_KEY>`
+- request model: `paidynamics/gpt-oss-120b-pai`
 
 For a self-hosted OpenAI-compatible endpoint, set `physicscode.paiBaseUrl` to your
 server's `/v1` URL. If your server exposes a different model name, also set

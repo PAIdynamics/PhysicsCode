@@ -172,6 +172,21 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         options: ok ? {} : { apiKey: "public" },
       }
     }),
+    paidynamics: Effect.fnUntraced(function* (input: Info) {
+      const env = yield* dep.env()
+      const cfg = yield* dep.config()
+      const providerConfig = cfg.provider?.[ModelsDev.PAIDYNAMICS_PROVIDER_ID]
+      const apiKey = input.env.map((item) => env[item]).find(Boolean) ?? providerConfig?.options?.apiKey
+      const baseURL = env["PAIDYNAMICS_BASE_URL"] ?? providerConfig?.options?.baseURL ?? input.options.baseURL
+      const ok = Boolean(apiKey) || Boolean(yield* dep.auth(input.id))
+
+      return {
+        autoload: ok,
+        options: {
+          ...(baseURL ? { baseURL } : {}),
+        },
+      }
+    }),
     openai: () =>
       Effect.succeed({
         autoload: false,
@@ -1056,6 +1071,14 @@ function rebrandModelsDev(providers: Record<string, ModelsDev.Provider>) {
   return next
 }
 
+function configurePaidynamicsProvider(database: Record<string, Info>) {
+  const provider = database[ModelsDev.PAIDYNAMICS_PROVIDER_ID]
+  if (!provider) return
+  const model = provider.models[ModelsDev.PAIDYNAMICS_MODEL_ID]
+  if (!model) return
+  model.api.id = ModelsDev.PAIDYNAMICS_UPSTREAM_MODEL_ID
+}
+
 export function fromModelsDevProvider(provider: ModelsDev.Provider): Info {
   const models: Record<string, Model> = {}
   for (const [key, model] of Object.entries(provider.models)) {
@@ -1110,6 +1133,7 @@ const layer: Layer.Layer<
         const cfg = yield* config.get()
         const modelsDev = rebrandModelsDev(yield* Effect.promise(() => ModelsDev.get()))
         const database = mapValues(modelsDev, fromModelsDevProvider)
+        configurePaidynamicsProvider(database)
 
         const providers: Record<ProviderID, Info> = {} as Record<ProviderID, Info>
         const languages = new Map<string, LanguageModelV3>()

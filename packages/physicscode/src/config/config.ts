@@ -593,6 +593,10 @@ export const layer = Layer.effect(
           log.debug("loaded custom config from PHYSICSCODE_CONFIG_CONTENT")
         }
 
+        result.enabled_providers ??= ["paidynamics"]
+        result.model ??= "paidynamics/gpt-oss-120b-pai"
+        result.small_model ??= result.model
+
         const activeAccount = Option.getOrUndefined(
           yield* accountSvc.active().pipe(Effect.catch(() => Effect.succeed(Option.none()))),
         )

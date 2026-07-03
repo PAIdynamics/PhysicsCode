@@ -358,13 +358,14 @@ export const ProvidersLoginCommand = cmd({
         )
 
         const priority: Record<string, number> = {
-          physicscode: 0,
-          openai: 1,
-          "github-copilot": 2,
-          google: 3,
-          anthropic: 4,
-          openrouter: 5,
-          vercel: 6,
+          paidynamics: 0,
+          physicscode: 1,
+          openai: 2,
+          "github-copilot": 3,
+          google: 4,
+          anthropic: 5,
+          openrouter: 6,
+          vercel: 7,
         }
         const pluginProviders = resolvePluginProviders({
           hooks,
@@ -461,6 +462,10 @@ export const ProvidersLoginCommand = cmd({
 
         if (provider === "physicscode") {
           prompts.log.info("Create an api key at https://physicscode.ai/auth")
+        }
+
+        if (provider === "paidynamics") {
+          prompts.log.info("Use the API key issued by PAI Dynamics for hosted PhysicsCode models")
         }
 
         if (provider === "vercel") {

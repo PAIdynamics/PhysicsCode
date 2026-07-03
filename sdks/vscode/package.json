@@ -2,15 +2,15 @@
   "name": "physicscode",
   "displayName": "PhysicsCode",
   "description": "Agentic coding with PhysicsCode by PAI Dynamics.",
-  "version": "1.14.33",
+  "version": "1.14.37",
   "publisher": "paidynamicsch",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pai-code/physicscode"
+    "url": "https://github.com/PAIdynamics/code.git"
   },
-  "homepage": "https://paidynamics.ch",
+  "homepage": "https://paidynamics.ch/physicscode",
   "bugs": {
-    "url": "https://paidynamics.ch"
+    "url": "https://paidynamics.ch/physicscode"
   },
   "license": "SEE LICENSE IN LICENSE",
   "icon": "images/icon.png",
@@ -47,6 +47,14 @@
       {
         "command": "physicscode.addFilepathToTerminal",
         "title": "Add Filepath to Terminal"
+      },
+      {
+        "command": "physicscode.setPaiApiKey",
+        "title": "PhysicsCode: Set PAI Dynamics API Key"
+      },
+      {
+        "command": "physicscode.clearPaiApiKey",
+        "title": "PhysicsCode: Clear PAI Dynamics API Key"
       }
     ],
     "menus": {
@@ -90,6 +98,11 @@
           "type": "string",
           "default": "",
           "description": "Path to the PhysicsCode CLI executable. Leave empty to use the local development binary when available, then fall back to physicscode from PATH."
+        },
+        "physicscode.paiBaseUrl": {
+          "type": "string",
+          "default": "https://www.paidynamics.ch/llm/v1",
+          "description": "OpenAI-compatible base URL for PAI Dynamics hosted PhysicsCode models."
         }
       }
     }

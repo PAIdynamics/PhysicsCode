@@ -2,10 +2,15 @@
 export function deactivate() {}
 
 import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import * as vscode from "vscode"
 
 const TERMINAL_NAME = "physicscode"
+const PAI_API_KEY_SECRET = "physicscode.paiDynamicsApiKey"
+const PAI_PROVIDER_ID = "paidynamics"
+const PAI_MODEL_ID = "gpt-oss-120b-pai"
+const PAI_DEFAULT_BASE_URL = "https://www.paidynamics.ch/llm/v1"
 
 export function activate(context: vscode.ExtensionContext) {
   const openNewTerminalDisposable = vscode.commands.registerCommand("physicscode.openNewTerminal", async () => {
@@ -42,7 +47,31 @@ export function activate(context: vscode.ExtensionContext) {
     }
   })
 
-  context.subscriptions.push(openNewTerminalDisposable, openTerminalDisposable, addFilepathDisposable)
+  const setPaiApiKeyDisposable = vscode.commands.registerCommand("physicscode.setPaiApiKey", async () => {
+    const key = await vscode.window.showInputBox({
+      title: "Set PAI Dynamics API Key",
+      prompt: "Enter the API key for PAI Dynamics hosted models.",
+      password: true,
+      ignoreFocusOut: true,
+      validateInput: (value) => (value.trim() ? undefined : "API key is required."),
+    })
+    if (key === undefined) return
+    await context.secrets.store(PAI_API_KEY_SECRET, key.trim())
+    vscode.window.showInformationMessage("PAI Dynamics API key saved for PhysicsCode.")
+  })
+
+  const clearPaiApiKeyDisposable = vscode.commands.registerCommand("physicscode.clearPaiApiKey", async () => {
+    await context.secrets.delete(PAI_API_KEY_SECRET)
+    vscode.window.showInformationMessage("PAI Dynamics API key removed from VS Code secret storage.")
+  })
+
+  context.subscriptions.push(
+    openNewTerminalDisposable,
+    openTerminalDisposable,
+    addFilepathDisposable,
+    setPaiApiKeyDisposable,
+    clearPaiApiKeyDisposable,
+  )
 
   async function openTerminal() {
     // Create a new terminal in split screen
@@ -60,6 +89,7 @@ export function activate(context: vscode.ExtensionContext) {
       env: {
         _EXTENSION_PHYSICSCODE_PORT: port.toString(),
         PHYSICSCODE_CALLER: "vscode",
+        ...(await paiHostedEnvironment()),
       },
     })
 
@@ -151,7 +181,41 @@ export function activate(context: vscode.ExtensionContext) {
       return localBinary
     }
 
+    for (const candidate of candidateCliPaths()) {
+      if (fs.existsSync(candidate)) {
+        return candidate
+      }
+    }
+
     return "physicscode"
+  }
+
+  function candidateCliPaths() {
+    const home = os.homedir()
+    const executable = process.platform === "win32" ? "physicscode.exe" : "physicscode"
+    return [
+      path.join(home, ".local", "bin", executable),
+      path.join(home, "bin", executable),
+      "/usr/local/bin/physicscode",
+      "/opt/homebrew/bin/physicscode",
+    ]
+  }
+
+  async function paiHostedEnvironment() {
+    const baseURL =
+      vscode.workspace.getConfiguration("physicscode").get<string>("paiBaseUrl")?.trim() || PAI_DEFAULT_BASE_URL
+    const apiKey = (await context.secrets.get(PAI_API_KEY_SECRET))?.trim()
+    const config = {
+      enabled_providers: [PAI_PROVIDER_ID],
+      model: `${PAI_PROVIDER_ID}/${PAI_MODEL_ID}`,
+      small_model: `${PAI_PROVIDER_ID}/${PAI_MODEL_ID}`,
+    }
+
+    return {
+      PAIDYNAMICS_BASE_URL: baseURL,
+      ...(apiKey ? { PAIDYNAMICS_API_KEY: apiKey } : {}),
+      PHYSICSCODE_CONFIG_CONTENT: JSON.stringify(config),
+    }
   }
 
   function quoteShell(value: string) {

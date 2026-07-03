@@ -101,6 +101,47 @@ export const Provider = Schema.Struct({
 
 export type Provider = Schema.Schema.Type<typeof Provider>
 
+export const PAIDYNAMICS_PROVIDER_ID = "paidynamics"
+export const PAIDYNAMICS_MODEL_ID = "gpt-oss-120b-pai"
+export const PAIDYNAMICS_UPSTREAM_MODEL_ID = "openai/gpt-oss-120b"
+export const PAIDYNAMICS_BASE_URL = "https://www.paidynamics.ch/llm/v1"
+
+export const PaidynamicsProvider = {
+  id: PAIDYNAMICS_PROVIDER_ID,
+  name: "PAI Dynamics Hosted",
+  api: PAIDYNAMICS_BASE_URL,
+  npm: "@ai-sdk/openai-compatible",
+  env: ["PAIDYNAMICS_API_KEY", "PHYSICSCODE_PAI_API_KEY"],
+  models: {
+    [PAIDYNAMICS_MODEL_ID]: {
+      id: PAIDYNAMICS_MODEL_ID,
+      name: "gpt-oss-120b-pai",
+      family: "gpt-oss",
+      release_date: "2026-07-03",
+      attachment: false,
+      reasoning: true,
+      temperature: true,
+      tool_call: true,
+      cost: {
+        input: 0,
+        output: 0,
+      },
+      limit: {
+        context: 131072,
+        output: 8192,
+      },
+      modalities: {
+        input: ["text"],
+        output: ["text"],
+      },
+      provider: {
+        npm: "@ai-sdk/openai-compatible",
+        api: PAIDYNAMICS_BASE_URL,
+      },
+    },
+  },
+} satisfies Provider
+
 function url() {
   return Flag.PHYSICSCODE_MODELS_URL || "https://models.dev"
 }
@@ -143,9 +184,12 @@ export const Data = lazy(async () => {
   })
 })
 
-export async function get() {
+export async function get(): Promise<Record<string, Provider>> {
   const result = await Data()
-  return result as Record<string, Provider>
+  return {
+    ...(result as Record<string, Provider>),
+    [PAIDYNAMICS_PROVIDER_ID]: PaidynamicsProvider,
+  }
 }
 
 export async function refresh(force = false) {

@@ -20,6 +20,7 @@ export const DialogSelectProvider: Component = () => {
   const otherGroup = () => language.t("dialog.provider.group.other")
   const customLabel = () => language.t("settings.providers.tag.custom")
   const note = (id: string) => {
+    if (id === "paidynamics") return "Hosted DGX models by PAI Dynamics"
     if (id === "anthropic") return language.t("dialog.provider.anthropic.note")
     if (id === "openai") return language.t("dialog.provider.openai.note")
     if (id.startsWith("github-copilot")) return language.t("dialog.provider.copilot.note")
@@ -70,6 +71,9 @@ export const DialogSelectProvider: Component = () => {
             </Show>
             <Show when={i.id === CUSTOM_ID}>
               <Tag>{language.t("settings.providers.tag.custom")}</Tag>
+            </Show>
+            <Show when={i.id === "paidynamics"}>
+              <Tag>{language.t("dialog.provider.tag.recommended")}</Tag>
             </Show>
             <Show when={i.id === "physicscode"}>
               <Tag>{language.t("dialog.provider.tag.recommended")}</Tag>

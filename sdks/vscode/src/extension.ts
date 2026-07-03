@@ -1,9 +1,11 @@
 // This method is called when your extension is deactivated
 export function deactivate() {}
 
+import { execFile } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
+import { promisify } from "node:util"
 import * as vscode from "vscode"
 
 const TERMINAL_NAME = "physicscode"
@@ -11,6 +13,7 @@ const PAI_API_KEY_SECRET = "physicscode.paiDynamicsApiKey"
 const PAI_PROVIDER_ID = "paidynamics"
 const PAI_MODEL_ID = "gpt-oss-120b-pai"
 const PAI_DEFAULT_BASE_URL = "https://www.paidynamics.ch/llm/v1"
+const execFileAsync = promisify(execFile)
 
 export function activate(context: vscode.ExtensionContext) {
   const openNewTerminalDisposable = vscode.commands.registerCommand("physicscode.openNewTerminal", async () => {
@@ -76,6 +79,21 @@ export function activate(context: vscode.ExtensionContext) {
   async function openTerminal() {
     // Create a new terminal in split screen
     const port = Math.floor(Math.random() * (65535 - 16384 + 1)) + 16384
+    const cliPath = await resolveCliPath()
+    if (!cliPath) {
+      const action = await vscode.window.showErrorMessage(
+        "PhysicsCode CLI was not found. Install it as 'physicscode' or set physicscode.cliPath.",
+        "Set CLI Path",
+        "Open Install Page",
+      )
+      if (action === "Set CLI Path") {
+        await vscode.commands.executeCommand("workbench.action.openSettings", "physicscode.cliPath")
+      } else if (action === "Open Install Page") {
+        await vscode.env.openExternal(vscode.Uri.parse("https://www.paidynamics.ch/physicscode"))
+      }
+      return
+    }
+
     const terminal = vscode.window.createTerminal({
       name: TERMINAL_NAME,
       iconPath: {
@@ -94,7 +112,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
 
     terminal.show()
-    terminal.sendText(`${quoteShell(await resolveCliPath())} --port ${port}`)
+    terminal.sendText(`${quoteShell(cliPath)} --port ${port}`)
 
     const fileRef = getActiveFile()
     if (!fileRef) {
@@ -173,21 +191,13 @@ export function activate(context: vscode.ExtensionContext) {
       return configured
     }
 
-    const localBinary = path.resolve(
-      context.extensionPath,
-      "../../packages/physicscode/dist/physicscode-darwin-arm64/bin/physicscode",
-    )
-    if (process.platform === "darwin" && process.arch === "arm64" && fs.existsSync(localBinary)) {
-      return localBinary
-    }
-
     for (const candidate of candidateCliPaths()) {
       if (fs.existsSync(candidate)) {
         return candidate
       }
     }
 
-    return "physicscode"
+    return (await executableOnPath("physicscode")) ? "physicscode" : undefined
   }
 
   function candidateCliPaths() {
@@ -199,6 +209,16 @@ export function activate(context: vscode.ExtensionContext) {
       "/usr/local/bin/physicscode",
       "/opt/homebrew/bin/physicscode",
     ]
+  }
+
+  async function executableOnPath(name: string) {
+    try {
+      const command = process.platform === "win32" ? "where" : "which"
+      await execFileAsync(command, [name])
+      return true
+    } catch {
+      return false
+    }
   }
 
   async function paiHostedEnvironment() {

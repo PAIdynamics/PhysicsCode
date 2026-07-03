@@ -103,6 +103,21 @@
           "type": "string",
           "default": "https://www.paidynamics.ch/llm/v1",
           "description": "OpenAI-compatible base URL for PAI Dynamics hosted PhysicsCode models."
+        },
+        "physicscode.paiProviderId": {
+          "type": "string",
+          "default": "paidynamics",
+          "description": "Provider ID used for the PAI Dynamics OpenAI-compatible endpoint."
+        },
+        "physicscode.paiModelId": {
+          "type": "string",
+          "default": "gpt-oss-120b-pai",
+          "description": "PhysicsCode model ID used for the PAI Dynamics OpenAI-compatible endpoint."
+        },
+        "physicscode.paiApiModelId": {
+          "type": "string",
+          "default": "",
+          "description": "Optional model ID sent to the OpenAI-compatible API. Leave empty to use the PhysicsCode model ID or built-in mapping."
         }
       }
     }

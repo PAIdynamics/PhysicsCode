@@ -183,6 +183,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
       return {
         autoload: ok,
         options: {
+          ...(apiKey ? { apiKey } : {}),
           ...(baseURL ? { baseURL } : {}),
         },
       }

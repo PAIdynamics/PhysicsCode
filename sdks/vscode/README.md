@@ -8,13 +8,17 @@ This extension requires the PhysicsCode CLI to be installed on your system as `p
 
 ## Hosted Model Access
 
-PhysicsCode is configured for PAI Dynamics hosted models by default. Run `PhysicsCode: Set PAI Dynamics API Key` from the VS Code command palette, paste your user API key, then open PhysicsCode.
+PhysicsCode is configured for PAI Dynamics hosted models by default. On first launch, the extension asks for your API key and stores it in VS Code secret storage. You can also run `PhysicsCode: Set PAI Dynamics API Key` from the command palette to update it later.
 
 The extension launches the CLI with:
 
 - provider: `paidynamics`
 - model: `paidynamics/gpt-oss-120b-pai`
 - base URL: `https://www.paidynamics.ch/llm/v1`
+
+For a self-hosted OpenAI-compatible endpoint, set `physicscode.paiBaseUrl` to your
+server's `/v1` URL. If your server exposes a different model name, also set
+`physicscode.paiApiModelId` to the model id accepted by the server.
 
 ## Support
 

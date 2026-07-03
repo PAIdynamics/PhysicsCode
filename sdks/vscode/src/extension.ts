@@ -10,9 +10,12 @@ import * as vscode from "vscode"
 
 const TERMINAL_NAME = "physicscode"
 const PAI_API_KEY_SECRET = "physicscode.paiDynamicsApiKey"
-const PAI_PROVIDER_ID = "paidynamics"
-const PAI_MODEL_ID = "gpt-oss-120b-pai"
+const PAI_API_KEY_ENV = "PAIDYNAMICS_API_KEY"
+const PAI_DEFAULT_PROVIDER_ID = "paidynamics"
+const PAI_DEFAULT_MODEL_ID = "gpt-oss-120b-pai"
 const PAI_DEFAULT_BASE_URL = "https://www.paidynamics.ch/llm/v1"
+const PAI_DEFAULT_CONTEXT_LIMIT = 131072
+const PAI_DEFAULT_OUTPUT_LIMIT = 8192
 const execFileAsync = promisify(execFile)
 
 export function activate(context: vscode.ExtensionContext) {
@@ -51,16 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
   })
 
   const setPaiApiKeyDisposable = vscode.commands.registerCommand("physicscode.setPaiApiKey", async () => {
-    const key = await vscode.window.showInputBox({
-      title: "Set PAI Dynamics API Key",
-      prompt: "Enter the API key for PAI Dynamics hosted models.",
-      password: true,
-      ignoreFocusOut: true,
-      validateInput: (value) => (value.trim() ? undefined : "API key is required."),
-    })
-    if (key === undefined) return
-    await context.secrets.store(PAI_API_KEY_SECRET, key.trim())
-    vscode.window.showInformationMessage("PAI Dynamics API key saved for PhysicsCode.")
+    await promptAndStorePaiApiKey()
   })
 
   const clearPaiApiKeyDisposable = vscode.commands.registerCommand("physicscode.clearPaiApiKey", async () => {
@@ -94,6 +88,11 @@ export function activate(context: vscode.ExtensionContext) {
       return
     }
 
+    const paiEnv = await paiHostedEnvironment()
+    if (!paiEnv) {
+      return
+    }
+
     const terminal = vscode.window.createTerminal({
       name: TERMINAL_NAME,
       iconPath: {
@@ -107,7 +106,7 @@ export function activate(context: vscode.ExtensionContext) {
       env: {
         _EXTENSION_PHYSICSCODE_PORT: port.toString(),
         PHYSICSCODE_CALLER: "vscode",
-        ...(await paiHostedEnvironment()),
+        ...paiEnv,
       },
     })
 
@@ -222,20 +221,72 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   async function paiHostedEnvironment() {
-    const baseURL =
-      vscode.workspace.getConfiguration("physicscode").get<string>("paiBaseUrl")?.trim() || PAI_DEFAULT_BASE_URL
-    const apiKey = (await context.secrets.get(PAI_API_KEY_SECRET))?.trim()
+    const baseURL = physicscodeSetting("paiBaseUrl", PAI_DEFAULT_BASE_URL)
+    const providerID = physicscodeSetting("paiProviderId", PAI_DEFAULT_PROVIDER_ID)
+    const modelID = physicscodeSetting("paiModelId", PAI_DEFAULT_MODEL_ID)
+    const apiModelID = vscode.workspace.getConfiguration("physicscode").get<string>("paiApiModelId")?.trim()
+    const apiKey = (await context.secrets.get(PAI_API_KEY_SECRET))?.trim() || (await promptAndStorePaiApiKey())
+    if (!apiKey) {
+      vscode.window.showWarningMessage("PhysicsCode needs an API key before it can connect to the hosted model.")
+      return
+    }
     const config = {
-      enabled_providers: [PAI_PROVIDER_ID],
-      model: `${PAI_PROVIDER_ID}/${PAI_MODEL_ID}`,
-      small_model: `${PAI_PROVIDER_ID}/${PAI_MODEL_ID}`,
+      enabled_providers: [providerID],
+      model: `${providerID}/${modelID}`,
+      small_model: `${providerID}/${modelID}`,
+      provider: {
+        [providerID]: {
+          name: "PAI Dynamics Hosted",
+          npm: "@ai-sdk/openai-compatible",
+          env: [PAI_API_KEY_ENV],
+          options: {
+            baseURL,
+          },
+          models: {
+            [modelID]: {
+              ...(apiModelID ? { id: apiModelID } : {}),
+              name: modelID,
+              family: "gpt-oss",
+              reasoning: true,
+              temperature: true,
+              tool_call: true,
+              limit: {
+                context: PAI_DEFAULT_CONTEXT_LIMIT,
+                output: PAI_DEFAULT_OUTPUT_LIMIT,
+              },
+              modalities: {
+                input: ["text"],
+                output: ["text"],
+              },
+            },
+          },
+        },
+      },
     }
 
     return {
       PAIDYNAMICS_BASE_URL: baseURL,
-      ...(apiKey ? { PAIDYNAMICS_API_KEY: apiKey } : {}),
+      ...(apiKey ? { [PAI_API_KEY_ENV]: apiKey } : {}),
       PHYSICSCODE_CONFIG_CONTENT: JSON.stringify(config),
     }
+  }
+
+  async function promptAndStorePaiApiKey() {
+    const key = await vscode.window.showInputBox({
+      title: "Set PhysicsCode API Key",
+      prompt: "Enter the API key for PhysicsCode hosted models.",
+      password: true,
+      ignoreFocusOut: true,
+      validateInput: (value) => (value.trim() ? undefined : "API key is required."),
+    })
+    if (key === undefined) return
+    await context.secrets.store(PAI_API_KEY_SECRET, key.trim())
+    vscode.window.showInformationMessage("PhysicsCode API key saved.")
+    return key.trim()
+  }
+
+  function physicscodeSetting(name: string, fallback: string) {
+    return vscode.workspace.getConfiguration("physicscode").get<string>(name)?.trim() || fallback
   }
 
   function quoteShell(value: string) {

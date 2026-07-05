@@ -4,10 +4,7 @@ import { NamedError } from "@physicscode-ai/core/util/error"
 import { logo as glyphs } from "./logo"
 
 const wordmark = [
-  `⠀                                ▄     `,
-  `█▀▀█ █▀▀█ █▀▀█ █▀▀▄ █▀▀▀ █▀▀█ █▀▀█ █▀▀█`,
-  `█  █ █  █ █▀▀▀ █  █ █    █  █ █  █ █▀▀▀`,
-  `▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀`,
+  `PhysicsCode`,
 ]
 
 export const CancelledError = NamedError.create("UICancelledError", z.void())

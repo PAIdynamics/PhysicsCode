@@ -118,6 +118,11 @@
           "type": "string",
           "default": "",
           "description": "Optional model ID sent to the OpenAI-compatible API. Leave empty to use the PhysicsCode model ID or built-in mapping."
+        },
+        "physicscode.paiEnableLocalTools": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow the hosted PAI Dynamics model to request local PhysicsCode tools such as shell commands and file edits. Commands still require the normal PhysicsCode permission prompt before execution. Turn this off to use hosted chat without local tool access."
         }
       }
     }

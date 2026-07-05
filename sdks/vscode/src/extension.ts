@@ -17,6 +17,7 @@ const PAI_DEFAULT_API_MODEL_ID = "openai/gpt-oss-120b"
 const PAI_DEFAULT_BASE_URL = "https://www.paidynamics.ch/llm/v1"
 const PAI_DEFAULT_CONTEXT_LIMIT = 131072
 const PAI_DEFAULT_OUTPUT_LIMIT = 8192
+const PAI_LOCAL_TOOLS_ENV = "PHYSICSCODE_PAI_ENABLE_LOCAL_TOOLS"
 const execFileAsync = promisify(execFile)
 
 export function activate(context: vscode.ExtensionContext) {
@@ -243,6 +244,8 @@ export function activate(context: vscode.ExtensionContext) {
     const modelID = physicscodeSetting("paiModelId", PAI_DEFAULT_MODEL_ID)
     const apiModelID =
       vscode.workspace.getConfiguration("physicscode").get<string>("paiApiModelId")?.trim() || PAI_DEFAULT_API_MODEL_ID
+    const enableLocalTools =
+      vscode.workspace.getConfiguration("physicscode").get<boolean>("paiEnableLocalTools") !== false
     const apiKey = (await context.secrets.get(PAI_API_KEY_SECRET))?.trim() || (await promptAndStorePaiApiKey())
     if (!apiKey) {
       vscode.window.showWarningMessage("PhysicsCode needs an API key before it can connect to the hosted model.")
@@ -267,7 +270,7 @@ export function activate(context: vscode.ExtensionContext) {
               family: "gpt-oss",
               reasoning: true,
               temperature: true,
-              tool_call: false,
+              tool_call: enableLocalTools,
               limit: {
                 context: PAI_DEFAULT_CONTEXT_LIMIT,
                 output: PAI_DEFAULT_OUTPUT_LIMIT,
@@ -296,6 +299,7 @@ export function activate(context: vscode.ExtensionContext) {
     return {
       PAIDYNAMICS_BASE_URL: baseURL,
       ...(apiKey ? { [PAI_API_KEY_ENV]: apiKey } : {}),
+      [PAI_LOCAL_TOOLS_ENV]: enableLocalTools ? "true" : "false",
       PHYSICSCODE_CONFIG_CONTENT: JSON.stringify(config),
     }
   }

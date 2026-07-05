@@ -33,6 +33,9 @@ type Result = Awaited<ReturnType<typeof streamText>>
 const mergeOptions = (target: Record<string, any>, source: Record<string, any> | undefined): Record<string, any> =>
   mergeDeep(target, source ?? {}) as Record<string, any>
 
+const enablePaidynamicsLocalTools = () =>
+  !["0", "false", "no", "off"].includes((process.env.PHYSICSCODE_PAI_ENABLE_LOCAL_TOOLS ?? "true").toLowerCase())
+
 export type StreamInput = {
   user: MessageV2.User
   sessionID: string
@@ -126,14 +129,24 @@ const live: Layer.Layer<
         system.length = 0
         system.push(header, rest.join("\n"))
       }
-      const isPaidynamicsHosted = input.model.providerID === "paidynamics"
-      if (isPaidynamicsHosted) {
+      const paidynamicsLocalToolsEnabled = input.model.providerID === "paidynamics" && enablePaidynamicsLocalTools()
+      const disablePaidynamicsLocalTools = input.model.providerID === "paidynamics" && !paidynamicsLocalToolsEnabled
+      if (disablePaidynamicsLocalTools) {
         system.push(
           [
             "<system-reminder>",
             "The PAI Dynamics hosted model is served through a remote OpenAI-compatible endpoint.",
-            "For this provider, local tool execution is disabled. Do not say you will use bash, files, or other tools unless an actual tool call is available.",
+            "For this session, local tool execution is disabled. Do not say you will use bash, files, or other tools unless an actual tool call is available.",
             "Answer directly from the conversation and the environment context. If live local data is missing, say what information is unavailable and what command the user can run.",
+            "</system-reminder>",
+          ].join("\n"),
+        )
+      } else if (paidynamicsLocalToolsEnabled) {
+        system.push(
+          [
+            "<system-reminder>",
+            "The PAI Dynamics hosted model can request local tools, but tools execute only inside the user's local PhysicsCode process after the user approves them.",
+            "Use bash, file, and other tools only when they are needed. Never imply that the remote hosted model has direct access to the user's machine.",
             "</system-reminder>",
           ].join("\n"),
         )
@@ -376,9 +389,9 @@ const live: Layer.Layer<
         topP: params.topP,
         topK: params.topK,
         providerOptions: ProviderTransform.providerOptions(input.model, params.options),
-        activeTools: isPaidynamicsHosted ? [] : Object.keys(tools).filter((x) => x !== "invalid"),
-        tools: isPaidynamicsHosted ? {} : tools,
-        toolChoice: isPaidynamicsHosted ? "none" : input.toolChoice,
+        activeTools: disablePaidynamicsLocalTools ? [] : Object.keys(tools).filter((x) => x !== "invalid"),
+        tools: disablePaidynamicsLocalTools ? {} : tools,
+        toolChoice: disablePaidynamicsLocalTools ? "none" : input.toolChoice,
         maxOutputTokens: params.maxOutputTokens,
         abortSignal: input.abort,
         headers: {

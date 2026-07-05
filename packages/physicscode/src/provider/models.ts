@@ -121,7 +121,7 @@ export const PaidynamicsProvider = {
       attachment: false,
       reasoning: true,
       temperature: true,
-      tool_call: false,
+      tool_call: true,
       cost: {
         input: 0,
         output: 0,

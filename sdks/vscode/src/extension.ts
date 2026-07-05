@@ -114,7 +114,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
 
     terminal.show()
-    terminal.sendText(`${quoteShell(cliPath)} --port ${port} --dir ${quoteShell(cwd)}`)
+    terminal.sendText(`${quoteShell(cliPath)} --port ${port}`)
 
     const fileRef = getActiveFile()
     if (!fileRef) {

@@ -126,6 +126,18 @@ const live: Layer.Layer<
         system.length = 0
         system.push(header, rest.join("\n"))
       }
+      const isPaidynamicsHosted = input.model.providerID === "paidynamics"
+      if (isPaidynamicsHosted) {
+        system.push(
+          [
+            "<system-reminder>",
+            "The PAI Dynamics hosted model is served through a remote OpenAI-compatible endpoint.",
+            "For this provider, local tool execution is disabled. Do not say you will use bash, files, or other tools unless an actual tool call is available.",
+            "Answer directly from the conversation and the environment context. If live local data is missing, say what information is unavailable and what command the user can run.",
+            "</system-reminder>",
+          ].join("\n"),
+        )
+      }
 
       const variant =
         !input.small && input.model.variants && input.user.model.variant
@@ -364,9 +376,9 @@ const live: Layer.Layer<
         topP: params.topP,
         topK: params.topK,
         providerOptions: ProviderTransform.providerOptions(input.model, params.options),
-        activeTools: Object.keys(tools).filter((x) => x !== "invalid"),
-        tools,
-        toolChoice: input.toolChoice,
+        activeTools: isPaidynamicsHosted ? [] : Object.keys(tools).filter((x) => x !== "invalid"),
+        tools: isPaidynamicsHosted ? {} : tools,
+        toolChoice: isPaidynamicsHosted ? "none" : input.toolChoice,
         maxOutputTokens: params.maxOutputTokens,
         abortSignal: input.abort,
         headers: {

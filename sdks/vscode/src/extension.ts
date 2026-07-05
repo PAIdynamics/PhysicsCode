@@ -267,7 +267,7 @@ export function activate(context: vscode.ExtensionContext) {
               family: "gpt-oss",
               reasoning: true,
               temperature: true,
-              tool_call: true,
+              tool_call: false,
               limit: {
                 context: PAI_DEFAULT_CONTEXT_LIMIT,
                 output: PAI_DEFAULT_OUTPUT_LIMIT,

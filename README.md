@@ -80,5 +80,5 @@ is `paidynamicsch.physicscode`. If publishing from a new machine, first run
 Original physicscode materials are proprietary and governed by the root
 [`LICENSE`](./LICENSE).
 
-physicscode is derived from OpenCode. The original OpenCode MIT notice and other
+PhysicsCode is derived from OpenCode. The original OpenCode MIT notice and other
 third-party notices are preserved in [`Licenses`](./Licenses).

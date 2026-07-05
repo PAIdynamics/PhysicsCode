@@ -48,6 +48,17 @@ function isOverflow(message: string) {
 function message(providerID: ProviderID, e: APICallError) {
   return iife(() => {
     const msg = e.message
+    const isPaidynamics = providerID === "paidynamics"
+    const responseBody = e.responseBody ?? ""
+    if (isPaidynamics && e.statusCode === 530) {
+      return "Cannot reach the PhysicsCode hosted model: Cloudflare Tunnel is not connected to the DGX origin."
+    }
+    if (isPaidynamics && /Unable to connect/i.test(msg)) {
+      return "Cannot connect to the PhysicsCode hosted model. Check that https://www.paidynamics.ch/llm/v1 is reachable and that the Cloudflare Tunnel is running."
+    }
+    if (isPaidynamics && msg === "<none>" && /^\s*<!doctype|^\s*<html/i.test(responseBody)) {
+      return "Cannot connect to the PhysicsCode hosted model. The public endpoint returned an HTML gateway error instead of an OpenAI-compatible response."
+    }
     if (msg === "") {
       if (e.responseBody) return e.responseBody
       if (e.statusCode) {
@@ -73,6 +84,9 @@ function message(providerID: ProviderID, e: APICallError) {
     // If responseBody is HTML (e.g. from a gateway or proxy error page),
     // provide a human-readable message instead of dumping raw markup
     if (/^\s*<!doctype|^\s*<html/i.test(e.responseBody)) {
+      if (isPaidynamics) {
+        return "Cannot connect to the PhysicsCode hosted model. The public endpoint returned an HTML gateway error instead of an OpenAI-compatible response."
+      }
       if (e.statusCode === 401) {
         return "Unauthorized: request was blocked by a gateway or proxy. Your authentication token may be missing or expired — try running `physicscode auth login <your provider URL>` to re-authenticate."
       }
@@ -189,11 +203,22 @@ export function parseAPICallError(input: { providerID: ProviderID; error: APICal
   }
 
   const metadata = input.error.url ? { url: input.error.url } : undefined
+  const paidynamicsNonRetryable =
+    input.providerID === "paidynamics" &&
+    (input.error.statusCode === undefined ||
+      input.error.statusCode === 401 ||
+      input.error.statusCode === 403 ||
+      input.error.statusCode === 404 ||
+      input.error.statusCode === 530)
   return {
     type: "api_error",
     message: m,
     statusCode: input.error.statusCode,
-    isRetryable: input.providerID.startsWith("openai") ? isOpenAiErrorRetryable(input.error) : input.error.isRetryable,
+    isRetryable: paidynamicsNonRetryable
+      ? false
+      : input.providerID.startsWith("openai")
+        ? isOpenAiErrorRetryable(input.error)
+        : input.error.isRetryable,
     responseHeaders: input.error.responseHeaders,
     responseBody: input.error.responseBody,
     metadata,

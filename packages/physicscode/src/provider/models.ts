@@ -103,7 +103,7 @@ export type Provider = Schema.Schema.Type<typeof Provider>
 
 export const PAIDYNAMICS_PROVIDER_ID = "paidynamics"
 export const PAIDYNAMICS_MODEL_ID = "gpt-oss-120b-pai"
-export const PAIDYNAMICS_UPSTREAM_MODEL_ID = `${PAIDYNAMICS_PROVIDER_ID}/${PAIDYNAMICS_MODEL_ID}`
+export const PAIDYNAMICS_UPSTREAM_MODEL_ID = "openai/gpt-oss-120b"
 export const PAIDYNAMICS_BASE_URL = "https://www.paidynamics.ch/llm/v1"
 
 export const PaidynamicsProvider = {
@@ -114,7 +114,7 @@ export const PaidynamicsProvider = {
   env: ["PAIDYNAMICS_API_KEY", "PHYSICSCODE_PAI_API_KEY"],
   models: {
     [PAIDYNAMICS_MODEL_ID]: {
-      id: PAIDYNAMICS_MODEL_ID,
+      id: PAIDYNAMICS_UPSTREAM_MODEL_ID,
       name: "gpt-oss-120b-pai",
       family: "gpt-oss",
       release_date: "2026-07-03",

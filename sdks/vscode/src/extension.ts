@@ -13,6 +13,7 @@ const PAI_API_KEY_SECRET = "physicscode.paiDynamicsApiKey"
 const PAI_API_KEY_ENV = "PAIDYNAMICS_API_KEY"
 const PAI_DEFAULT_PROVIDER_ID = "paidynamics"
 const PAI_DEFAULT_MODEL_ID = "gpt-oss-120b-pai"
+const PAI_DEFAULT_API_MODEL_ID = "openai/gpt-oss-120b"
 const PAI_DEFAULT_BASE_URL = "https://www.paidynamics.ch/llm/v1"
 const PAI_DEFAULT_CONTEXT_LIMIT = 131072
 const PAI_DEFAULT_OUTPUT_LIMIT = 8192
@@ -93,6 +94,7 @@ export function activate(context: vscode.ExtensionContext) {
       return
     }
 
+    const cwd = getWorkspaceCwd()
     const terminal = vscode.window.createTerminal({
       name: TERMINAL_NAME,
       iconPath: {
@@ -103,6 +105,7 @@ export function activate(context: vscode.ExtensionContext) {
         viewColumn: vscode.ViewColumn.Beside,
         preserveFocus: false,
       },
+      cwd,
       env: {
         _EXTENSION_PHYSICSCODE_PORT: port.toString(),
         PHYSICSCODE_CALLER: "vscode",
@@ -111,7 +114,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
 
     terminal.show()
-    terminal.sendText(`${quoteShell(cliPath)} --port ${port}`)
+    terminal.sendText(`${quoteShell(cliPath)} --port ${port} --dir ${quoteShell(cwd)}`)
 
     const fileRef = getActiveFile()
     if (!fileRef) {
@@ -184,6 +187,19 @@ export function activate(context: vscode.ExtensionContext) {
     return filepathWithAt
   }
 
+  function getWorkspaceCwd() {
+    const activeEditor = vscode.window.activeTextEditor
+    if (activeEditor) {
+      const workspaceFolder = vscode.workspace.getWorkspaceFolder(activeEditor.document.uri)
+      if (workspaceFolder) {
+        return workspaceFolder.uri.fsPath
+      }
+    }
+
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
+    return workspaceFolder?.uri.fsPath ?? os.homedir()
+  }
+
   async function resolveCliPath() {
     const configured = vscode.workspace.getConfiguration("physicscode").get<string>("cliPath")?.trim()
     if (configured) {
@@ -203,6 +219,7 @@ export function activate(context: vscode.ExtensionContext) {
     const home = os.homedir()
     const executable = process.platform === "win32" ? "physicscode.exe" : "physicscode"
     return [
+      path.join(home, ".physicscode", "bin", executable),
       path.join(home, ".local", "bin", executable),
       path.join(home, "bin", executable),
       "/usr/local/bin/physicscode",
@@ -224,7 +241,8 @@ export function activate(context: vscode.ExtensionContext) {
     const baseURL = physicscodeSetting("paiBaseUrl", PAI_DEFAULT_BASE_URL)
     const providerID = physicscodeSetting("paiProviderId", PAI_DEFAULT_PROVIDER_ID)
     const modelID = physicscodeSetting("paiModelId", PAI_DEFAULT_MODEL_ID)
-    const apiModelID = vscode.workspace.getConfiguration("physicscode").get<string>("paiApiModelId")?.trim()
+    const apiModelID =
+      vscode.workspace.getConfiguration("physicscode").get<string>("paiApiModelId")?.trim() || PAI_DEFAULT_API_MODEL_ID
     const apiKey = (await context.secrets.get(PAI_API_KEY_SECRET))?.trim() || (await promptAndStorePaiApiKey())
     if (!apiKey) {
       vscode.window.showWarningMessage("PhysicsCode needs an API key before it can connect to the hosted model.")
@@ -244,7 +262,7 @@ export function activate(context: vscode.ExtensionContext) {
           },
           models: {
             [modelID]: {
-              ...(apiModelID ? { id: apiModelID } : {}),
+              id: apiModelID,
               name: modelID,
               family: "gpt-oss",
               reasoning: true,
@@ -257,6 +275,17 @@ export function activate(context: vscode.ExtensionContext) {
               modalities: {
                 input: ["text"],
                 output: ["text"],
+              },
+              options: {
+                reasoningEffort: "low",
+              },
+              variants: {
+                medium: {
+                  disabled: true,
+                },
+                high: {
+                  disabled: true,
+                },
               },
             },
           },

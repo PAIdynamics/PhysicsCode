@@ -1078,6 +1078,16 @@ function configurePaidynamicsProvider(database: Record<string, Info>) {
   const model = provider.models[ModelsDev.PAIDYNAMICS_MODEL_ID]
   if (!model) return
   model.api.id = ModelsDev.PAIDYNAMICS_UPSTREAM_MODEL_ID
+  model.options = mergeDeep(model.options ?? {}, {
+    reasoningEffort: "low",
+  })
+  model.variants = mapValues(
+    mergeDeep(model.variants ?? {}, {
+      medium: { disabled: true },
+      high: { disabled: true },
+    }),
+    (v) => v,
+  )
 }
 
 export function fromModelsDevProvider(provider: ModelsDev.Provider): Info {

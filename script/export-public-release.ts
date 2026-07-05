@@ -30,7 +30,7 @@ if (!version) {
 
 const releaseDir = path.join(site, "physicscode/releases", `v${version}`)
 const latestDir = path.join(site, "physicscode/releases/latest")
-await $`mkdir -p ${path.join(releaseDir, "download")} ${path.join(latestDir, "download")}`
+await $`mkdir -p ${path.join(releaseDir, "download")} ${latestDir}`
 
 const archiveFor = async (dir: string) => {
   const archive = path.join(dist, `${dir}${dir.includes("linux") ? ".tar.gz" : ".zip"}`)
@@ -49,7 +49,6 @@ const assets = await Promise.all(
     const name = path.basename(archive)
     const bytes = await Bun.file(archive).arrayBuffer()
     await Bun.write(path.join(releaseDir, "download", name), bytes)
-    await Bun.write(path.join(latestDir, "download", name), bytes)
     return {
       name,
       size: bytes.byteLength,
@@ -69,6 +68,7 @@ await Bun.write(path.join(releaseDir, "version.txt"), `${version}\n`)
 await Bun.write(path.join(latestDir, "version.txt"), `${version}\n`)
 await Bun.write(path.join(releaseDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`)
 await Bun.write(path.join(latestDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`)
+await $`ln -sfn ${path.relative(latestDir, path.join(releaseDir, "download"))} ${path.join(latestDir, "download")}`
 
 const releasesPath = path.join(site, "physicscode/releases/releases.json")
 const existing = await Bun.file(releasesPath)

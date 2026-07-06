@@ -408,6 +408,24 @@ function renderMathInText(text: string): string {
   return result
 }
 
+function normalizeMathDelimiters(markdown: string): string {
+  const codeFencePattern = /(```[\s\S]*?```|~~~[\s\S]*?~~~)/g
+  return markdown
+    .split(codeFencePattern)
+    .map((part, index) => {
+      if (index % 2 === 1) return part
+      return part
+        .replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => `\n\n$$${math}$$\n\n`)
+        .replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => `$${math}$`)
+        .replace(/\\begin\{equation\*?\}([\s\S]*?)\\end\{equation\*?\}/g, (_, math) => `\n\n$$${math}$$\n\n`)
+        .replace(
+          /\\begin\{align\*?\}([\s\S]*?)\\end\{align\*?\}/g,
+          (_, math) => `\n\n$$\\begin{aligned}${math}\\end{aligned}$$\n\n`,
+        )
+    })
+    .join("")
+}
+
 function renderMathExpressions(html: string): string {
   // Split on code/pre/kbd tags to avoid processing their contents
   const codeBlockPattern = /(<(?:pre|code|kbd)[^>]*>[\s\S]*?<\/(?:pre|code|kbd)>)/gi
@@ -507,13 +525,17 @@ export const { use: useMarked, provider: MarkedProvider } = createSimpleContext(
       const nativeParser = props.nativeParser
       return {
         async parse(markdown: string): Promise<string> {
-          const html = await nativeParser(markdown)
+          const html = await nativeParser(normalizeMathDelimiters(markdown))
           const withMath = renderMathExpressions(html)
           return highlightCodeBlocks(withMath)
         },
       }
     }
 
-    return jsParser
+    return {
+      async parse(markdown: string): Promise<string> {
+        return jsParser.parse(normalizeMathDelimiters(markdown))
+      },
+    }
   },
 })

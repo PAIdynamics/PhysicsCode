@@ -32,9 +32,7 @@ import { ModelID, ProviderID } from "./schema"
 
 const log = Log.create({ service: "provider" })
 const PAIDYNAMICS_LOGIN_REQUIRED_MESSAGE =
-  "Log in to PhysicsCode to use PAI-hosted models.\n\n" +
-  "Run: physicscode account login https://www.paidynamics.ch\n" +
-  "Or open: https://www.paidynamics.ch/physicscode/login"
+  "Log in to PhysicsCode to use PAI-hosted models.\n\n"
 
 function shouldUseCopilotResponsesApi(modelID: string): boolean {
   const match = /^gpt-(\d+)/.exec(modelID)

@@ -89,12 +89,15 @@ import { TuiPluginRuntime } from "@/cli/cmd/tui/plugin/runtime"
 import { DialogGoUpsell } from "../../component/dialog-go-upsell"
 import { SessionRetry } from "@/session/retry"
 import { getRevertDiffFiles } from "../../util/revert-diff"
+import { Link } from "../../ui/link"
 
 addDefaultParsers(parsers.parsers)
 
 const GO_UPSELL_LAST_SEEN_AT = "go_upsell_last_seen_at"
 const GO_UPSELL_DONT_SHOW = "go_upsell_dont_show"
 const GO_UPSELL_WINDOW = 86_400_000 // 24 hrs
+const PAIDYNAMICS_LOGIN_URL = "https://www.paidynamics.ch/physicscode/login"
+const PAIDYNAMICS_LOGIN_COMMAND = "physicscode account login https://www.paidynamics.ch"
 
 const context = createContext<{
   width: number
@@ -1397,6 +1400,11 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
         </box>
       </Show>
       <Show when={props.message.error && props.message.error.name !== "MessageAbortedError"}>
+        {(() => {
+          const error = props.message.error
+          const providerID = error?.data && "providerID" in error.data ? error.data.providerID : undefined
+          const showPaidynamicsLogin = error?.name === "ProviderAuthError" && providerID === "paidynamics"
+          return (
         <box
           border={["left"]}
           paddingTop={1}
@@ -1408,7 +1416,18 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
           borderColor={theme.error}
         >
           <text fg={theme.textMuted}>{props.message.error?.data.message}</text>
+          <Show when={showPaidynamicsLogin}>
+            <box flexDirection="column" marginTop={1}>
+              <text fg={theme.text}>Log in to continue with PAI-hosted models:</text>
+              <Link href={PAIDYNAMICS_LOGIN_URL} fg={theme.primary}>
+                {PAIDYNAMICS_LOGIN_URL}
+              </Link>
+              <text fg={theme.textMuted}>{PAIDYNAMICS_LOGIN_COMMAND}</text>
+            </box>
+          </Show>
         </box>
+          )
+        })()}
       </Show>
       <Switch>
         <Match when={props.last || final() || props.message.error?.name === "MessageAbortedError"}>

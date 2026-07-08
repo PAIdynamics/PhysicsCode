@@ -88,11 +88,6 @@ export function activate(context: vscode.ExtensionContext) {
       return
     }
 
-    const loginReady = await ensurePhysicsCodeLogin(cliPath)
-    if (!loginReady) {
-      return
-    }
-
     const paiEnv = paiHostedEnvironment()
     if (!paiEnv) {
       return
@@ -301,27 +296,6 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }
 
-  async function ensurePhysicsCodeLogin(cliPath: string) {
-    if (hasPhysicsCodeAccountStore()) return true
-
-    const action = await vscode.window.showInformationMessage(
-      "Log in to PhysicsCode to use PAI-hosted models.",
-      "Log in",
-      "Continue",
-      "Open Account Page",
-    )
-
-    if (action === "Continue") return true
-    if (action === "Open Account Page") {
-      await vscode.env.openExternal(vscode.Uri.parse(`${PAI_DEFAULT_LOGIN_URL}/physicscode/account`))
-      return false
-    }
-    if (action === "Log in") {
-      await loginToPhysicsCode(cliPath)
-    }
-    return false
-  }
-
   async function loginToPhysicsCode(cliPath?: string) {
     const resolved = cliPath ?? (await resolveCliPath())
     if (!resolved) {
@@ -335,22 +309,6 @@ export function activate(context: vscode.ExtensionContext) {
     })
     terminal.show()
     terminal.sendText(`${quoteShell(resolved)} account login ${quoteShell(PAI_DEFAULT_LOGIN_URL)}`)
-  }
-
-  function hasPhysicsCodeAccountStore() {
-    return candidateAccountStores().some((candidate) => fs.existsSync(candidate))
-  }
-
-  function candidateAccountStores() {
-    const home = os.homedir()
-    const candidates = [
-      path.join(home, ".local", "share", "physicscode", "physicscode.db"),
-      path.join(home, "Library", "Application Support", "physicscode", "physicscode.db"),
-    ]
-    if (process.env.LOCALAPPDATA) {
-      candidates.push(path.join(process.env.LOCALAPPDATA, "physicscode", "physicscode.db"))
-    }
-    return candidates
   }
 
   function physicscodeSetting(name: string, fallback: string) {

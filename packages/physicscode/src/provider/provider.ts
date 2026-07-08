@@ -2,7 +2,7 @@ import os from "os"
 import fuzzysort from "fuzzysort"
 import { Config } from "@/config/config"
 import { mapValues, mergeDeep, omit, pickBy, sortBy } from "remeda"
-import { NoSuchModelError, type Provider as SDK } from "ai"
+import { LoadAPIKeyError, NoSuchModelError, type Provider as SDK } from "ai"
 import * as Log from "@physicscode-ai/core/util/log"
 import { Npm } from "@physicscode-ai/core/npm"
 import { Hash } from "@physicscode-ai/core/util/hash"
@@ -31,6 +31,10 @@ import * as ProviderTransform from "./transform"
 import { ModelID, ProviderID } from "./schema"
 
 const log = Log.create({ service: "provider" })
+const PAIDYNAMICS_LOGIN_REQUIRED_MESSAGE =
+  "Log in to PhysicsCode to use PAI-hosted models.\n\n" +
+  "Run: physicscode account login https://www.paidynamics.ch\n" +
+  "Or open: https://www.paidynamics.ch/physicscode/login"
 
 function shouldUseCopilotResponsesApi(modelID: string): boolean {
   const match = /^gpt-(\d+)/.exec(modelID)
@@ -183,12 +187,24 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         providerConfig?.options?.apiKey ??
         (yield* dep.accountToken())
       const baseURL = env["PAIDYNAMICS_BASE_URL"] ?? providerConfig?.options?.baseURL ?? input.options.baseURL
-      const ok = Boolean(apiKey) || Boolean(yield* dep.auth(input.id))
 
       return {
-        autoload: ok,
+        autoload: true,
+        async getModel(sdk: any, modelID: string) {
+          const freshAccountToken = await Effect.runPromise(dep.accountToken())
+          const freshEnv = await Effect.runPromise(dep.env())
+          const freshConfig = await Effect.runPromise(dep.config())
+          const freshProviderConfig = freshConfig.provider?.[ModelsDev.PAIDYNAMICS_PROVIDER_ID]
+          const freshApiKey =
+            input.env.map((item) => freshEnv[item]).find(Boolean) ??
+            freshProviderConfig?.options?.apiKey ??
+            freshAccountToken
+          if (!freshApiKey) throw new LoadAPIKeyError({ message: PAIDYNAMICS_LOGIN_REQUIRED_MESSAGE })
+          if (useLanguageModel(sdk)) return sdk.languageModel(modelID)
+          return sdk.chat(modelID)
+        },
         options: {
-          ...(apiKey ? { apiKey } : {}),
+          apiKey: apiKey ?? "physicscode-login-required",
           ...(baseURL ? { baseURL } : {}),
         },
       }
@@ -1538,9 +1554,36 @@ const layer: Layer.Layer<
         const chunkTimeout = options["chunkTimeout"]
         delete options["chunkTimeout"]
 
+        const paidynamicsRuntimeApiKey = async () => {
+          if (model.providerID !== ModelsDev.PAIDYNAMICS_PROVIDER_ID) return undefined
+          const freshEnv = await Effect.runPromise(env.all())
+          const freshConfig = await Effect.runPromise(config.get())
+          const active = await Effect.runPromise(
+            account.active().pipe(
+              Effect.flatMap((current) => {
+                if (Option.isNone(current)) return Effect.succeed(undefined)
+                return account.token(current.value.id).pipe(Effect.map(Option.getOrUndefined))
+              }),
+              Effect.catch(() => Effect.succeed(undefined)),
+            ),
+          )
+          const freshProviderConfig = freshConfig.provider?.[ModelsDev.PAIDYNAMICS_PROVIDER_ID]
+          return (
+            provider.env.map((item) => freshEnv[item]).find(Boolean) ??
+            freshProviderConfig?.options?.apiKey ??
+            active
+          )
+        }
+
         options["fetch"] = async (input: any, init?: BunFetchRequestInit) => {
           const fetchFn = customFetch ?? fetch
           const opts = init ?? {}
+          const runtimeApiKey = await paidynamicsRuntimeApiKey()
+          if (runtimeApiKey) {
+            const headers = new Headers(opts.headers)
+            headers.set("authorization", `Bearer ${runtimeApiKey}`)
+            opts.headers = headers
+          }
           const chunkAbortCtl = typeof chunkTimeout === "number" && chunkTimeout > 0 ? new AbortController() : undefined
           const signals: AbortSignal[] = []
 

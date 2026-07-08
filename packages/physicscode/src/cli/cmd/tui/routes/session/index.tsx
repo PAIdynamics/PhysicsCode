@@ -90,13 +90,17 @@ import { DialogGoUpsell } from "../../component/dialog-go-upsell"
 import { SessionRetry } from "@/session/retry"
 import { getRevertDiffFiles } from "../../util/revert-diff"
 import { Link } from "../../ui/link"
+import { AppRuntime } from "@/effect/app-runtime"
+import { Account } from "@/account/account"
+import { Duration, Effect } from "effect"
+import open from "open"
 
 addDefaultParsers(parsers.parsers)
 
 const GO_UPSELL_LAST_SEEN_AT = "go_upsell_last_seen_at"
 const GO_UPSELL_DONT_SHOW = "go_upsell_dont_show"
 const GO_UPSELL_WINDOW = 86_400_000 // 24 hrs
-const PAIDYNAMICS_LOGIN_URL = "https://www.paidynamics.ch/physicscode/login"
+const PAIDYNAMICS_LOGIN_SERVER = "https://www.paidynamics.ch"
 const PAIDYNAMICS_LOGIN_COMMAND = "physicscode account login https://www.paidynamics.ch"
 
 const context = createContext<{
@@ -1417,13 +1421,7 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
         >
           <text fg={theme.textMuted}>{props.message.error?.data.message}</text>
           <Show when={showPaidynamicsLogin}>
-            <box flexDirection="column" marginTop={1}>
-              <text fg={theme.text}>Log in to continue with PAI-hosted models:</text>
-              <Link href={PAIDYNAMICS_LOGIN_URL} fg={theme.primary}>
-                {PAIDYNAMICS_LOGIN_URL}
-              </Link>
-              <text fg={theme.textMuted}>{PAIDYNAMICS_LOGIN_COMMAND}</text>
-            </box>
+            <PaidynamicsLoginPrompt />
           </Show>
         </box>
           )
@@ -1463,6 +1461,104 @@ const PART_MAPPING = {
   text: TextPart,
   tool: ToolPart,
   reasoning: ReasoningPart,
+}
+
+function PaidynamicsLoginPrompt() {
+  const { theme } = useTheme()
+  const [status, setStatus] = createSignal<"idle" | "pending" | "success" | "error">("idle")
+  const [message, setMessage] = createSignal("Click Start login to connect this terminal.")
+  const [url, setUrl] = createSignal<string>()
+  const [userCode, setUserCode] = createSignal<string>()
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+  const startLogin = async () => {
+    if (status() === "pending") return
+    setStatus("pending")
+    setMessage("Starting login...")
+    setUrl(undefined)
+    setUserCode(undefined)
+
+    try {
+      const login = await AppRuntime.runPromise(
+        Effect.gen(function* () {
+          const service = yield* Account.Service
+          return yield* service.login(PAIDYNAMICS_LOGIN_SERVER)
+        }),
+      )
+      setUrl(login.url)
+      setUserCode(login.user)
+      setMessage("Approve the browser page, then return here.")
+      open(login.url).catch(() => {})
+
+      let wait = Duration.toMillis(login.interval)
+      const expiresAt = Date.now() + Duration.toMillis(login.expiry)
+      while (Date.now() < expiresAt) {
+        await sleep(wait)
+        const result = await AppRuntime.runPromise(
+          Effect.gen(function* () {
+            const service = yield* Account.Service
+            return yield* service.poll(login)
+          }),
+        )
+        if (result._tag === "PollPending") continue
+        if (result._tag === "PollSlow") {
+          wait += 5000
+          continue
+        }
+        if (result._tag === "PollSuccess") {
+          setStatus("success")
+          setMessage(`Logged in as ${result.email}. Retry your prompt.`)
+          return
+        }
+        if (result._tag === "PollDenied") {
+          setStatus("error")
+          setMessage("Authorization was denied.")
+          return
+        }
+        if (result._tag === "PollExpired") {
+          setStatus("error")
+          setMessage("Login code expired. Start login again.")
+          return
+        }
+        setStatus("error")
+        setMessage("Login failed. Start login again or use the command below.")
+        return
+      }
+      setStatus("error")
+      setMessage("Login code expired. Start login again.")
+    } catch (e) {
+      setStatus("error")
+      setMessage(errorMessage(e))
+    }
+  }
+
+  return (
+    <box flexDirection="column" marginTop={1} gap={1}>
+      <text fg={theme.text}>{message()}</text>
+      <Show when={url()}>
+        {(loginUrl) => (
+          <box flexDirection="column">
+            <text fg={theme.textMuted}>Code: {userCode()}</text>
+            <Link href={loginUrl()} fg={theme.primary}>
+              {loginUrl()}
+            </Link>
+          </box>
+        )}
+      </Show>
+      <box flexDirection="row" gap={2}>
+        <text
+          fg={status() === "pending" ? theme.textMuted : theme.primary}
+          onMouseUp={() => {
+            void startLogin()
+          }}
+        >
+          Start login
+        </text>
+        <text fg={theme.textMuted}>{PAIDYNAMICS_LOGIN_COMMAND}</text>
+      </box>
+    </box>
+  )
 }
 
 function ReasoningPart(props: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {

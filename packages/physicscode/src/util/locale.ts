@@ -29,11 +29,13 @@ export function todayTimeOrDateTime(input: number): string {
 
 export function number(num: number): string {
   if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + "M"
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + "K"
+    return trimFixed(num / 1000000) + "M"
   }
-  return num.toString()
+  return trimFixed(num / 1000) + "K"
+}
+
+function trimFixed(num: number): string {
+  return num.toFixed(1).replace(/\.0$/, "")
 }
 
 export function duration(input: number) {

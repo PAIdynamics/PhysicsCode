@@ -172,6 +172,24 @@ const openEffect = Effect.fn("open")(function* () {
   yield* Prompt.outro("Opened " + url)
 })
 
+const statusEffect = Effect.fn("status")(function* (json: boolean) {
+  const service = yield* Account.Service
+  const active = yield* service.active()
+  if (Option.isNone(active)) {
+    const result = { loggedIn: false }
+    return yield* println(json ? JSON.stringify(result) : "Not logged in")
+  }
+
+  const account = active.value
+  const result = {
+    loggedIn: true,
+    email: account.email,
+    url: account.url,
+    orgID: account.active_org_id,
+  }
+  return yield* println(json ? JSON.stringify(result) : formatAccountLabel(account, true))
+})
+
 export const LoginCommand = cmd({
   command: "login <url>",
   describe: false,
@@ -228,6 +246,21 @@ export const OpenCommand = cmd({
   },
 })
 
+export const StatusCommand = cmd({
+  command: "status",
+  describe: false,
+  builder: (yargs) =>
+    yargs.option("json", {
+      describe: "print machine-readable status",
+      type: "boolean",
+      default: false,
+    }),
+  async handler(args) {
+    UI.empty()
+    await AppRuntime.runPromise(statusEffect(Boolean(args.json)))
+  },
+})
+
 export const ConsoleCommand = cmd({
   command: "console",
   aliases: ["account"],
@@ -253,6 +286,10 @@ export const ConsoleCommand = cmd({
       .command({
         ...OpenCommand,
         describe: "open active console account",
+      })
+      .command({
+        ...StatusCommand,
+        describe: "show console login status",
       })
       .demandCommand(),
   async handler() {},

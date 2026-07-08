@@ -8,7 +8,12 @@ This extension requires the PhysicsCode CLI to be installed on your system as `p
 
 ## Hosted Model Access
 
-PhysicsCode is configured for PAI Dynamics hosted models by default. On first launch, the extension asks you to log in with your PhysicsCode account. You can also run `PhysicsCode: Log in` from the command palette.
+PhysicsCode is configured for PAI Dynamics hosted models by default. On launch, the extension checks the local CLI account state when supported by the installed CLI. If you are not logged in, it offers to start the PhysicsCode account login flow. You can also use these command palette actions:
+
+- `PhysicsCode: Log in`
+- `PhysicsCode: Log out`
+- `PhysicsCode: Switch Account`
+- `PhysicsCode: Open Account Dashboard`
 
 The extension launches the CLI with:
 

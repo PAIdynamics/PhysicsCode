@@ -58,6 +58,14 @@ export function activate(context: vscode.ExtensionContext) {
     await loginToPhysicsCode()
   })
 
+  const logoutDisposable = vscode.commands.registerCommand("physicscode.logout", async () => {
+    await runPhysicsCodeAccountCommand("logout")
+  })
+
+  const switchAccountDisposable = vscode.commands.registerCommand("physicscode.switchAccount", async () => {
+    await runPhysicsCodeAccountCommand("switch")
+  })
+
   const openAccountDisposable = vscode.commands.registerCommand("physicscode.openAccount", async () => {
     await vscode.env.openExternal(vscode.Uri.parse(`${PAI_DEFAULT_LOGIN_URL}/physicscode/account`))
   })
@@ -67,6 +75,8 @@ export function activate(context: vscode.ExtensionContext) {
     openTerminalDisposable,
     addFilepathDisposable,
     loginDisposable,
+    logoutDisposable,
+    switchAccountDisposable,
     openAccountDisposable,
   )
 
@@ -90,6 +100,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     const paiEnv = paiHostedEnvironment()
     if (!paiEnv) {
+      return
+    }
+    const shouldContinue = await ensurePhysicsCodeAccount(cliPath)
+    if (!shouldContinue) {
       return
     }
 
@@ -309,6 +323,60 @@ export function activate(context: vscode.ExtensionContext) {
     })
     terminal.show()
     terminal.sendText(`${quoteShell(resolved)} account login ${quoteShell(PAI_DEFAULT_LOGIN_URL)}`)
+  }
+
+  async function ensurePhysicsCodeAccount(cliPath: string) {
+    const status = await physicsCodeAccountStatus(cliPath)
+    if (status !== "logged-out") {
+      return true
+    }
+
+    const action = await vscode.window.showWarningMessage(
+      "PhysicsCode is not logged in. Log in before starting a hosted model session.",
+      "Log in",
+      "Continue",
+    )
+    if (action === "Log in") {
+      await loginToPhysicsCode(cliPath)
+      return false
+    }
+    return action === "Continue"
+  }
+
+  async function physicsCodeAccountStatus(cliPath: string): Promise<"logged-in" | "logged-out" | "unknown"> {
+    try {
+      const { stdout } = await execFileAsync(cliPath, ["account", "status", "--json"], { timeout: 8000 })
+      let jsonLine: string | undefined
+      for (const line of stdout.split(/\r?\n/)) {
+        const trimmed = line.trim()
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+          jsonLine = trimmed
+        }
+      }
+      if (!jsonLine) {
+        return "unknown"
+      }
+      const parsed = JSON.parse(jsonLine) as { loggedIn?: boolean }
+      return parsed.loggedIn ? "logged-in" : "logged-out"
+    } catch {
+      // Older CLI versions do not have `account status`; let the CLI handle auth prompts.
+      return "unknown"
+    }
+  }
+
+  async function runPhysicsCodeAccountCommand(command: "logout" | "switch", cliPath?: string) {
+    const resolved = cliPath ?? (await resolveCliPath())
+    if (!resolved) {
+      vscode.window.showErrorMessage(`PhysicsCode CLI was not found. Install it first, then run PhysicsCode: ${command}.`)
+      return
+    }
+
+    const terminal = vscode.window.createTerminal({
+      name: `physicscode ${command}`,
+      cwd: getWorkspaceCwd(),
+    })
+    terminal.show()
+    terminal.sendText(`${quoteShell(resolved)} account ${command}`)
   }
 
   function physicscodeSetting(name: string, fallback: string) {

@@ -2,7 +2,7 @@
   "name": "physicscode",
   "displayName": "PhysicsCode",
   "description": "Agentic coding with PhysicsCode by PAI Dynamics.",
-  "version": "1.14.47",
+  "version": "1.14.48",
   "publisher": "paidynamicsch",
   "repository": {
     "type": "git",
@@ -51,6 +51,14 @@
       {
         "command": "physicscode.login",
         "title": "PhysicsCode: Log in"
+      },
+      {
+        "command": "physicscode.logout",
+        "title": "PhysicsCode: Log out"
+      },
+      {
+        "command": "physicscode.switchAccount",
+        "title": "PhysicsCode: Switch Account"
       },
       {
         "command": "physicscode.openAccount",

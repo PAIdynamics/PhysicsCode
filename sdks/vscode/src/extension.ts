@@ -9,12 +9,11 @@ import { promisify } from "node:util"
 import * as vscode from "vscode"
 
 const TERMINAL_NAME = "physicscode"
-const PAI_API_KEY_SECRET = "physicscode.paiDynamicsApiKey"
-const PAI_API_KEY_ENV = "PAIDYNAMICS_API_KEY"
 const PAI_DEFAULT_PROVIDER_ID = "paidynamics"
 const PAI_DEFAULT_MODEL_ID = "gpt-oss-120b-pai"
 const PAI_DEFAULT_API_MODEL_ID = "openai/gpt-oss-120b"
 const PAI_DEFAULT_BASE_URL = "https://www.paidynamics.ch/llm/v1"
+const PAI_DEFAULT_LOGIN_URL = "https://www.paidynamics.ch"
 const PAI_DEFAULT_CONTEXT_LIMIT = 131072
 const PAI_DEFAULT_OUTPUT_LIMIT = 8192
 const PAI_LOCAL_TOOLS_ENV = "PHYSICSCODE_PAI_ENABLE_LOCAL_TOOLS"
@@ -55,21 +54,20 @@ export function activate(context: vscode.ExtensionContext) {
     }
   })
 
-  const setPaiApiKeyDisposable = vscode.commands.registerCommand("physicscode.setPaiApiKey", async () => {
-    await promptAndStorePaiApiKey()
+  const loginDisposable = vscode.commands.registerCommand("physicscode.login", async () => {
+    await loginToPhysicsCode()
   })
 
-  const clearPaiApiKeyDisposable = vscode.commands.registerCommand("physicscode.clearPaiApiKey", async () => {
-    await context.secrets.delete(PAI_API_KEY_SECRET)
-    vscode.window.showInformationMessage("PAI Dynamics API key removed from VS Code secret storage.")
+  const openAccountDisposable = vscode.commands.registerCommand("physicscode.openAccount", async () => {
+    await vscode.env.openExternal(vscode.Uri.parse(`${PAI_DEFAULT_LOGIN_URL}/physicscode/account`))
   })
 
   context.subscriptions.push(
     openNewTerminalDisposable,
     openTerminalDisposable,
     addFilepathDisposable,
-    setPaiApiKeyDisposable,
-    clearPaiApiKeyDisposable,
+    loginDisposable,
+    openAccountDisposable,
   )
 
   async function openTerminal() {
@@ -90,7 +88,12 @@ export function activate(context: vscode.ExtensionContext) {
       return
     }
 
-    const paiEnv = await paiHostedEnvironment()
+    const loginReady = await ensurePhysicsCodeLogin(cliPath)
+    if (!loginReady) {
+      return
+    }
+
+    const paiEnv = paiHostedEnvironment()
     if (!paiEnv) {
       return
     }
@@ -238,7 +241,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }
 
-  async function paiHostedEnvironment() {
+  function paiHostedEnvironment() {
     const baseURL = physicscodeSetting("paiBaseUrl", PAI_DEFAULT_BASE_URL)
     const providerID = physicscodeSetting("paiProviderId", PAI_DEFAULT_PROVIDER_ID)
     const modelID = physicscodeSetting("paiModelId", PAI_DEFAULT_MODEL_ID)
@@ -246,11 +249,6 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.workspace.getConfiguration("physicscode").get<string>("paiApiModelId")?.trim() || PAI_DEFAULT_API_MODEL_ID
     const enableLocalTools =
       vscode.workspace.getConfiguration("physicscode").get<boolean>("paiEnableLocalTools") !== false
-    const apiKey = (await context.secrets.get(PAI_API_KEY_SECRET))?.trim() || (await promptAndStorePaiApiKey())
-    if (!apiKey) {
-      vscode.window.showWarningMessage("PhysicsCode needs an API key before it can connect to the hosted model.")
-      return
-    }
     const config = {
       enabled_providers: [providerID],
       model: `${providerID}/${modelID}`,
@@ -259,7 +257,7 @@ export function activate(context: vscode.ExtensionContext) {
         [providerID]: {
           name: "PAI Dynamics Hosted",
           npm: "@ai-sdk/openai-compatible",
-          env: [PAI_API_KEY_ENV],
+          env: [],
           options: {
             baseURL,
           },
@@ -298,24 +296,61 @@ export function activate(context: vscode.ExtensionContext) {
 
     return {
       PAIDYNAMICS_BASE_URL: baseURL,
-      ...(apiKey ? { [PAI_API_KEY_ENV]: apiKey } : {}),
       [PAI_LOCAL_TOOLS_ENV]: enableLocalTools ? "true" : "false",
       PHYSICSCODE_CONFIG_CONTENT: JSON.stringify(config),
     }
   }
 
-  async function promptAndStorePaiApiKey() {
-    const key = await vscode.window.showInputBox({
-      title: "Set PhysicsCode API Key",
-      prompt: "Enter the API key for PhysicsCode hosted models.",
-      password: true,
-      ignoreFocusOut: true,
-      validateInput: (value) => (value.trim() ? undefined : "API key is required."),
+  async function ensurePhysicsCodeLogin(cliPath: string) {
+    if (hasPhysicsCodeAccountStore()) return true
+
+    const action = await vscode.window.showInformationMessage(
+      "Log in to PhysicsCode to use PAI-hosted models.",
+      "Log in",
+      "Continue",
+      "Open Account Page",
+    )
+
+    if (action === "Continue") return true
+    if (action === "Open Account Page") {
+      await vscode.env.openExternal(vscode.Uri.parse(`${PAI_DEFAULT_LOGIN_URL}/physicscode/account`))
+      return false
+    }
+    if (action === "Log in") {
+      await loginToPhysicsCode(cliPath)
+    }
+    return false
+  }
+
+  async function loginToPhysicsCode(cliPath?: string) {
+    const resolved = cliPath ?? (await resolveCliPath())
+    if (!resolved) {
+      vscode.window.showErrorMessage("PhysicsCode CLI was not found. Install it first, then run PhysicsCode: Log in.")
+      return
+    }
+
+    const terminal = vscode.window.createTerminal({
+      name: "physicscode login",
+      cwd: getWorkspaceCwd(),
     })
-    if (key === undefined) return
-    await context.secrets.store(PAI_API_KEY_SECRET, key.trim())
-    vscode.window.showInformationMessage("PhysicsCode API key saved.")
-    return key.trim()
+    terminal.show()
+    terminal.sendText(`${quoteShell(resolved)} account login ${quoteShell(PAI_DEFAULT_LOGIN_URL)}`)
+  }
+
+  function hasPhysicsCodeAccountStore() {
+    return candidateAccountStores().some((candidate) => fs.existsSync(candidate))
+  }
+
+  function candidateAccountStores() {
+    const home = os.homedir()
+    const candidates = [
+      path.join(home, ".local", "share", "physicscode", "physicscode.db"),
+      path.join(home, "Library", "Application Support", "physicscode", "physicscode.db"),
+    ]
+    if (process.env.LOCALAPPDATA) {
+      candidates.push(path.join(process.env.LOCALAPPDATA, "physicscode", "physicscode.db"))
+    }
+    return candidates
   }
 
   function physicscodeSetting(name: string, fallback: string) {

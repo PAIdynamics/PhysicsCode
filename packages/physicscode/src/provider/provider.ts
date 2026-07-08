@@ -10,6 +10,7 @@ import { Plugin } from "../plugin"
 import { type LanguageModelV3 } from "@ai-sdk/provider"
 import * as ModelsDev from "./models"
 import { Auth } from "../auth"
+import { Account } from "../account/account"
 import { Env } from "../env"
 import { InstallationVersion } from "@physicscode-ai/core/installation/version"
 import { Flag } from "@physicscode-ai/core/flag/flag"
@@ -19,7 +20,7 @@ import { iife } from "@/util/iife"
 import { Global } from "@physicscode-ai/core/global"
 import path from "path"
 import { pathToFileURL } from "url"
-import { Effect, Layer, Context, Schema, Types } from "effect"
+import { Effect, Layer, Context, Schema, Types, Option } from "effect"
 import { EffectBridge } from "@/effect/bridge"
 import { InstanceState } from "@/effect/instance-state"
 import { AppFileSystem } from "@physicscode-ai/core/filesystem"
@@ -129,6 +130,7 @@ type CustomLoader = (provider: Info) => Effect.Effect<{
 
 type CustomDep = {
   auth: (id: string) => Effect.Effect<Auth.Info | undefined>
+  accountToken: () => Effect.Effect<string | undefined>
   config: () => Effect.Effect<Config.Info>
   env: () => Effect.Effect<Record<string, string | undefined>>
   get: (key: string) => Effect.Effect<string | undefined>
@@ -176,7 +178,10 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
       const env = yield* dep.env()
       const cfg = yield* dep.config()
       const providerConfig = cfg.provider?.[ModelsDev.PAIDYNAMICS_PROVIDER_ID]
-      const apiKey = input.env.map((item) => env[item]).find(Boolean) ?? providerConfig?.options?.apiKey
+      const apiKey =
+        input.env.map((item) => env[item]).find(Boolean) ??
+        providerConfig?.options?.apiKey ??
+        (yield* dep.accountToken())
       const baseURL = env["PAIDYNAMICS_BASE_URL"] ?? providerConfig?.options?.baseURL ?? input.options.baseURL
       const ok = Boolean(apiKey) || Boolean(yield* dep.auth(input.id))
 
@@ -1127,13 +1132,14 @@ export function fromModelsDevProvider(provider: ModelsDev.Provider): Info {
 const layer: Layer.Layer<
   Service,
   never,
-  Config.Service | Auth.Service | Plugin.Service | AppFileSystem.Service | Env.Service
+  Config.Service | Auth.Service | Account.Service | Plugin.Service | AppFileSystem.Service | Env.Service
 > = Layer.effect(
   Service,
   Effect.gen(function* () {
     const fs = yield* AppFileSystem.Service
     const config = yield* Config.Service
     const auth = yield* Auth.Service
+    const account = yield* Account.Service
     const env = yield* Env.Service
     const plugin = yield* Plugin.Service
 
@@ -1160,6 +1166,14 @@ const layer: Layer.Layer<
         } = {}
         const dep = {
           auth: (id: string) => auth.get(id).pipe(Effect.orDie),
+          accountToken: () =>
+            account.active().pipe(
+              Effect.flatMap((active) => {
+                if (Option.isNone(active)) return Effect.succeed(undefined)
+                return account.token(active.value.id).pipe(Effect.map(Option.getOrUndefined))
+              }),
+              Effect.catch(() => Effect.succeed(undefined)),
+            ),
           config: () => config.get(),
           env: () => env.all(),
           get: (key: string) => env.get(key),
@@ -1775,6 +1789,7 @@ export const defaultLayer = Layer.suspend(() =>
     Layer.provide(Env.defaultLayer),
     Layer.provide(Config.defaultLayer),
     Layer.provide(Auth.defaultLayer),
+    Layer.provide(Account.defaultLayer),
     Layer.provide(Plugin.defaultLayer),
   ),
 )

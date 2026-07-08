@@ -2,7 +2,7 @@
   "name": "physicscode",
   "displayName": "PhysicsCode",
   "description": "Agentic coding with PhysicsCode by PAI Dynamics.",
-  "version": "1.14.43",
+  "version": "1.14.44",
   "publisher": "paidynamicsch",
   "repository": {
     "type": "git",
@@ -49,12 +49,12 @@
         "title": "Add Filepath to Terminal"
       },
       {
-        "command": "physicscode.setPaiApiKey",
-        "title": "PhysicsCode: Set PAI Dynamics API Key"
+        "command": "physicscode.login",
+        "title": "PhysicsCode: Log in"
       },
       {
-        "command": "physicscode.clearPaiApiKey",
-        "title": "PhysicsCode: Clear PAI Dynamics API Key"
+        "command": "physicscode.openAccount",
+        "title": "PhysicsCode: Open Account Dashboard"
       }
     ],
     "menus": {
@@ -102,7 +102,7 @@
         "physicscode.paiBaseUrl": {
           "type": "string",
           "default": "https://www.paidynamics.ch/llm/v1",
-          "description": "OpenAI-compatible base URL for PAI Dynamics hosted PhysicsCode models."
+          "description": "OpenAI-compatible base URL for PAI Dynamics hosted PhysicsCode models. Authentication uses physicscode account login."
         },
         "physicscode.paiProviderId": {
           "type": "string",

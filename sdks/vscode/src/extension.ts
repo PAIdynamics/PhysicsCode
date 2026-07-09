@@ -50,6 +50,15 @@ const PAI_MODELS: Record<string, PaiModel> = {
     output: 8192,
     reasoningEffort: "medium",
   },
+  "glm-4.5-air-pai": {
+    apiID: "zai-org/GLM-4.5-Air-FP8",
+    family: "glm45",
+    reasoning: true,
+    toolCall: true,
+    context: 4096,
+    output: 2048,
+    reasoningEffort: "medium",
+  },
   "gpt-oss-20b-pai": {
     apiID: "openai/gpt-oss-20b",
     family: "gpt-oss",
@@ -438,7 +447,7 @@ export function activate(context: vscode.ExtensionContext) {
         mode: "primary",
         description: "Master coding agent. Delegates narrow tasks to specialized PAI-hosted subagents when useful.",
         prompt:
-          "You are the master PhysicsCode coding agent. Use your own judgment for difficult architecture and edits. For hard reasoning, math, numerical debugging, or subtle bug analysis, delegate to the deep-reasoner subagent. For quick summarization, routing, titles, lightweight code review, and inexpensive helper tasks, delegate to small-router. Keep the user-facing answer concise and own the final decision.",
+          "You are the master PhysicsCode coding agent. Use your own judgment for difficult architecture and edits. For hard reasoning, math, numerical debugging, or subtle bug analysis, delegate to the deep-reasoner subagent. For agentic coding or coding second opinions that can tolerate a model switch, delegate to glm-air. For quick summarization, routing, titles, lightweight code review, and inexpensive helper tasks, delegate to small-router. Keep the user-facing answer concise and own the final decision.",
       },
       plan: {
         model: `${providerID}/gpt-oss-120b-pai`,
@@ -449,6 +458,11 @@ export function activate(context: vscode.ExtensionContext) {
         model: `${providerID}/deepseek-r1-distill-qwen-32b-pai`,
         mode: "subagent",
         description: "Use for hard reasoning, math, algorithm analysis, numerical issues, and debugging second opinions.",
+      },
+      "glm-air": {
+        model: `${providerID}/glm-4.5-air-pai`,
+        mode: "subagent",
+        description: "Use for agentic coding and coding second opinions when the task can tolerate loading a large on-demand model.",
       },
       "small-router": {
         model: `${providerID}/gpt-oss-20b-pai`,

@@ -127,6 +127,16 @@ const PaidynamicsModelDefinitions = {
     context: 32768,
     output: 8192,
   },
+  "glm-4.5-air-pai": {
+    upstream: "zai-org/GLM-4.5-Air-FP8",
+    name: "glm-4.5-air-pai",
+    family: "glm45",
+    release_date: "2025-07-20",
+    reasoning: true,
+    tool_call: true,
+    context: 4096,
+    output: 2048,
+  },
   "gpt-oss-20b-pai": {
     upstream: "openai/gpt-oss-20b",
     name: "gpt-oss-20b-pai",
@@ -160,6 +170,7 @@ export const PAIDYNAMICS_MODEL_ALIASES: Record<string, string> = Object.fromEntr
     .concat([
       ["deepseek-r1-distil-qwen-32b-pai", "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"],
       ["paidynamics/deepseek-r1-distil-qwen-32b-pai", "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"],
+      ["zai-org/GLM-4.5-Air", "zai-org/GLM-4.5-Air-FP8"],
     ]),
 )
 

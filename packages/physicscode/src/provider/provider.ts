@@ -1682,8 +1682,15 @@ const layer: Layer.Layer<
         throw new ModelNotFoundError({ providerID, modelID, suggestions: matches.map((m) => m.target) })
       }
 
-      const canonicalModelID =
-        providerID === ModelsDev.PAIDYNAMICS_PROVIDER_ID ? (ModelsDev.PAIDYNAMICS_MODEL_ID_ALIASES[modelID] ?? modelID) : modelID
+      const canonicalModelID = (() => {
+        if (providerID !== ModelsDev.PAIDYNAMICS_PROVIDER_ID) return modelID
+        const aliased = ModelsDev.PAIDYNAMICS_MODEL_ID_ALIASES[modelID] ?? modelID
+        if (provider.models[aliased]) return aliased
+        const match = Object.entries(provider.models).find(([id, info]) => {
+          return id === modelID || info.id === modelID || info.api.id === modelID || info.name === modelID
+        })
+        return match?.[0] ?? aliased
+      })()
       const info = provider.models[canonicalModelID]
       if (!info) {
         const available = Object.keys(provider.models)

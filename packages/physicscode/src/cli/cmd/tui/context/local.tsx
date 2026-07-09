@@ -28,16 +28,33 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
     const sdk = useSDK()
     const toast = useToast()
 
-    function isModelValid(model: { providerID: string; modelID: string }) {
+    function normalizeModel(model: { providerID: string; modelID: string }) {
       const provider = sync.data.provider.find((x) => x.id === model.providerID)
-      return !!provider?.models[model.modelID]
+      if (!provider) return undefined
+      if (provider.models[model.modelID]) return model
+
+      const match = Object.entries(provider.models).find(([id, info]) => {
+        const apiID = (info as any).api?.id
+        const name = info.name
+        return id === model.modelID || info.id === model.modelID || apiID === model.modelID || name === model.modelID
+      })
+      if (!match) return undefined
+      return {
+        providerID: model.providerID,
+        modelID: match[0],
+      }
+    }
+
+    function isModelValid(model: { providerID: string; modelID: string }) {
+      return !!normalizeModel(model)
     }
 
     function getFirstValidModel(...modelFns: (() => { providerID: string; modelID: string } | undefined)[]) {
       for (const modelFn of modelFns) {
         const model = modelFn()
         if (!model) continue
-        if (isModelValid(model)) return model
+        const normalized = normalizeModel(model)
+        if (normalized) return normalized
       }
     }
 
@@ -296,11 +313,13 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
               })
               return
             }
+            const normalized = normalizeModel(model)
+            if (!normalized) return
             const a = agent.current()
             if (!a) return
-            setModelStore("model", a.name, model)
+            setModelStore("model", a.name, normalized)
             if (options?.recent) {
-              const uniq = uniqueBy([model, ...modelStore.recent], (x) => `${x.providerID}/${x.modelID}`)
+              const uniq = uniqueBy([normalized, ...modelStore.recent], (x) => `${x.providerID}/${x.modelID}`)
               if (uniq.length > 10) uniq.pop()
               setModelStore(
                 "recent",
@@ -320,12 +339,16 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
               })
               return
             }
+            const normalized = normalizeModel(model)
+            if (!normalized) return
             const exists = modelStore.favorite.some(
-              (x) => x.providerID === model.providerID && x.modelID === model.modelID,
+              (x) => x.providerID === normalized.providerID && x.modelID === normalized.modelID,
             )
             const next = exists
-              ? modelStore.favorite.filter((x) => x.providerID !== model.providerID || x.modelID !== model.modelID)
-              : [model, ...modelStore.favorite]
+              ? modelStore.favorite.filter(
+                  (x) => x.providerID !== normalized.providerID || x.modelID !== normalized.modelID,
+                )
+              : [normalized, ...modelStore.favorite]
             setModelStore(
               "favorite",
               next.map((x) => ({ providerID: x.providerID, modelID: x.modelID })),

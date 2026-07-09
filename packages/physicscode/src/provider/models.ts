@@ -117,16 +117,6 @@ const PaidynamicsModelDefinitions = {
     context: 131072,
     output: 8192,
   },
-  "qwen3-coder-30b-pai": {
-    upstream: "Qwen/Qwen3-Coder-30B-A3B-Instruct",
-    name: "qwen3-coder-30b-pai",
-    family: "qwen3-coder",
-    release_date: "2025-07-31",
-    reasoning: false,
-    tool_call: true,
-    context: 262144,
-    output: 16384,
-  },
   "deepseek-r1-distill-qwen-32b-pai": {
     upstream: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
     name: "deepseek-r1-distill-qwen-32b-pai",

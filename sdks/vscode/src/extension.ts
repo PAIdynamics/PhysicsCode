@@ -41,14 +41,6 @@ const PAI_MODELS: Record<string, PaiModel> = {
     output: 8192,
     reasoningEffort: "medium",
   },
-  "qwen3-coder-30b-pai": {
-    apiID: "Qwen/Qwen3-Coder-30B-A3B-Instruct",
-    family: "qwen3-coder",
-    reasoning: false,
-    toolCall: true,
-    context: 262144,
-    output: 16384,
-  },
   "deepseek-r1-distill-qwen-32b-pai": {
     apiID: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
     family: "deepseek-r1",
@@ -446,17 +438,12 @@ export function activate(context: vscode.ExtensionContext) {
         mode: "primary",
         description: "Master coding agent. Delegates narrow tasks to specialized PAI-hosted subagents when useful.",
         prompt:
-          "You are the master PhysicsCode coding agent. Use your own judgment for difficult architecture and edits. For C++-heavy implementation or a coding second opinion, delegate to the qwen-coder subagent. For hard reasoning, math, numerical debugging, or subtle bug analysis, delegate to the deep-reasoner subagent. For quick summarization, routing, titles, and cheap small subtasks, delegate to small-router. Keep the user-facing answer concise and own the final decision.",
+          "You are the master PhysicsCode coding agent. Use your own judgment for difficult architecture and edits. For hard reasoning, math, numerical debugging, or subtle bug analysis, delegate to the deep-reasoner subagent. For quick summarization, routing, titles, lightweight code review, and inexpensive helper tasks, delegate to small-router. Keep the user-facing answer concise and own the final decision.",
       },
       plan: {
         model: `${providerID}/gpt-oss-120b-pai`,
         mode: "primary",
         description: "Planning agent for larger coding tasks.",
-      },
-      "qwen-coder": {
-        model: `${providerID}/qwen3-coder-30b-pai`,
-        mode: "subagent",
-        description: "Use for C++, implementation-heavy tasks, code generation, refactors, and coding fallback.",
       },
       "deep-reasoner": {
         model: `${providerID}/deepseek-r1-distill-qwen-32b-pai`,

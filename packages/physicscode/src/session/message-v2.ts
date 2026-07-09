@@ -1158,6 +1158,19 @@ export function fromError(
         providerID: ctx.providerID,
         error: e,
       })
+      if (
+        ctx.providerID === "paidynamics" &&
+        (e.statusCode === 401 ||
+          /login required|log in|required.*login|authentication required|unauthorized/i.test(parsed.message))
+      ) {
+        return new AuthError(
+          {
+            providerID: ctx.providerID,
+            message: "Log in to PhysicsCode to use PAI-hosted models.",
+          },
+          { cause: e },
+        ).toObject()
+      }
       if (parsed.type === "context_overflow") {
         return new ContextOverflowError(
           {

@@ -106,40 +106,99 @@ export const PAIDYNAMICS_MODEL_ID = "gpt-oss-120b-pai"
 export const PAIDYNAMICS_UPSTREAM_MODEL_ID = "openai/gpt-oss-120b"
 export const PAIDYNAMICS_BASE_URL = "https://www.paidynamics.ch/llm/v1"
 
+const PaidynamicsModelDefinitions = {
+  [PAIDYNAMICS_MODEL_ID]: {
+    upstream: PAIDYNAMICS_UPSTREAM_MODEL_ID,
+    name: "gpt-oss-120b-pai",
+    family: "gpt-oss",
+    release_date: "2026-07-03",
+    reasoning: true,
+    tool_call: true,
+    context: 131072,
+    output: 8192,
+  },
+  "qwen3-coder-30b-pai": {
+    upstream: "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    name: "qwen3-coder-30b-pai",
+    family: "qwen3-coder",
+    release_date: "2025-07-31",
+    reasoning: false,
+    tool_call: true,
+    context: 262144,
+    output: 16384,
+  },
+  "deepseek-r1-distill-qwen-32b-pai": {
+    upstream: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+    name: "deepseek-r1-distill-qwen-32b-pai",
+    family: "deepseek-r1",
+    release_date: "2025-01-20",
+    reasoning: true,
+    tool_call: false,
+    context: 32768,
+    output: 8192,
+  },
+  "gpt-oss-20b-pai": {
+    upstream: "openai/gpt-oss-20b",
+    name: "gpt-oss-20b-pai",
+    family: "gpt-oss",
+    release_date: "2026-07-03",
+    reasoning: true,
+    tool_call: true,
+    context: 131072,
+    output: 8192,
+  },
+  "qwen3-8b-pai": {
+    upstream: "Qwen/Qwen3-8B",
+    name: "qwen3-8b-pai",
+    family: "qwen3",
+    release_date: "2025-05-14",
+    reasoning: true,
+    tool_call: true,
+    context: 32768,
+    output: 8192,
+  },
+} as const
+
+export const PAIDYNAMICS_MODEL_ALIASES = Object.fromEntries(
+  Object.entries(PaidynamicsModelDefinitions).map(([id, model]) => [id, model.upstream]),
+)
+
+const paidynamicsModel = (model: (typeof PaidynamicsModelDefinitions)[keyof typeof PaidynamicsModelDefinitions]) => ({
+  id: model.upstream,
+  name: model.name,
+  family: model.family,
+  release_date: model.release_date,
+  attachment: false,
+  reasoning: model.reasoning,
+  temperature: true,
+  tool_call: model.tool_call,
+  cost: {
+    input: 0,
+    output: 0,
+  },
+  limit: {
+    context: model.context,
+    output: model.output,
+  },
+  modalities: {
+    input: ["text" as const],
+    output: ["text" as const],
+  },
+  provider: {
+    npm: "@ai-sdk/openai-compatible",
+    api: PAIDYNAMICS_BASE_URL,
+  },
+})
+
 export const PaidynamicsProvider = {
   id: PAIDYNAMICS_PROVIDER_ID,
   name: "PAI Dynamics Hosted",
   api: PAIDYNAMICS_BASE_URL,
   npm: "@ai-sdk/openai-compatible",
   env: ["PAIDYNAMICS_API_KEY", "PHYSICSCODE_PAI_API_KEY"],
-  models: {
-    [PAIDYNAMICS_MODEL_ID]: {
-      id: PAIDYNAMICS_UPSTREAM_MODEL_ID,
-      name: "gpt-oss-120b-pai",
-      family: "gpt-oss",
-      release_date: "2026-07-03",
-      attachment: false,
-      reasoning: true,
-      temperature: true,
-      tool_call: true,
-      cost: {
-        input: 0,
-        output: 0,
-      },
-      limit: {
-        context: 131072,
-        output: 8192,
-      },
-      modalities: {
-        input: ["text"],
-        output: ["text"],
-      },
-      provider: {
-        npm: "@ai-sdk/openai-compatible",
-        api: PAIDYNAMICS_BASE_URL,
-      },
-    },
-  },
+  models: Object.fromEntries(
+    Object.entries(PaidynamicsModelDefinitions).map(([id, model]) => [id, paidynamicsModel(model)]),
+  ),
 } satisfies Provider
 
 function url() {

@@ -1094,19 +1094,25 @@ function rebrandModelsDev(providers: Record<string, ModelsDev.Provider>) {
 function configurePaidynamicsProvider(database: Record<string, Info>) {
   const provider = database[ModelsDev.PAIDYNAMICS_PROVIDER_ID]
   if (!provider) return
-  const model = provider.models[ModelsDev.PAIDYNAMICS_MODEL_ID]
-  if (!model) return
-  model.api.id = ModelsDev.PAIDYNAMICS_UPSTREAM_MODEL_ID
-  model.options = mergeDeep(model.options ?? {}, {
-    reasoningEffort: "low",
-  })
-  model.variants = mapValues(
-    mergeDeep(model.variants ?? {}, {
-      medium: { disabled: true },
-      high: { disabled: true },
-    }),
-    (v) => v,
-  )
+  for (const [modelID, upstreamID] of Object.entries(ModelsDev.PAIDYNAMICS_MODEL_ALIASES)) {
+    const model = provider.models[modelID]
+    if (!model) continue
+    model.api.id = upstreamID
+    if (modelID.includes("gpt-oss") || modelID.includes("deepseek-r1")) {
+      model.options = mergeDeep(model.options ?? {}, {
+        reasoningEffort: modelID.includes("20b") ? "low" : "medium",
+      })
+    }
+    if (modelID === ModelsDev.PAIDYNAMICS_MODEL_ID) {
+      model.variants = mapValues(
+        mergeDeep(model.variants ?? {}, {
+          medium: { disabled: false, options: { reasoningEffort: "medium" } },
+          high: { disabled: false, options: { reasoningEffort: "high" } },
+        }),
+        (v) => v,
+      )
+    }
+  }
 }
 
 export function fromModelsDevProvider(provider: ModelsDev.Provider): Info {

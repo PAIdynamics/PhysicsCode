@@ -14,10 +14,65 @@ const PAI_DEFAULT_MODEL_ID = "gpt-oss-120b-pai"
 const PAI_DEFAULT_API_MODEL_ID = "openai/gpt-oss-120b"
 const PAI_DEFAULT_BASE_URL = "https://www.paidynamics.ch/llm/v1"
 const PAI_DEFAULT_LOGIN_URL = "https://www.paidynamics.ch"
-const PAI_DEFAULT_CONTEXT_LIMIT = 131072
-const PAI_DEFAULT_OUTPUT_LIMIT = 8192
 const PAI_LOCAL_TOOLS_ENV = "PHYSICSCODE_PAI_ENABLE_LOCAL_TOOLS"
 const execFileAsync = promisify(execFile)
+
+type PaiModel = {
+  apiID: string
+  family: string
+  reasoning: boolean
+  toolCall: boolean
+  context: number
+  output: number
+  reasoningEffort?: string
+}
+
+const PAI_MODELS: Record<string, PaiModel> = {
+  "gpt-oss-120b-pai": {
+    apiID: "openai/gpt-oss-120b",
+    family: "gpt-oss",
+    reasoning: true,
+    toolCall: true,
+    context: 131072,
+    output: 8192,
+    reasoningEffort: "medium",
+  },
+  "qwen3-coder-30b-pai": {
+    apiID: "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    family: "qwen3-coder",
+    reasoning: false,
+    toolCall: true,
+    context: 262144,
+    output: 16384,
+  },
+  "deepseek-r1-distill-qwen-32b-pai": {
+    apiID: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+    family: "deepseek-r1",
+    reasoning: true,
+    toolCall: false,
+    context: 32768,
+    output: 8192,
+    reasoningEffort: "medium",
+  },
+  "gpt-oss-20b-pai": {
+    apiID: "openai/gpt-oss-20b",
+    family: "gpt-oss",
+    reasoning: true,
+    toolCall: true,
+    context: 131072,
+    output: 8192,
+    reasoningEffort: "low",
+  },
+  "qwen3-8b-pai": {
+    apiID: "Qwen/Qwen3-8B",
+    family: "qwen3",
+    reasoning: true,
+    toolCall: true,
+    context: 32768,
+    output: 8192,
+    reasoningEffort: "low",
+  },
+}
 
 export function activate(context: vscode.ExtensionContext) {
   const openNewTerminalDisposable = vscode.commands.registerCommand("physicscode.openNewTerminal", async () => {
@@ -258,10 +313,34 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.workspace.getConfiguration("physicscode").get<string>("paiApiModelId")?.trim() || PAI_DEFAULT_API_MODEL_ID
     const enableLocalTools =
       vscode.workspace.getConfiguration("physicscode").get<boolean>("paiEnableLocalTools") !== false
+    const models = Object.fromEntries(
+      Object.entries(PAI_MODELS).map(([id, model]) => [
+        id,
+        {
+          id: id === PAI_DEFAULT_MODEL_ID ? apiModelID : model.apiID,
+          name: id,
+          family: model.family,
+          reasoning: model.reasoning,
+          temperature: true,
+          tool_call: enableLocalTools && model.toolCall,
+          limit: {
+            context: model.context,
+            output: model.output,
+          },
+          modalities: {
+            input: ["text"],
+            output: ["text"],
+          },
+          ...(model.reasoningEffort ? { options: { reasoningEffort: model.reasoningEffort } } : {}),
+        },
+      ]),
+    )
     const config = {
       enabled_providers: [providerID],
       model: `${providerID}/${modelID}`,
-      small_model: `${providerID}/${modelID}`,
+      small_model: `${providerID}/gpt-oss-20b-pai`,
+      default_agent: "build",
+      agent: paiAgentConfig(providerID),
       provider: {
         [providerID]: {
           name: "PAI Dynamics Hosted",
@@ -270,35 +349,7 @@ export function activate(context: vscode.ExtensionContext) {
           options: {
             baseURL,
           },
-          models: {
-            [modelID]: {
-              id: apiModelID,
-              name: modelID,
-              family: "gpt-oss",
-              reasoning: true,
-              temperature: true,
-              tool_call: enableLocalTools,
-              limit: {
-                context: PAI_DEFAULT_CONTEXT_LIMIT,
-                output: PAI_DEFAULT_OUTPUT_LIMIT,
-              },
-              modalities: {
-                input: ["text"],
-                output: ["text"],
-              },
-              options: {
-                reasoningEffort: "low",
-              },
-              variants: {
-                medium: {
-                  disabled: true,
-                },
-                high: {
-                  disabled: true,
-                },
-              },
-            },
-          },
+          models,
         },
       },
     }
@@ -381,6 +432,47 @@ export function activate(context: vscode.ExtensionContext) {
 
   function physicscodeSetting(name: string, fallback: string) {
     return vscode.workspace.getConfiguration("physicscode").get<string>(name)?.trim() || fallback
+  }
+
+  function paiAgentConfig(providerID: string) {
+    return {
+      build: {
+        model: `${providerID}/gpt-oss-120b-pai`,
+        mode: "primary",
+        description: "Master coding agent. Delegates narrow tasks to specialized PAI-hosted subagents when useful.",
+        prompt:
+          "You are the master PhysicsCode coding agent. Use your own judgment for difficult architecture and edits. For C++-heavy implementation or a coding second opinion, delegate to the qwen-coder subagent. For hard reasoning, math, numerical debugging, or subtle bug analysis, delegate to the deep-reasoner subagent. For quick summarization, routing, titles, and cheap small subtasks, delegate to small-router. Keep the user-facing answer concise and own the final decision.",
+      },
+      plan: {
+        model: `${providerID}/gpt-oss-120b-pai`,
+        mode: "primary",
+        description: "Planning agent for larger coding tasks.",
+      },
+      "qwen-coder": {
+        model: `${providerID}/qwen3-coder-30b-pai`,
+        mode: "subagent",
+        description: "Use for C++, implementation-heavy tasks, code generation, refactors, and coding fallback.",
+      },
+      "deep-reasoner": {
+        model: `${providerID}/deepseek-r1-distill-qwen-32b-pai`,
+        mode: "subagent",
+        description: "Use for hard reasoning, math, algorithm analysis, numerical issues, and debugging second opinions.",
+      },
+      "small-router": {
+        model: `${providerID}/gpt-oss-20b-pai`,
+        mode: "subagent",
+        description: "Use for quick edits, summaries, routing decisions, titles, and inexpensive helper tasks.",
+      },
+      summary: {
+        model: `${providerID}/gpt-oss-20b-pai`,
+      },
+      title: {
+        model: `${providerID}/gpt-oss-20b-pai`,
+      },
+      compaction: {
+        model: `${providerID}/gpt-oss-20b-pai`,
+      },
+    }
   }
 
   function quoteShell(value: string) {

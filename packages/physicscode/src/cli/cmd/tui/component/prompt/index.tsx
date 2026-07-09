@@ -294,6 +294,38 @@ export function Prompt(props: PromptProps) {
     }
   })
 
+  const interruptSession = (force = false) => {
+    if (autocomplete.visible) return
+    if (!input.focused) return
+    // TODO: this should be its own command
+    if (store.mode === "shell") {
+      setStore("mode", "normal")
+      return
+    }
+    if (!props.sessionID) return
+
+    if (force) {
+      void sdk.client.session.abort({
+        sessionID: props.sessionID,
+      })
+      setStore("interrupt", 0)
+      return
+    }
+
+    setStore("interrupt", store.interrupt + 1)
+
+    setTimeout(() => {
+      setStore("interrupt", 0)
+    }, 5000)
+
+    if (store.interrupt >= 2) {
+      void sdk.client.session.abort({
+        sessionID: props.sessionID,
+      })
+      setStore("interrupt", 0)
+    }
+  }
+
   command.register(() => {
     return [
       {
@@ -356,27 +388,7 @@ export function Prompt(props: PromptProps) {
         hidden: true,
         enabled: status().type !== "idle",
         onSelect: (dialog) => {
-          if (autocomplete.visible) return
-          if (!input.focused) return
-          // TODO: this should be its own command
-          if (store.mode === "shell") {
-            setStore("mode", "normal")
-            return
-          }
-          if (!props.sessionID) return
-
-          setStore("interrupt", store.interrupt + 1)
-
-          setTimeout(() => {
-            setStore("interrupt", 0)
-          }, 5000)
-
-          if (store.interrupt >= 2) {
-            void sdk.client.session.abort({
-              sessionID: props.sessionID,
-            })
-            setStore("interrupt", 0)
-          }
+          interruptSession()
           dialog.clear()
         },
       },
@@ -1423,12 +1435,22 @@ export function Prompt(props: PromptProps) {
                   })()}
                 </box>
               </box>
-              <text fg={store.interrupt > 0 ? theme.primary : theme.text}>
-                esc{" "}
-                <span style={{ fg: store.interrupt > 0 ? theme.primary : theme.textMuted }}>
-                  {store.interrupt > 0 ? "again to interrupt" : "interrupt"}
-                </span>
-              </text>
+              <box flexDirection="row" gap={1}>
+                <text fg={store.interrupt > 0 ? theme.primary : theme.text}>
+                  esc{" "}
+                  <span style={{ fg: store.interrupt > 0 ? theme.primary : theme.textMuted }}>
+                    {store.interrupt > 0 ? "again to interrupt" : "interrupt"}
+                  </span>
+                </text>
+                <text
+                  fg={theme.error}
+                  onMouseUp={() => {
+                    interruptSession(true)
+                  }}
+                >
+                  Stop
+                </text>
+              </box>
             </box>
           </Show>
           <Show when={status().type !== "retry"}>

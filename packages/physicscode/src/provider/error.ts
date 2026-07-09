@@ -50,6 +50,15 @@ function message(providerID: ProviderID, e: APICallError) {
     const msg = e.message
     const isPaidynamics = providerID === "paidynamics"
     const responseBody = e.responseBody ?? ""
+    const body = json(responseBody)
+    const errorType = typeof body?.error?.type === "string" ? body.error.type : undefined
+    const errorMessage = typeof body?.error?.message === "string" ? body.error.message : undefined
+    if (isPaidynamics && (errorType === "model_warming" || errorType === "upstream_warming")) {
+      return errorMessage ?? "The selected PhysicsCode hosted model is loading. Retrying shortly."
+    }
+    if (isPaidynamics && (errorType === "origin_unavailable" || errorType === "origin_gateway_error")) {
+      return errorMessage ?? "The PhysicsCode hosted model origin is unavailable or warming. Retrying shortly."
+    }
     if (isPaidynamics && e.statusCode === 530) {
       return "Cannot reach the PhysicsCode hosted model: Cloudflare Tunnel is not connected to the DGX origin."
     }
@@ -75,7 +84,7 @@ function message(providerID: ProviderID, e: APICallError) {
     try {
       const body = JSON.parse(e.responseBody)
       // try to extract common error message fields
-      const errMsg = body.message || body.error || body.error?.message
+      const errMsg = body.message || body.error?.message || body.error
       if (errMsg && typeof errMsg === "string") {
         return `${msg}: ${errMsg}`
       }
@@ -203,6 +212,7 @@ export function parseAPICallError(input: { providerID: ProviderID; error: APICal
   }
 
   const metadata = input.error.url ? { url: input.error.url } : undefined
+  const errorType = typeof body?.error?.type === "string" ? body.error.type : undefined
   const paidynamicsNonRetryable =
     input.providerID === "paidynamics" &&
     (input.error.statusCode === undefined ||
@@ -210,11 +220,22 @@ export function parseAPICallError(input: { providerID: ProviderID; error: APICal
       input.error.statusCode === 403 ||
       input.error.statusCode === 404 ||
       input.error.statusCode === 530)
+  const paidynamicsRetryable =
+    input.providerID === "paidynamics" &&
+    (input.error.statusCode === 502 ||
+      input.error.statusCode === 503 ||
+      input.error.statusCode === 504 ||
+      errorType === "model_warming" ||
+      errorType === "upstream_warming" ||
+      errorType === "origin_unavailable" ||
+      errorType === "origin_gateway_error")
   return {
     type: "api_error",
     message: m,
     statusCode: input.error.statusCode,
-    isRetryable: paidynamicsNonRetryable
+    isRetryable: paidynamicsRetryable
+      ? true
+      : paidynamicsNonRetryable
       ? false
       : input.providerID.startsWith("openai")
         ? isOpenAiErrorRetryable(input.error)

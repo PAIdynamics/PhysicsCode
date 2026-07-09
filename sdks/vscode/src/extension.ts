@@ -16,6 +16,10 @@ const PAI_DEFAULT_BASE_URL = "https://www.paidynamics.ch/llm/v1"
 const PAI_DEFAULT_LOGIN_URL = "https://www.paidynamics.ch"
 const PAI_LOCAL_TOOLS_ENV = "PHYSICSCODE_PAI_ENABLE_LOCAL_TOOLS"
 const execFileAsync = promisify(execFile)
+const PAI_MODEL_ALIASES: Record<string, string> = {
+  "deepseek-r1-distil-qwen-32b-pai": "deepseek-r1-distill-qwen-32b-pai",
+  "paidynamics/deepseek-r1-distil-qwen-32b-pai": "deepseek-r1-distill-qwen-32b-pai",
+}
 
 type PaiModel = {
   apiID: string
@@ -308,7 +312,8 @@ export function activate(context: vscode.ExtensionContext) {
   function paiHostedEnvironment() {
     const baseURL = physicscodeSetting("paiBaseUrl", PAI_DEFAULT_BASE_URL)
     const providerID = physicscodeSetting("paiProviderId", PAI_DEFAULT_PROVIDER_ID)
-    const modelID = physicscodeSetting("paiModelId", PAI_DEFAULT_MODEL_ID)
+    const configuredModelID = physicscodeSetting("paiModelId", PAI_DEFAULT_MODEL_ID)
+    const modelID = PAI_MODEL_ALIASES[configuredModelID] ?? configuredModelID
     const apiModelID =
       vscode.workspace.getConfiguration("physicscode").get<string>("paiApiModelId")?.trim() || PAI_DEFAULT_API_MODEL_ID
     const enableLocalTools =

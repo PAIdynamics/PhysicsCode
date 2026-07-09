@@ -159,8 +159,18 @@ const PaidynamicsModelDefinitions = {
   },
 } as const
 
-export const PAIDYNAMICS_MODEL_ALIASES = Object.fromEntries(
-  Object.entries(PaidynamicsModelDefinitions).map(([id, model]) => [id, model.upstream]),
+export const PAIDYNAMICS_MODEL_ID_ALIASES: Record<string, string> = {
+  "deepseek-r1-distil-qwen-32b-pai": "deepseek-r1-distill-qwen-32b-pai",
+  "paidynamics/deepseek-r1-distil-qwen-32b-pai": "deepseek-r1-distill-qwen-32b-pai",
+}
+
+export const PAIDYNAMICS_MODEL_ALIASES: Record<string, string> = Object.fromEntries(
+  Object.entries(PaidynamicsModelDefinitions)
+    .map(([id, model]) => [id, model.upstream])
+    .concat([
+      ["deepseek-r1-distil-qwen-32b-pai", "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"],
+      ["paidynamics/deepseek-r1-distil-qwen-32b-pai", "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"],
+    ]),
 )
 
 const paidynamicsModel = (model: (typeof PaidynamicsModelDefinitions)[keyof typeof PaidynamicsModelDefinitions]) => ({

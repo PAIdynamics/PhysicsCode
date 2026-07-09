@@ -114,57 +114,59 @@ const getCopyMethod = lazy(async () => {
   const os = platform()
   const which = await getWhich()
 
-  if (os === "darwin" && which("osascript")) {
-    console.log("clipboard: using osascript")
+  if (os === "darwin" && which("pbcopy")) {
     return async (text: string) => {
-      const escaped = text.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-      await Process.run(["osascript", "-e", `set the clipboard to "${escaped}"`], { nothrow: true })
+      const proc = Process.spawn(["pbcopy"], { stdin: "pipe", stdout: "ignore", stderr: "ignore" })
+      if (!proc.stdin) throw new Error("pbcopy stdin is unavailable")
+      proc.stdin.write(text)
+      proc.stdin.end()
+      const code = await proc.exited
+      if (code !== 0) throw new Error("pbcopy failed")
     }
   }
 
   if (os === "linux") {
     if (process.env["WAYLAND_DISPLAY"] && which("wl-copy")) {
-      console.log("clipboard: using wl-copy")
       return async (text: string) => {
         const proc = Process.spawn(["wl-copy"], { stdin: "pipe", stdout: "ignore", stderr: "ignore" })
-        if (!proc.stdin) return
+        if (!proc.stdin) throw new Error("wl-copy stdin is unavailable")
         proc.stdin.write(text)
         proc.stdin.end()
-        await proc.exited.catch(() => {})
+        const code = await proc.exited
+        if (code !== 0) throw new Error("wl-copy failed")
       }
     }
-    if (which("xclip")) {
-      console.log("clipboard: using xclip")
+    if (process.env["DISPLAY"] && which("xclip")) {
       return async (text: string) => {
         const proc = Process.spawn(["xclip", "-selection", "clipboard"], {
           stdin: "pipe",
           stdout: "ignore",
           stderr: "ignore",
         })
-        if (!proc.stdin) return
+        if (!proc.stdin) throw new Error("xclip stdin is unavailable")
         proc.stdin.write(text)
         proc.stdin.end()
-        await proc.exited.catch(() => {})
+        const code = await proc.exited
+        if (code !== 0) throw new Error("xclip failed")
       }
     }
-    if (which("xsel")) {
-      console.log("clipboard: using xsel")
+    if (process.env["DISPLAY"] && which("xsel")) {
       return async (text: string) => {
         const proc = Process.spawn(["xsel", "--clipboard", "--input"], {
           stdin: "pipe",
           stdout: "ignore",
           stderr: "ignore",
         })
-        if (!proc.stdin) return
+        if (!proc.stdin) throw new Error("xsel stdin is unavailable")
         proc.stdin.write(text)
         proc.stdin.end()
-        await proc.exited.catch(() => {})
+        const code = await proc.exited
+        if (code !== 0) throw new Error("xsel failed")
       }
     }
   }
 
   if (os === "win32") {
-    console.log("clipboard: using powershell")
     return async (text: string) => {
       // Pipe via stdin to avoid PowerShell string interpolation ($env:FOO, $(), etc.)
       const proc = Process.spawn(
@@ -182,24 +184,27 @@ const getCopyMethod = lazy(async () => {
         },
       )
 
-      if (!proc.stdin) return
+      if (!proc.stdin) throw new Error("powershell stdin is unavailable")
       proc.stdin.write(text)
       proc.stdin.end()
-      await proc.exited.catch(() => {})
+      const code = await proc.exited
+      if (code !== 0) throw new Error("powershell clipboard failed")
     }
   }
 
-  console.log("clipboard: no native support")
   return async (text: string) => {
     const clipboardy = await getClipboardy()
-    await clipboardy.write(text).catch(() => {})
+    await clipboardy.write(text)
   }
 })
 
 export async function copy(text: string): Promise<void> {
   writeOsc52(text)
   const method = await getCopyMethod()
-  await method(text)
+  await method(text).catch((error) => {
+    if (process.stdout.isTTY) return
+    throw error
+  })
 }
 
 export * as Clipboard from "./clipboard"

@@ -1682,10 +1682,12 @@ const layer: Layer.Layer<
         throw new ModelNotFoundError({ providerID, modelID, suggestions: matches.map((m) => m.target) })
       }
 
-      const info = provider.models[modelID]
+      const canonicalModelID =
+        providerID === ModelsDev.PAIDYNAMICS_PROVIDER_ID ? (ModelsDev.PAIDYNAMICS_MODEL_ID_ALIASES[modelID] ?? modelID) : modelID
+      const info = provider.models[canonicalModelID]
       if (!info) {
         const available = Object.keys(provider.models)
-        const matches = fuzzysort.go(modelID, available, { limit: 3, threshold: -10000 })
+        const matches = fuzzysort.go(canonicalModelID, available, { limit: 3, threshold: -10000 })
         throw new ModelNotFoundError({ providerID, modelID, suggestions: matches.map((m) => m.target) })
       }
       return info

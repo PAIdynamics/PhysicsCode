@@ -106,6 +106,25 @@ void solve_heat_equation() {
             finally:
                 store.close()
 
+    def test_search_filters_by_domain_metadata(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = _repo(root)
+            (repo / "solver.cpp").write_text("int poisson_solver() {\n  return 0;\n}\n", encoding="utf-8")
+            _init_git_repo(repo)
+            store = ScienceStore(root / "science.sqlite")
+            try:
+                ingest_repository(_config(repo), store, root / "reports")
+                store.commit()
+
+                matched = search(store, SearchQuery("poisson", domains=("pde",), top_k=3))
+                missed = search(store, SearchQuery("poisson", domains=("plasma-physics",), top_k=3))
+
+                self.assertEqual(len(matched), 1)
+                self.assertEqual(missed, [])
+            finally:
+                store.close()
+
 
 def _repo(root: Path) -> Path:
     repo = root / "repo"

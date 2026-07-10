@@ -4,6 +4,7 @@
       "query_id": "kokkos-parallel-for",
       "query": "Kokkos parallel_for execution policy example",
       "relevant_repositories": ["kokkos"],
+      "domains": ["performance-portability"],
       "languages": ["cpp"],
       "licenses": ["Apache-2.0"]
     },
@@ -11,6 +12,7 @@
       "query_id": "mfem-newton-solver",
       "query": "Newton solver finite element nonlinear PDE",
       "relevant_repositories": ["mfem"],
+      "domains": ["finite-element"],
       "languages": ["cpp"],
       "licenses": ["BSD-3-Clause"]
     }

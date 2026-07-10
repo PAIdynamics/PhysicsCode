@@ -158,6 +158,10 @@ def _parsed_object(
         content_hash=content_hash,
         ingestion_timestamp=datetime.now(UTC),
         parser_version=PARSER_VERSION,
+        metadata={
+            "domains": list(revision.repository.domains),
+            "repository_priority": revision.repository.priority,
+        },
     )
 
 

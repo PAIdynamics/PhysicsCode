@@ -40,3 +40,30 @@ python -m physicscode_science.cli.main ingest \
   --report .science/reports \
   --content-store .science/content
 ```
+
+Search the local index:
+
+```sh
+python -m physicscode_science.cli.main search \
+  "Kokkos parallel_for execution policy" \
+  --db .science/physicscode-science.sqlite \
+  --language cpp \
+  --top-k 10
+```
+
+Compare retrieval modes on a benchmark file:
+
+```sh
+python -m physicscode_science.cli.main evaluate \
+  --db .science/physicscode-science.sqlite \
+  --queries benchmarks/queries/phase2-smoke.json
+```
+
+Run the local HTTP API:
+
+```sh
+python -m physicscode_science.cli.main serve \
+  --db .science/physicscode-science.sqlite \
+  --host 127.0.0.1 \
+  --port 8765
+```

@@ -240,7 +240,7 @@ class ScienceStore:
             """,
             tuple(values),
         ).fetchall()
-        return [
+        candidates = [
             SearchCandidate(
                 object_id=row["object_id"],
                 repository=row["repository"],
@@ -258,6 +258,7 @@ class ScienceStore:
             )
             for row in rows
         ]
+        return [candidate for candidate in candidates if _domain_matches(candidate, query.domains)]
 
 
 def _json_ready(value: object) -> object:
@@ -270,3 +271,15 @@ def _json_ready(value: object) -> object:
     if isinstance(value, list):
         return [_json_ready(item) for item in value]
     return value
+
+
+def _domain_matches(candidate: SearchCandidate, domains: tuple[str, ...]) -> bool:
+    if not domains:
+        return True
+    metadata = candidate.metadata.get("metadata", {})
+    if not isinstance(metadata, dict):
+        return False
+    candidate_domains = metadata.get("domains", [])
+    if not isinstance(candidate_domains, list):
+        return False
+    return bool(set(domains) & set(str(domain) for domain in candidate_domains))

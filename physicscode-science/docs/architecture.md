@@ -40,6 +40,15 @@ Phase 1 modules:
 Future phases will add embeddings, hybrid search, MCP tools, scientific
 enrichment, relationship expansion, reranking, and agentic validation.
 
+Phase 2 now includes the first hybrid retrieval layer and an HTTP API boundary.
+The API is intentionally small:
+
+- `GET /health`
+- `POST /v1/search`
+
+The API returns the same provenance-bearing result shape as the CLI. MCP tools
+in Phase 3 should wrap this service rather than reimplement retrieval logic.
+
 ## Integration Plan
 
 1. Keep ingestion and retrieval independently testable in `physicscode-science/`.

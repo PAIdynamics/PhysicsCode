@@ -5,6 +5,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
+from physicscode_science.api.server import run_server
 from physicscode_science.ingestion.pipeline import ingest_repositories
 from physicscode_science.evaluation.benchmarks import evaluate_search, load_benchmark_queries
 from physicscode_science.licensing.policy import load_license_policy
@@ -29,6 +30,7 @@ def main() -> None:
     search_command.add_argument("query")
     search_command.add_argument("--db", default=".science/physicscode-science.sqlite")
     search_command.add_argument("--repository", action="append", default=[])
+    search_command.add_argument("--domain", action="append", default=[])
     search_command.add_argument("--language", action="append", default=[])
     search_command.add_argument("--object-type", action="append", default=[])
     search_command.add_argument("--license", action="append", default=[])
@@ -45,6 +47,10 @@ def main() -> None:
     evaluate.add_argument("--db", default=".science/physicscode-science.sqlite")
     evaluate.add_argument("--queries", required=True)
     evaluate.add_argument("--top-k", type=int, default=10)
+    serve = subcommands.add_parser("serve", help="Run the science retrieval HTTP API")
+    serve.add_argument("--db", default=".science/physicscode-science.sqlite")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
 
     if args.command == "ingest":
@@ -70,6 +76,7 @@ def main() -> None:
                 SearchQuery(
                     query=args.query,
                     repositories=tuple(args.repository),
+                    domains=tuple(args.domain),
                     languages=tuple(args.language),
                     object_types=tuple(args.object_type),
                     licenses=tuple(args.license),
@@ -89,6 +96,8 @@ def main() -> None:
         finally:
             store.close()
         print(json.dumps(report, indent=2, sort_keys=True))
+    if args.command == "serve":
+        run_server(args.db, host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

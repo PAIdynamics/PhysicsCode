@@ -102,6 +102,7 @@ class ParsedObject:
 class SearchQuery:
     query: str
     repositories: tuple[str, ...] = ()
+    domains: tuple[str, ...] = ()
     languages: tuple[str, ...] = ()
     object_types: tuple[str, ...] = ()
     licenses: tuple[str, ...] = ()
@@ -154,6 +155,7 @@ class BenchmarkQuery:
     relevant_object_ids: tuple[str, ...] = ()
     relevant_symbols: tuple[str, ...] = ()
     relevant_repositories: tuple[str, ...] = ()
+    domains: tuple[str, ...] = ()
     languages: tuple[str, ...] = ()
     object_types: tuple[str, ...] = ()
     licenses: tuple[str, ...] = ()

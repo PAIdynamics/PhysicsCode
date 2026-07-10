@@ -26,6 +26,7 @@ def load_benchmark_queries(path: str | Path) -> list[BenchmarkQuery]:
             relevant_object_ids=tuple(item.get("relevant_object_ids", [])),
             relevant_symbols=tuple(item.get("relevant_symbols", [])),
             relevant_repositories=tuple(item.get("relevant_repositories", [])),
+            domains=tuple(item.get("domains", [])),
             languages=tuple(item.get("languages", [])),
             object_types=tuple(item.get("object_types", [])),
             licenses=tuple(item.get("licenses", [])),
@@ -64,6 +65,7 @@ def _evaluate_one(
         store,
         SearchQuery(
             query=benchmark.query,
+            domains=benchmark.domains,
             languages=benchmark.languages,
             object_types=benchmark.object_types,
             licenses=benchmark.licenses,
@@ -90,6 +92,7 @@ def _relevant_ids(store: ScienceStore, benchmark: BenchmarkQuery) -> set[str]:
         SearchQuery(
             query=benchmark.query,
             repositories=benchmark.relevant_repositories,
+            domains=benchmark.domains,
             languages=benchmark.languages,
             object_types=benchmark.object_types,
             licenses=benchmark.licenses,

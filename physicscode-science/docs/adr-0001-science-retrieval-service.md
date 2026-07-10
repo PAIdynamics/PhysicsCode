@@ -40,7 +40,8 @@ PhysicsCode integration will happen through command, agent, and MCP boundaries:
 
 - Phase 1: implemented here as registry, revision pinning, license detection,
   file filtering, hashing, parsing, SQLite state, reports, and tests.
-- Phase 2: add sparse/dense search and rank fusion against the stored objects.
+- Phase 2: add sparse/dense search, exact symbol search, filters, rank fusion,
+  CLI/API search, and retrieval-mode evaluation against the stored objects.
 - Phase 3: add MCP server and wire `/science` to the specialized agent.
 - Phase 4+: add scientific enrichment, relationship expansion, reranking, and
   validation workflows.

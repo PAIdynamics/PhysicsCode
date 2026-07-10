@@ -54,6 +54,11 @@ PhysicsCode can start it from `.physicscode/physicscode.jsonc`, and the local
 `/science` command directs the agent to retrieve evidence before planning
 scientific code changes.
 
+The Phase 3 MCP layer also includes read-only local project inspection. This
+keeps repository context collection separate from retrieval and gives the agent a
+structured way to understand languages, build systems, dependencies, tests, git
+state, and candidate source files before searching external evidence.
+
 ## Integration Plan
 
 1. Keep ingestion and retrieval independently testable in `physicscode-science/`.

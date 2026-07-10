@@ -26,6 +26,7 @@ Tools:
 - `science_get_symbol`
 - `science_get_context`
 - `science_check_license`
+- `science_project_context`
 
 ## Search
 

@@ -25,6 +25,8 @@ changes when the task involves numerical methods, scientific libraries, hardware
 backends, build issues, or physical validation. Prefer `science_search` or the
 local `science-search` tool for broad evidence, then fetch exact sources with
 `science_get_source` or `science-source` when raw code context is needed.
+Use `science_project_context` first when available to inspect the current
+repository without modifying files.
 
 Plan before editing. The plan must name the scientific interpretation, retrieved
 implementation patterns, likely files to change, validation strategy, risks, and

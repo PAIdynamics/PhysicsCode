@@ -9,7 +9,8 @@ $ARGUMENTS
 
 Workflow:
 
-1. Inspect the current project without modifying files.
+1. Inspect the current project without modifying files. Use
+   `science_project_context` when available.
 2. Interpret the scientific and engineering request.
 3. Build several complementary retrieval queries.
 4. Retrieve source-backed evidence with the `science` MCP tools or local

@@ -4,6 +4,7 @@ from dataclasses import asdict
 from typing import Any
 
 from physicscode_science.models import SearchQuery
+from physicscode_science.context.project import inspect_project
 from physicscode_science.retrieval.search import search
 from physicscode_science.storage.sqlite import ScienceStore
 
@@ -70,6 +71,18 @@ def tool_definitions() -> list[dict[str, Any]]:
                 "required": ["object_id"],
             },
         },
+        {
+            "name": "science_project_context",
+            "description": "Inspect a local scientific software project without modifying files.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "max_files": {"type": "integer", "minimum": 1, "maximum": 50000},
+                },
+                "required": ["path"],
+            },
+        },
     ]
 
 
@@ -128,6 +141,8 @@ def call_tool(db_path: str, name: str, arguments: dict[str, Any]) -> dict[str, A
                 "path": candidate.path,
                 "object_id": candidate.object_id,
             }
+        if name == "science_project_context":
+            return inspect_project(str(arguments["path"]), max_files=int(arguments.get("max_files", 5000)))
         raise ValueError(f"unknown science tool: {name}")
     finally:
         store.close()

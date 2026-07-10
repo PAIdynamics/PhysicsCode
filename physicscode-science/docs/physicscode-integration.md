@@ -24,6 +24,7 @@ Phase 3 exposes `physicscode-science` through:
   - `.physicscode/tool/science-search.ts`
   - `.physicscode/tool/science-source.ts`
 - `/science` command and `science` agent guidance
+- `science_project_context` MCP tool for read-only project inspection
 
 Before using `/science` retrieval in a live session, build the local science
 index:
@@ -46,3 +47,12 @@ The MCP server is configured to read:
 
 If that database does not exist yet, the tools will connect but return no
 retrieval results.
+
+Recommended `/science` order:
+
+1. Call `science_project_context` for the current repository.
+2. Interpret the scientific problem and missing assumptions.
+3. Run several `science_search` queries with domain, language, library, license,
+   and hardware filters where possible.
+4. Fetch exact source records with `science_get_source`.
+5. Present an evidence-backed plan before editing.

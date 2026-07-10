@@ -1544,16 +1544,6 @@ const layer: Layer.Layer<
             ...model.headers,
           }
 
-        const key = Hash.fast(
-          JSON.stringify({
-            providerID: model.providerID,
-            npm: model.api.npm,
-            options,
-          }),
-        )
-        const existing = s.sdk.get(key)
-        if (existing) return existing
-
         const customFetch = options["fetch"]
         const chunkTimeout = options["chunkTimeout"]
         delete options["chunkTimeout"]
@@ -1578,6 +1568,22 @@ const layer: Layer.Layer<
             active
           )
         }
+
+        if (model.providerID === ModelsDev.PAIDYNAMICS_PROVIDER_ID) {
+          const runtimeApiKey = await paidynamicsRuntimeApiKey()
+          if (runtimeApiKey) options["apiKey"] = runtimeApiKey
+        }
+
+        const cacheable = model.providerID !== ModelsDev.PAIDYNAMICS_PROVIDER_ID
+        const key = Hash.fast(
+          JSON.stringify({
+            providerID: model.providerID,
+            npm: model.api.npm,
+            options,
+          }),
+        )
+        const existing = cacheable ? s.sdk.get(key) : undefined
+        if (existing) return existing
 
         options["fetch"] = async (input: any, init?: BunFetchRequestInit) => {
           const fetchFn = customFetch ?? fetch
@@ -1638,7 +1644,7 @@ const layer: Layer.Layer<
             name: model.providerID,
             ...options,
           })
-          s.sdk.set(key, loaded)
+          if (cacheable) s.sdk.set(key, loaded)
           return loaded as SDK
         }
 
@@ -1662,7 +1668,7 @@ const layer: Layer.Layer<
           name: model.providerID,
           ...options,
         })
-        s.sdk.set(key, loaded)
+        if (cacheable) s.sdk.set(key, loaded)
         return loaded as SDK
       } catch (e) {
         throw new InitError({ providerID: model.providerID }, { cause: e })
@@ -1704,7 +1710,8 @@ const layer: Layer.Layer<
       const s = yield* InstanceState.get(state)
       const envs = yield* env.all()
       const key = `${model.providerID}/${model.id}`
-      if (s.models.has(key)) return s.models.get(key)!
+      const cacheable = model.providerID !== ModelsDev.PAIDYNAMICS_PROVIDER_ID
+      if (cacheable && s.models.has(key)) return s.models.get(key)!
 
       return yield* Effect.promise(async () => {
         const provider = s.providers[model.providerID]
@@ -1717,7 +1724,7 @@ const layer: Layer.Layer<
                 ...model.options,
               })
             : sdk.languageModel(model.api.id)
-          s.models.set(key, language)
+          if (cacheable) s.models.set(key, language)
           return language
         } catch (e) {
           if (e instanceof NoSuchModelError)

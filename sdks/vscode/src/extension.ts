@@ -344,7 +344,7 @@ export function activate(context: vscode.ExtensionContext) {
     const config = {
       enabled_providers: [providerID],
       model: `${providerID}/${modelID}`,
-      small_model: `${providerID}/gpt-oss-20b-pai`,
+      small_model: `${providerID}/gpt-oss-120b-pai`,
       default_agent: "build",
       agent: paiAgentConfig(providerID),
       provider: {
@@ -445,9 +445,9 @@ export function activate(context: vscode.ExtensionContext) {
       build: {
         model: `${providerID}/gpt-oss-120b-pai`,
         mode: "primary",
-        description: "Master coding agent. Delegates narrow tasks to specialized PAI-hosted subagents when useful.",
+        description: "Master coding agent. Uses the always-on PAI-hosted model by default for stable interactive work.",
         prompt:
-          "You are the master PhysicsCode coding agent. Use your own judgment for difficult architecture and edits. For hard reasoning, math, numerical debugging, or subtle bug analysis, delegate to the deep-reasoner subagent. For agentic coding or coding second opinions that can tolerate a model switch, delegate to glm-air. For quick summarization, routing, titles, lightweight code review, and inexpensive helper tasks, delegate to small-router. Keep the user-facing answer concise and own the final decision.",
+          "You are the master PhysicsCode coding agent. Use the always-on gpt-oss-120b-pai model for normal interactive work, titles, summaries, planning, and edits. Do not automatically switch to on-demand hosted models for hidden helper tasks; those models should be used only when the user explicitly selects them or asks for a second opinion. Keep the user-facing answer concise and own the final decision.",
       },
       plan: {
         model: `${providerID}/gpt-oss-120b-pai`,
@@ -465,18 +465,18 @@ export function activate(context: vscode.ExtensionContext) {
         description: "Use for agentic coding and coding second opinions when the task can tolerate loading a large on-demand model.",
       },
       "small-router": {
-        model: `${providerID}/gpt-oss-20b-pai`,
+        model: `${providerID}/gpt-oss-120b-pai`,
         mode: "subagent",
-        description: "Use for quick edits, summaries, routing decisions, titles, and inexpensive helper tasks.",
+        description: "Uses the always-on default model for quick edits, summaries, routing decisions, and titles.",
       },
       summary: {
-        model: `${providerID}/gpt-oss-20b-pai`,
+        model: `${providerID}/gpt-oss-120b-pai`,
       },
       title: {
-        model: `${providerID}/gpt-oss-20b-pai`,
+        model: `${providerID}/gpt-oss-120b-pai`,
       },
       compaction: {
-        model: `${providerID}/gpt-oss-20b-pai`,
+        model: `${providerID}/gpt-oss-120b-pai`,
       },
     }
   }

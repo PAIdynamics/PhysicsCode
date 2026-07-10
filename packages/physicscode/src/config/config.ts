@@ -596,6 +596,7 @@ export const layer = Layer.effect(
         result.enabled_providers ??= ["paidynamics"]
         result.model ??= "paidynamics/gpt-oss-120b-pai"
         result.small_model ??= result.model
+        result.default_agent ??= "science"
 
         const activeAccount = Option.getOrUndefined(
           yield* accountSvc.active().pipe(Effect.catch(() => Effect.succeed(Option.none()))),

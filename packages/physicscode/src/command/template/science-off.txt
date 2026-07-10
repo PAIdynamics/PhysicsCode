@@ -1,0 +1,8 @@
+Continue this task with the standard PhysicsCode build workflow, without the
+extra Science retrieval-first workflow.
+
+$ARGUMENTS
+
+Use normal local project inspection, planning, implementation, and validation.
+Use Science retrieval tools only if the user explicitly asks for source-backed
+scientific reference retrieval again.

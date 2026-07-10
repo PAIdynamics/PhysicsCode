@@ -734,6 +734,20 @@ export function Prompt(props: PromptProps) {
       void exit()
       return true
     }
+    if (trimmed === "/science-off") {
+      local.agent.set("build")
+      input.clear()
+      setStore("prompt", {
+        input: "",
+        parts: [],
+      })
+      toast.show({
+        variant: "info",
+        message: "Science workflow is off. Using the build agent.",
+        duration: 3000,
+      })
+      return true
+    }
     const selectedModel = local.model.current()
     if (!selectedModel) {
       void promptModelWarning()

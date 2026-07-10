@@ -13,6 +13,7 @@ import { Skill } from "../skill"
 import PROMPT_INITIALIZE from "./template/initialize.txt"
 import PROMPT_REVIEW from "./template/review.txt"
 import PROMPT_SCIENCE from "./template/science.txt"
+import PROMPT_SCIENCE_OFF from "./template/science-off.txt"
 
 type State = {
   commands: Record<string, Info>
@@ -61,6 +62,7 @@ export const Default = {
   INIT: "init",
   REVIEW: "review",
   SCIENCE: "science",
+  SCIENCE_OFF: "science-off",
 } as const
 
 export interface Interface {
@@ -110,6 +112,16 @@ export const layer = Layer.effect(
           return PROMPT_SCIENCE
         },
         hints: hints(PROMPT_SCIENCE),
+      }
+      commands[Default.SCIENCE_OFF] = {
+        name: Default.SCIENCE_OFF,
+        description: "turn off the science workflow for this prompt",
+        agent: "build",
+        source: "command",
+        get template() {
+          return PROMPT_SCIENCE_OFF
+        },
+        hints: hints(PROMPT_SCIENCE_OFF),
       }
 
       for (const [name, command] of Object.entries(cfg.command ?? {})) {

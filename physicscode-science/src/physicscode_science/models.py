@@ -107,6 +107,9 @@ class SearchQuery:
     object_types: tuple[str, ...] = ()
     licenses: tuple[str, ...] = ()
     retrieval_channels: tuple[str, ...] = ("dense", "sparse", "symbol")
+    rerank: bool = True
+    deduplicate: bool = True
+    diversity: bool = True
     top_k: int = 10
     include_content: bool = False
 
@@ -144,6 +147,7 @@ class SearchResult:
     score: float
     retrieval_channels: tuple[str, ...]
     reason: str
+    explanation: dict[str, object]
     summary: str
     content: str | None = None
 

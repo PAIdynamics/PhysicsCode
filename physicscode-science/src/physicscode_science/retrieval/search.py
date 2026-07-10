@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from urllib import error
 
 from physicscode_science.models import SearchCandidate, SearchQuery, SearchResult
 from physicscode_science.retrieval.bm25 import bm25_scores
@@ -66,6 +67,12 @@ def _dense_scores(
     candidates: list[SearchCandidate],
 ) -> dict[str, float]:
     if os.environ.get("PHYSICSCODE_SCIENCE_VECTOR_BACKEND") == "qdrant":
+        if os.environ.get("PHYSICSCODE_SCIENCE_EMBEDDING_PROVIDER") not in {
+            "openai",
+            "openai-compatible",
+            "vllm",
+        }:
+            return {}
         candidate_ids = {candidate.object_id for candidate in candidates}
         try:
             scores = QdrantVectorIndex(
@@ -78,7 +85,7 @@ def _dense_scores(
                 for object_id, score in scores.items()
                 if object_id in candidate_ids
             }
-        except OSError:
+        except (OSError, RuntimeError, ValueError, error.URLError):
             pass
     index_path = default_vector_index_path(store)
     if index_path.exists():

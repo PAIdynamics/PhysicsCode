@@ -346,7 +346,7 @@ repositories:
     local_path: /home/mohsen/ref-codes/picongpu
     default_branch: dev
     revision_policy: fixed-local
-    license_policy: allowed
+    license_policy: reference-only
     domains:
       - particle-in-cell
       - plasma-physics

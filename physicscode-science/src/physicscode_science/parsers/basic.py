@@ -8,6 +8,7 @@ from physicscode_science.models import ParsedObject, RepositoryRevision, SourceF
 from physicscode_science.utils import sha256_text
 
 PARSER_VERSION = "basic-regex-v1"
+MAX_DECLARATION_LINE_CHARS = 600
 
 CPP_FUNCTION = re.compile(
     r"^\s*(?:template\s*<[^;{}]+>\s*)?(?P<signature>(?:[\w:<>,~*&\s]+\s+)+(?P<name>[A-Za-z_]\w*(?:::[A-Za-z_]\w*)?)\s*\([^;{}]*\)\s*(?:const\s*)?(?:noexcept\s*)?(?:override\s*)?)\{?"
@@ -74,6 +75,8 @@ def _matches_for_language(language: str, lines: list[str]) -> list[dict[str, obj
         return []
     objects = []
     for index, line in enumerate(lines, start=1):
+        if len(line) > MAX_DECLARATION_LINE_CHARS:
+            continue
         match = matcher.match(line)
         if match:
             objects.append(

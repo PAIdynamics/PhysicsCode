@@ -94,6 +94,39 @@ int poisson_multigrid_solver() { return 1; }
             finally:
                 store.close()
 
+    def test_qdrant_dense_search_skips_without_embedding_provider(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = _repo(root)
+            (repo / "solver.cpp").write_text(
+                "int poisson_solver() { return 0; }\n",
+                encoding="utf-8",
+            )
+            _init_git_repo(repo)
+            store = _store_with_repo(root, repo)
+            try:
+                with mock.patch.dict(
+                    "os.environ",
+                    {"PHYSICSCODE_SCIENCE_VECTOR_BACKEND": "qdrant"},
+                    clear=True,
+                ):
+                    with mock.patch(
+                        "physicscode_science.retrieval.search.QdrantVectorIndex.search",
+                    ) as qdrant_search:
+                        results = search(
+                            store,
+                            SearchQuery(
+                                "poisson",
+                                retrieval_channels=("dense",),
+                                top_k=1,
+                            ),
+                        )
+
+                self.assertEqual(results, [])
+                qdrant_search.assert_not_called()
+            finally:
+                store.close()
+
     def test_qdrant_collection_dimension_mismatch_fails(self):
         class ExistingCollection(QdrantVectorIndex):
             def _request(self, method, path, payload=None, **kwargs):  # noqa: ANN001, ANN202

@@ -6,7 +6,7 @@ from pathlib import Path
 from physicscode_science.models import LicenseFinding
 from physicscode_science.utils import read_text
 
-LICENSE_FILES = ("LICENSE", "LICENSE.txt", "LICENSE.md", "COPYING", "COPYRIGHT", "NOTICE")
+LICENSE_FILES = ("LICENSE", "LICENSE.txt", "LICENSE.md", "License/License", "COPYING", "COPYRIGHT", "NOTICE")
 
 LICENSE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("Apache-2.0", re.compile(r"Apache License.*Version 2\.0", re.I | re.S)),
@@ -15,8 +15,10 @@ LICENSE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("MIT", re.compile(r"Permission is hereby granted, free of charge", re.I)),
     ("LGPL-2.1-or-later", re.compile(r"GNU Lesser General Public License.*version 2\.1", re.I | re.S)),
     ("LGPL-3.0-or-later", re.compile(r"GNU Lesser General Public License.*version 3", re.I | re.S)),
+    ("GPL-3.0-or-later", re.compile(r"GPLv3\+|GNU General Public License.*version 3.*or later", re.I | re.S)),
     ("GPL-3.0", re.compile(r"GNU General Public License.*version 3", re.I | re.S)),
     ("GPL-2.0", re.compile(r"GNU General Public License.*version 2", re.I | re.S)),
+    ("CeCILL-B", re.compile(r"CeCILL-B FREE SOFTWARE LICENSE AGREEMENT", re.I)),
     ("HDF5", re.compile(r"Hierarchical Data Format.*HDF5", re.I | re.S)),
     ("NCSA", re.compile(r"University of Illinois/NCSA Open Source License", re.I)),
 )

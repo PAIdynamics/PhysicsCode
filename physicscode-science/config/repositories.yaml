@@ -1,0 +1,79 @@
+repositories:
+  - name: kokkos
+    url: https://github.com/kokkos/kokkos
+    local_path: /home/mohsen/ref-codes/kokkos
+    default_branch: develop
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - performance-portability
+      - high-performance-computing
+    languages:
+      - cpp
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: mfem
+    url: https://github.com/mfem/mfem
+    local_path: /home/mohsen/ref-codes/mfem
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - finite-element
+      - partial-differential-equations
+    languages:
+      - cpp
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: amrex
+    url: https://github.com/AMReX-Codes/amrex
+    local_path: /home/mohsen/ref-codes/amrex
+    default_branch: development
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - adaptive-mesh-refinement
+      - computational-fluid-dynamics
+    languages:
+      - cpp
+      - fortran
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: hdf5
+    url: https://github.com/HDFGroup/hdf5
+    local_path: /home/mohsen/ref-codes/hdf5
+    default_branch: develop
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - scientific-data
+      - io
+    languages:
+      - c
+      - cpp
+      - fortran
+      - cmake
+    priority: medium
+    enabled: true
+
+  - name: su2
+    url: https://github.com/su2code/SU2
+    local_path: /home/mohsen/ref-codes/SU2
+    default_branch: develop
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - computational-fluid-dynamics
+      - optimization
+    languages:
+      - cpp
+      - python
+      - cmake
+    priority: medium
+    enabled: true

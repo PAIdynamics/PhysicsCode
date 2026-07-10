@@ -1,0 +1,23 @@
+domains:
+  performance-portability:
+    aliases: [kokkos, raja, portability, accelerator]
+  high-performance-computing:
+    aliases: [hpc, mpi, openmp, cuda, hip]
+  finite-element:
+    aliases: [fem, finite element, galerkin]
+  partial-differential-equations:
+    aliases: [pde, elliptic, hyperbolic, parabolic]
+  computational-fluid-dynamics:
+    aliases: [cfd, navier-stokes, euler equations]
+  adaptive-mesh-refinement:
+    aliases: [amr, block structured]
+  scientific-data:
+    aliases: [hdf5, netcdf, adios]
+
+algorithms:
+  charge-deposition:
+    aliases: [cloud-in-cell, cic, particle mesh]
+  matrix-free-newton-krylov:
+    aliases: [matrix free, jfnk, newton krylov]
+  finite-volume-boundary-conditions:
+    aliases: [ghost cells, flux boundary]

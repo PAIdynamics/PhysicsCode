@@ -1,0 +1,11 @@
+retrieval:
+  default_top_k: 10
+  max_context_tokens: 6000
+  dense_enabled: false
+  sparse_enabled: true
+  symbol_enabled: true
+  license_filter:
+    - MIT
+    - BSD-2-Clause
+    - BSD-3-Clause
+    - Apache-2.0

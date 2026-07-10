@@ -7,6 +7,7 @@ from physicscode_science.embeddings.providers import (
     OpenAICompatibleEmbeddingProvider,
     candidate_embedding_text,
     configured_embedding_provider,
+    truncate_for_embedding,
 )
 from physicscode_science.models import SearchCandidate
 
@@ -82,6 +83,36 @@ class EmbeddingProviderTest(unittest.TestCase):
         provider.embed_candidate(candidate)
 
         self.assertLessEqual(len(provider.text), 64)
+
+    def test_truncate_for_embedding_uses_conservative_word_budget(self):
+        text = " ".join(f"token{i}" for i in range(100))
+
+        truncated = truncate_for_embedding(text, max_tokens=20)
+
+        self.assertLessEqual(len(truncated.split()), 11)
+
+    def test_openai_compatible_provider_retries_smaller_input_on_context_error(self):
+        class RetryingProvider(OpenAICompatibleEmbeddingProvider):
+            def __init__(self):  # noqa: ANN204
+                super().__init__(
+                    "http://example.invalid",
+                    "embedding-model",
+                    max_input_tokens=20,
+                )
+                self.inputs = []
+
+            def _request(self, path, payload):  # noqa: ANN001, ANN202
+                self.inputs.append(payload["input"])
+                if len(self.inputs) == 1:
+                    raise RuntimeError("maximum context length exceeded: input_tokens")
+                return {"data": [{"embedding": [0.0, 1.0]}]}
+
+        provider = RetryingProvider()
+
+        vector = provider.embed_text(" ".join(f"token{i}" for i in range(100)))
+
+        self.assertEqual(vector, [0.0, 1.0])
+        self.assertGreater(len(provider.inputs[0]), len(provider.inputs[1]))
 
 
 if __name__ == "__main__":

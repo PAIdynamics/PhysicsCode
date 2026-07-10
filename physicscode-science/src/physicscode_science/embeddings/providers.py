@@ -13,6 +13,8 @@ from physicscode_science.retrieval.vector import (
     vectorize_query,
 )
 
+DEFAULT_MAX_EMBEDDING_TOKENS = 1800
+
 
 @dataclass(frozen=True)
 class EmbeddingModel:
@@ -64,6 +66,7 @@ class OpenAICompatibleEmbeddingProvider(EmbeddingProvider):
         api_key: str | None = None,
         timeout_seconds: int = 60,
         max_candidate_chars: int = 4000,
+        max_input_tokens: int = DEFAULT_MAX_EMBEDDING_TOKENS,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model_name = model
@@ -71,6 +74,7 @@ class OpenAICompatibleEmbeddingProvider(EmbeddingProvider):
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
         self.max_candidate_chars = max_candidate_chars
+        self.max_input_tokens = max_input_tokens
 
     def model(self) -> EmbeddingModel:
         return EmbeddingModel(
@@ -81,11 +85,18 @@ class OpenAICompatibleEmbeddingProvider(EmbeddingProvider):
         )
 
     def embed_text(self, text: str) -> list[float]:
+        text = truncate_for_embedding(text, max_tokens=self.max_input_tokens)
         payload: dict[str, object] = {
             "model": self.model_name,
             "input": text,
         }
-        response = self._request("/v1/embeddings", payload)
+        try:
+            response = self._request("/v1/embeddings", payload)
+        except RuntimeError as exc:
+            if "maximum context length" not in str(exc) and "input_tokens" not in str(exc):
+                raise
+            payload["input"] = truncate_for_embedding(text, max_tokens=max(1, self.max_input_tokens // 2))
+            response = self._request("/v1/embeddings", payload)
         data = response.get("data", [])
         if not data or not isinstance(data, list):
             raise RuntimeError("embedding response did not include data")
@@ -140,6 +151,12 @@ def configured_embedding_provider(
                 dimensions=dimensions,
                 api_key=key,
                 max_candidate_chars=int(os.environ.get("PHYSICSCODE_SCIENCE_EMBEDDING_MAX_CHARS", "4000")),
+                max_input_tokens=int(
+                    os.environ.get(
+                        "PHYSICSCODE_SCIENCE_EMBEDDING_MAX_TOKENS",
+                        str(DEFAULT_MAX_EMBEDDING_TOKENS),
+                    )
+                ),
             )
             embedding_provider.embed_text("embedding health check")
             return embedding_provider
@@ -165,6 +182,20 @@ def candidate_embedding_text(candidate: SearchCandidate, *, max_raw_chars: int =
     )
 
 
+def truncate_for_embedding(text: str, *, max_tokens: int = DEFAULT_MAX_EMBEDDING_TOKENS) -> str:
+    if max_tokens <= 0:
+        return ""
+    words = text.split()
+    if not words:
+        return text[: max_tokens * 3]
+    # SentencePiece/BPE tokenizers often split code identifiers and punctuation
+    # more aggressively than whitespace. Keep a conservative word budget and
+    # char cap so local embedding servers with 2k-token limits stay healthy.
+    max_words = max(1, int(max_tokens * 0.55))
+    max_chars = max_tokens * 3
+    return " ".join(words[:max_words])[:max_chars]
+
+
 def candidate_embedding_views(candidate: SearchCandidate, *, max_raw_chars: int = 8000) -> dict[str, str]:
     metadata = candidate.metadata.get("metadata", {})
     generated = metadata.get("generated_views", {}) if isinstance(metadata, dict) else {}
@@ -174,7 +205,7 @@ def candidate_embedding_views(candidate: SearchCandidate, *, max_raw_chars: int 
     if isinstance(generated, dict):
         summary = str(generated.get("summary", ""))
         queries = [str(query) for query in generated.get("queries", []) if isinstance(query, str)]
-    documentation = "\n".join(
+    documentation = truncate_for_embedding("\n".join(
         [
             f"repository: {candidate.repository}",
             f"path: {candidate.path}",
@@ -183,8 +214,8 @@ def candidate_embedding_views(candidate: SearchCandidate, *, max_raw_chars: int 
             f"queries: {' | '.join(queries)}",
             f"scientific_metadata: {json.dumps(scientific, sort_keys=True)}",
         ]
-    )
-    signature = "\n".join(
+    ))
+    signature = truncate_for_embedding("\n".join(
         [
             f"repository: {candidate.repository}",
             f"path: {candidate.path}",
@@ -193,17 +224,17 @@ def candidate_embedding_views(candidate: SearchCandidate, *, max_raw_chars: int 
             f"language: {candidate.language}",
             candidate.raw_content.splitlines()[0] if candidate.raw_content else "",
         ]
-    )
-    source = "\n".join(
+    ))
+    source = truncate_for_embedding("\n".join(
         [
             f"repository: {candidate.repository}",
             f"path: {candidate.path}",
             f"symbol: {candidate.symbol}",
             candidate.raw_content[:max_raw_chars],
         ]
-    )
+    ))
     return {
-        "summary": candidate_embedding_text(candidate, max_raw_chars=max_raw_chars),
+        "summary": truncate_for_embedding(candidate_embedding_text(candidate, max_raw_chars=max_raw_chars)),
         "signature": signature,
         "source": source,
         "documentation": documentation,

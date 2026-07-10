@@ -111,6 +111,7 @@ def main() -> None:
     vector_index.add_argument("--embedding-model")
     vector_index.add_argument("--embedding-api-key")
     vector_index.add_argument("--embedding-max-chars", type=int)
+    vector_index.add_argument("--embedding-max-tokens", type=int)
     status = subcommands.add_parser("status", help="Report science DB and vector-index readiness")
     status.add_argument("--db", default=".science/physicscode-science.sqlite")
     serve = subcommands.add_parser("serve", help="Run the science retrieval HTTP API")
@@ -302,6 +303,8 @@ def _configure_embedding_environment(args: argparse.Namespace) -> None:
         os.environ["PHYSICSCODE_SCIENCE_EMBEDDING_API_KEY"] = args.embedding_api_key
     if getattr(args, "embedding_max_chars", None):
         os.environ["PHYSICSCODE_SCIENCE_EMBEDDING_MAX_CHARS"] = str(args.embedding_max_chars)
+    if getattr(args, "embedding_max_tokens", None):
+        os.environ["PHYSICSCODE_SCIENCE_EMBEDDING_MAX_TOKENS"] = str(args.embedding_max_tokens)
 
 
 if __name__ == "__main__":

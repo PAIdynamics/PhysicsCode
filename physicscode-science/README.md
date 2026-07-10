@@ -41,6 +41,22 @@ python -m physicscode_science.cli.main ingest \
   --content-store .science/content
 ```
 
+For a faster first population of search and vector retrieval, skip relationship
+graph extraction and run it later:
+
+```sh
+python -m physicscode_science.cli.main ingest \
+  --registry config/repositories.yaml \
+  --licenses config/licenses.yaml \
+  --taxonomy config/taxonomy.yaml \
+  --db .science/physicscode-science.sqlite \
+  --report .science/reports \
+  --content-store .science/content \
+  --skip-relationships \
+  --stream-reports \
+  --max-objects-per-repo 1000
+```
+
 Search the local index:
 
 ```sh

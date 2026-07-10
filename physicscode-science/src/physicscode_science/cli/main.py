@@ -10,7 +10,7 @@ from physicscode_science.agentic.tasks import load_agentic_tasks
 from physicscode_science.agentic.workflow import run_agentic_benchmark
 from physicscode_science.enrichment.rebuild import metadata_report, rebuild_metadata
 from physicscode_science.enrichment.taxonomy import load_taxonomy
-from physicscode_science.ingestion.pipeline import ingest_repositories
+from physicscode_science.ingestion.pipeline import ingest_repositories, ingest_repository
 from physicscode_science.evaluation.benchmarks import evaluate_search, load_benchmark_queries
 from physicscode_science.licensing.policy import load_license_policy
 from physicscode_science.mcp.server import serve_stdio
@@ -34,6 +34,17 @@ def main() -> None:
     ingest.add_argument("--report", default=".science/reports")
     ingest.add_argument("--content-store", default=".science/content")
     ingest.add_argument("--max-files-per-repo", type=int)
+    ingest.add_argument("--max-objects-per-repo", type=int)
+    ingest.add_argument(
+        "--skip-relationships",
+        action="store_true",
+        help="Skip relationship graph extraction for faster initial search/vector-index population.",
+    )
+    ingest.add_argument(
+        "--stream-reports",
+        action="store_true",
+        help="Print and commit one repository report at a time.",
+    )
     search_command = subcommands.add_parser("search", help="Search indexed scientific source objects")
     search_command.add_argument("query")
     search_command.add_argument("--db", default=".science/physicscode-science.sqlite")
@@ -92,18 +103,43 @@ def main() -> None:
     if args.command == "ingest":
         store = ScienceStore(args.db)
         try:
-            reports = ingest_repositories(
-                enabled_repositories(Path(args.registry)),
-                store,
-                args.report,
-                max_files_per_repo=args.max_files_per_repo,
-                license_policy=load_license_policy(args.licenses),
-                content_store=ContentStore(args.content_store),
-                taxonomy=load_taxonomy(args.taxonomy),
-            )
+            repositories = enabled_repositories(Path(args.registry))
+            license_policy = load_license_policy(args.licenses)
+            content_store = ContentStore(args.content_store)
+            taxonomy = load_taxonomy(args.taxonomy)
+            if args.stream_reports:
+                reports = []
+                for repository in repositories:
+                    report = ingest_repository(
+                        repository,
+                        store,
+                        args.report,
+                        max_files_per_repo=args.max_files_per_repo,
+                        license_policy=license_policy,
+                        content_store=content_store,
+                        taxonomy=taxonomy,
+                        extract_relationship_graph=not args.skip_relationships,
+                        max_objects_per_repo=args.max_objects_per_repo,
+                    )
+                    store.commit()
+                    reports.append(report)
+                    print(json.dumps(report, sort_keys=True), flush=True)
+            else:
+                reports = ingest_repositories(
+                    repositories,
+                    store,
+                    args.report,
+                    max_files_per_repo=args.max_files_per_repo,
+                    license_policy=license_policy,
+                    content_store=content_store,
+                    taxonomy=taxonomy,
+                    extract_relationship_graph=not args.skip_relationships,
+                    max_objects_per_repo=args.max_objects_per_repo,
+                )
         finally:
             store.close()
-        print(json.dumps(reports, indent=2, sort_keys=True))
+        if not args.stream_reports:
+            print(json.dumps(reports, indent=2, sort_keys=True))
     if args.command == "search":
         store = ScienceStore(args.db)
         try:

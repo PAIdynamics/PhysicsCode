@@ -15,6 +15,13 @@ python -m physicscode_science.cli.main ingest \
 
 Use `--max-files-per-repo` for smoke tests against large local clones.
 
+Use `--skip-relationships` for the initial population of `/science` search.
+This indexes source objects quickly so the vector index can be built, while
+relationship graph extraction can run later when graph-expanded context is
+needed. Add `--stream-reports` for long runs so each repository is committed and
+reported independently. Add `--max-objects-per-repo` when you want a bounded but
+useful initial index before running an exhaustive corpus pass.
+
 Parser failures are captured in the report instead of being swallowed. Unchanged
 objects are idempotent: reingesting the same revision does not create duplicate
 records.

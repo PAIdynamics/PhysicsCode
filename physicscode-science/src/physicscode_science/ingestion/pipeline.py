@@ -27,6 +27,8 @@ def ingest_repositories(
     license_policy: LicensePolicy | None = None,
     content_store: ContentStore | None = None,
     taxonomy: Taxonomy | None = None,
+    extract_relationship_graph: bool = True,
+    max_objects_per_repo: int | None = None,
 ) -> list[dict[str, object]]:
     store.migrate()
     reports = [
@@ -38,6 +40,8 @@ def ingest_repositories(
             license_policy=license_policy,
             content_store=content_store,
             taxonomy=taxonomy,
+            extract_relationship_graph=extract_relationship_graph,
+            max_objects_per_repo=max_objects_per_repo,
         )
         for repository in repositories
     ]
@@ -53,6 +57,8 @@ def ingest_repository(
     license_policy: LicensePolicy | None = None,
     content_store: ContentStore | None = None,
     taxonomy: Taxonomy | None = None,
+    extract_relationship_graph: bool = True,
+    max_objects_per_repo: int | None = None,
 ) -> dict[str, object]:
     store.migrate()
     started_at = datetime.now(UTC)
@@ -70,6 +76,8 @@ def ingest_repository(
     parser_failures: list[dict[str, str]] = []
 
     for absolute_path, language in selected_files:
+        if max_objects_per_repo is not None and objects_seen >= max_objects_per_repo:
+            break
         relative_path = str(absolute_path.relative_to(repository.local_path))
         try:
             source = SourceFile(
@@ -95,18 +103,29 @@ def ingest_repository(
                 for parsed in parse_source_file(source, revision)
             ]
             keep_object_ids = {parsed.object_id for parsed in parsed_objects}
+            file_truncated = False
             for parsed in parsed_objects:
+                if max_objects_per_repo is not None and objects_seen >= max_objects_per_repo:
+                    file_truncated = True
+                    break
                 repository_objects.append(parsed)
                 objects_seen += 1
                 objects_changed += int(store.upsert_object(parsed))
-            objects_deleted += store.prune_objects_for_file(
-                repository.name, revision.commit, relative_path, keep_object_ids
-            )
+            if not file_truncated:
+                objects_deleted += store.prune_objects_for_file(
+                    repository.name, revision.commit, relative_path, keep_object_ids
+                )
         except Exception as error:  # noqa: BLE001 - failures are reported, not hidden
             parser_failures.append({"path": relative_path, "error": str(error)})
 
-    relationships = extract_relationships(repository_objects)
-    store.replace_relationships_for_repository(repository.name, revision.commit, relationships, datetime.now(UTC))
+    relationships = extract_relationships(repository_objects) if extract_relationship_graph else []
+    if extract_relationship_graph:
+        store.replace_relationships_for_repository(
+            repository.name,
+            revision.commit,
+            relationships,
+            datetime.now(UTC),
+        )
     report = {
         "repository": repository.name,
         "url": repository.url,
@@ -121,9 +140,11 @@ def ingest_repository(
         "files_changed": files_changed,
         "files_skipped_license": files_skipped_license,
         "objects_seen": objects_seen,
+        "max_objects_per_repo": max_objects_per_repo,
         "objects_changed": objects_changed,
         "objects_deleted": objects_deleted,
         "relationships": len(relationships),
+        "relationship_extraction": "enabled" if extract_relationship_graph else "skipped",
         "parser_failures": parser_failures,
         "started_at": started_at.isoformat(),
         "finished_at": datetime.now(UTC).isoformat(),

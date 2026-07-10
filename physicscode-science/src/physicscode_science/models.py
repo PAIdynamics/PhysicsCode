@@ -105,6 +105,7 @@ class SearchQuery:
     languages: tuple[str, ...] = ()
     object_types: tuple[str, ...] = ()
     licenses: tuple[str, ...] = ()
+    retrieval_channels: tuple[str, ...] = ("dense", "sparse", "symbol")
     top_k: int = 10
     include_content: bool = False
 
@@ -144,3 +145,15 @@ class SearchResult:
     reason: str
     summary: str
     content: str | None = None
+
+
+@dataclass(frozen=True)
+class BenchmarkQuery:
+    query_id: str
+    query: str
+    relevant_object_ids: tuple[str, ...] = ()
+    relevant_symbols: tuple[str, ...] = ()
+    relevant_repositories: tuple[str, ...] = ()
+    languages: tuple[str, ...] = ()
+    object_types: tuple[str, ...] = ()
+    licenses: tuple[str, ...] = ()

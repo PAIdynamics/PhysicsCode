@@ -81,6 +81,31 @@ void solve_heat_equation() {
             finally:
                 store.close()
 
+    def test_search_can_limit_retrieval_channels(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = _repo(root)
+            (repo / "solver.cpp").write_text("int newton_krylov_solver() {\n  return 0;\n}\n", encoding="utf-8")
+            _init_git_repo(repo)
+            store = ScienceStore(root / "science.sqlite")
+            try:
+                ingest_repository(_config(repo), store, root / "reports")
+                store.commit()
+
+                results = search(
+                    store,
+                    SearchQuery(
+                        "newton_krylov_solver",
+                        retrieval_channels=("symbol",),
+                        top_k=3,
+                    ),
+                )
+
+                self.assertEqual(results[0].symbol, "newton_krylov_solver")
+                self.assertEqual(results[0].retrieval_channels, ("symbol",))
+            finally:
+                store.close()
+
 
 def _repo(root: Path) -> Path:
     repo = root / "repo"

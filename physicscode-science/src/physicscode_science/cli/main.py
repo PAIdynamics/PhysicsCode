@@ -6,6 +6,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from physicscode_science.ingestion.pipeline import ingest_repositories
+from physicscode_science.evaluation.benchmarks import evaluate_search, load_benchmark_queries
 from physicscode_science.licensing.policy import load_license_policy
 from physicscode_science.models import SearchQuery
 from physicscode_science.registry.config import enabled_repositories
@@ -31,8 +32,19 @@ def main() -> None:
     search_command.add_argument("--language", action="append", default=[])
     search_command.add_argument("--object-type", action="append", default=[])
     search_command.add_argument("--license", action="append", default=[])
+    search_command.add_argument(
+        "--channel",
+        action="append",
+        choices=["dense", "sparse", "symbol"],
+        default=[],
+        help="Retrieval channel to use. Repeat for hybrid search. Defaults to all channels.",
+    )
     search_command.add_argument("--top-k", type=int, default=10)
     search_command.add_argument("--include-content", action="store_true")
+    evaluate = subcommands.add_parser("evaluate", help="Compare retrieval modes on benchmark queries")
+    evaluate.add_argument("--db", default=".science/physicscode-science.sqlite")
+    evaluate.add_argument("--queries", required=True)
+    evaluate.add_argument("--top-k", type=int, default=10)
     args = parser.parse_args()
 
     if args.command == "ingest":
@@ -61,6 +73,7 @@ def main() -> None:
                     languages=tuple(args.language),
                     object_types=tuple(args.object_type),
                     licenses=tuple(args.license),
+                    retrieval_channels=tuple(args.channel or ["dense", "sparse", "symbol"]),
                     top_k=args.top_k,
                     include_content=args.include_content,
                 ),
@@ -68,6 +81,14 @@ def main() -> None:
         finally:
             store.close()
         print(json.dumps([asdict(result) for result in results], indent=2, sort_keys=True))
+    if args.command == "evaluate":
+        store = ScienceStore(args.db)
+        try:
+            store.migrate()
+            report = evaluate_search(store, load_benchmark_queries(args.queries), top_k=args.top_k)
+        finally:
+            store.close()
+        print(json.dumps(report, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

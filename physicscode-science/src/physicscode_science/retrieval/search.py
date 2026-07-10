@@ -11,10 +11,15 @@ from physicscode_science.storage.sqlite import ScienceStore
 def search(store: ScienceStore, query: SearchQuery) -> list[SearchResult]:
     candidates = store.search_candidates(query)
     by_id = {candidate.object_id: candidate for candidate in candidates}
-    channels = {
+    all_channels = {
         "sparse": bm25_scores(query.query, candidates),
         "dense": hashed_vector_scores(query.query, candidates),
         "symbol": symbol_scores(query.query, candidates),
+    }
+    channels = {
+        key: value
+        for key, value in all_channels.items()
+        if key in set(query.retrieval_channels)
     }
     fused, source_channels = reciprocal_rank_fusion({key: value for key, value in channels.items() if value})
     ranked = sorted(fused.items(), key=lambda item: (-item[1], item[0]))[: query.top_k]

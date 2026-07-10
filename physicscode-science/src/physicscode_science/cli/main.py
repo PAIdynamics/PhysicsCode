@@ -5,6 +5,7 @@ import json
 import os
 from dataclasses import asdict
 from pathlib import Path
+from urllib.error import URLError
 
 from physicscode_science.api.server import run_server
 from physicscode_science.agentic.tasks import load_agentic_tasks
@@ -221,12 +222,21 @@ def main() -> None:
         try:
             store.migrate()
             if args.backend == "qdrant":
-                report = QdrantVectorIndex(
-                    args.qdrant_url,
-                    args.qdrant_collection,
-                    dimensions=args.dimensions,
-                    api_key=args.qdrant_api_key,
-                ).upsert_store(store)
+                try:
+                    report = QdrantVectorIndex(
+                        args.qdrant_url,
+                        args.qdrant_collection,
+                        dimensions=args.dimensions,
+                        api_key=args.qdrant_api_key,
+                    ).upsert_store(store)
+                except URLError as error:
+                    raise SystemExit(
+                        "Qdrant is not reachable. Start it first, for example:\n"
+                        "  docker compose up -d qdrant\n"
+                        "If Docker says permission denied, run that command with sudo or add your user "
+                        "to the docker group and log out/in.\n"
+                        f"Original error: {error}"
+                    ) from error
             else:
                 report = build_local_vector_index(
                     store,

@@ -134,20 +134,22 @@ class ScienceStore:
         return self.connection.total_changes > before
 
     def upsert_object(self, parsed: ParsedObject) -> bool:
-        before = self.connection.total_changes
+        metadata = _json_ready(asdict(parsed))
+        row = self.connection.execute(
+            "select content_hash, metadata_json from source_object where object_id = ?",
+            (parsed.object_id,),
+        ).fetchone()
+        if row and row["content_hash"] == parsed.content_hash:
+            existing = json.loads(row["metadata_json"])
+            if _semantic_payload(existing) == _semantic_payload(metadata):
+                return False
         self.connection.execute(
             """
-            insert into source_object
+            insert or replace into source_object
               (object_id, repository, repository_url, commit_sha, path, start_line, end_line,
                symbol, object_type, language, license, content_hash, parser_version,
                raw_content, metadata_json, updated_at)
             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            on conflict(object_id) do update set
-              content_hash=excluded.content_hash,
-              raw_content=excluded.raw_content,
-              metadata_json=excluded.metadata_json,
-              updated_at=excluded.updated_at
-            where source_object.content_hash != excluded.content_hash
             """,
             (
                 parsed.object_id,
@@ -164,11 +166,11 @@ class ScienceStore:
                 parsed.content_hash,
                 parsed.parser_version,
                 parsed.raw_content,
-                json.dumps(_json_ready(asdict(parsed)), sort_keys=True),
+                json.dumps(metadata, sort_keys=True),
                 parsed.ingestion_timestamp.isoformat(),
             ),
         )
-        return self.connection.total_changes > before
+        return True
 
     def prune_objects_for_file(
         self, repository: str, commit: str, path: str, keep_object_ids: set[str]
@@ -260,6 +262,12 @@ class ScienceStore:
         ]
         return [candidate for candidate in candidates if _domain_matches(candidate, query.domains)]
 
+    def parsed_objects(self) -> list[ParsedObject]:
+        rows = self.connection.execute(
+            "select metadata_json from source_object order by repository, path, start_line"
+        ).fetchall()
+        return [_parsed_object_from_json(json.loads(row["metadata_json"])) for row in rows]
+
     def get_candidate(self, object_id: str) -> SearchCandidate | None:
         row = self.connection.execute(
             """
@@ -305,6 +313,17 @@ def _json_ready(value: object) -> object:
     return value
 
 
+def _semantic_payload(value: dict[str, object]) -> dict[str, object]:
+    return {
+        "metadata": value.get("metadata", {}),
+        "summary_model": value.get("summary_model"),
+        "summary_model_version": value.get("summary_model_version"),
+        "embedding_model": value.get("embedding_model"),
+        "embedding_model_version": value.get("embedding_model_version"),
+        "parser_version": value.get("parser_version"),
+    }
+
+
 def _domain_matches(candidate: SearchCandidate, domains: tuple[str, ...]) -> bool:
     if not domains:
         return True
@@ -315,3 +334,43 @@ def _domain_matches(candidate: SearchCandidate, domains: tuple[str, ...]) -> boo
     if not isinstance(candidate_domains, list):
         return False
     return bool(set(domains) & set(str(domain) for domain in candidate_domains))
+
+
+def _parsed_object_from_json(data: dict[str, object]) -> ParsedObject:
+    return ParsedObject(
+        object_id=str(data["object_id"]),
+        object_type=str(data["object_type"]),
+        name=str(data["name"]),
+        qualified_name=str(data["qualified_name"]),
+        language=str(data["language"]),
+        repository=str(data["repository"]),
+        repository_url=str(data["repository_url"]),
+        commit=str(data["commit"]),
+        release=str(data["release"]) if data.get("release") is not None else None,
+        path=str(data["path"]),
+        start_line=int(data["start_line"]),
+        end_line=int(data["end_line"]),
+        signature=str(data["signature"]),
+        raw_content=str(data["raw_content"]),
+        documentation=str(data["documentation"]),
+        parent_symbol=str(data["parent_symbol"]) if data.get("parent_symbol") is not None else None,
+        dependencies=tuple(str(item) for item in data.get("dependencies", [])),
+        calls=tuple(str(item) for item in data.get("calls", [])),
+        called_by=tuple(str(item) for item in data.get("called_by", [])),
+        tests=tuple(str(item) for item in data.get("tests", [])),
+        examples=tuple(str(item) for item in data.get("examples", [])),
+        license=str(data["license"]),
+        copyright=tuple(str(item) for item in data.get("copyright", [])),
+        content_hash=str(data["content_hash"]),
+        ingestion_timestamp=datetime.fromisoformat(str(data["ingestion_timestamp"])),
+        parser_version=str(data["parser_version"]),
+        embedding_model=str(data["embedding_model"]) if data.get("embedding_model") is not None else None,
+        embedding_model_version=str(data["embedding_model_version"])
+        if data.get("embedding_model_version") is not None
+        else None,
+        summary_model=str(data["summary_model"]) if data.get("summary_model") is not None else None,
+        summary_model_version=str(data["summary_model_version"])
+        if data.get("summary_model_version") is not None
+        else None,
+        metadata=dict(data.get("metadata", {})),
+    )

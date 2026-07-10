@@ -6,6 +6,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from physicscode_science.api.server import run_server
+from physicscode_science.enrichment.rebuild import metadata_report, rebuild_metadata
 from physicscode_science.enrichment.taxonomy import load_taxonomy
 from physicscode_science.ingestion.pipeline import ingest_repositories
 from physicscode_science.evaluation.benchmarks import evaluate_search, load_benchmark_queries
@@ -56,6 +57,11 @@ def main() -> None:
     serve.add_argument("--port", type=int, default=8765)
     mcp = subcommands.add_parser("mcp", help="Run the science retrieval MCP stdio server")
     mcp.add_argument("--db", default=".science/physicscode-science.sqlite")
+    enrich = subcommands.add_parser("enrich-metadata", help="Regenerate scientific metadata for stored objects")
+    enrich.add_argument("--db", default=".science/physicscode-science.sqlite")
+    enrich.add_argument("--taxonomy", default="config/taxonomy.yaml")
+    report_metadata = subcommands.add_parser("metadata-report", help="Report scientific metadata coverage")
+    report_metadata.add_argument("--db", default=".science/physicscode-science.sqlite")
     args = parser.parse_args()
 
     if args.command == "ingest":
@@ -106,6 +112,23 @@ def main() -> None:
         run_server(args.db, host=args.host, port=args.port)
     if args.command == "mcp":
         serve_stdio(args.db)
+    if args.command == "enrich-metadata":
+        store = ScienceStore(args.db)
+        try:
+            store.migrate()
+            report = rebuild_metadata(store, load_taxonomy(args.taxonomy))
+            store.commit()
+        finally:
+            store.close()
+        print(json.dumps(report, indent=2, sort_keys=True))
+    if args.command == "metadata-report":
+        store = ScienceStore(args.db)
+        try:
+            store.migrate()
+            report = metadata_report(store.parsed_objects())
+        finally:
+            store.close()
+        print(json.dumps(report, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

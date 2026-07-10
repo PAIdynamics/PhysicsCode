@@ -6,7 +6,7 @@ from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
-from physicscode_science.models import ParsedObject, RepositoryRevision
+from physicscode_science.models import ParsedObject, RepositoryRevision, SourceFile
 
 
 class ScienceStore:
@@ -52,9 +52,23 @@ class ScienceStore:
               updated_at text not null
             );
 
+            create table if not exists source_file (
+              repository text not null,
+              commit_sha text not null,
+              path text not null,
+              language text not null,
+              license text not null,
+              license_source text not null,
+              content_hash text not null,
+              snapshot_path text not null,
+              ingested_at text not null,
+              primary key (repository, commit_sha, path)
+            );
+
             create index if not exists source_object_repo_idx on source_object(repository);
             create index if not exists source_object_symbol_idx on source_object(symbol);
             create index if not exists source_object_hash_idx on source_object(content_hash);
+            create index if not exists source_file_hash_idx on source_file(content_hash);
             """
         )
         self.connection.commit()
@@ -85,6 +99,39 @@ class ScienceStore:
                 ingested_at.isoformat(),
             ),
         )
+
+    def upsert_source_file(self, source: SourceFile, snapshot_path: str, ingested_at: datetime) -> bool:
+        before = self.connection.total_changes
+        self.connection.execute(
+            """
+            insert into source_file
+              (repository, commit_sha, path, language, license, license_source,
+               content_hash, snapshot_path, ingested_at)
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            on conflict(repository, commit_sha, path) do update set
+              language=excluded.language,
+              license=excluded.license,
+              license_source=excluded.license_source,
+              content_hash=excluded.content_hash,
+              snapshot_path=excluded.snapshot_path,
+              ingested_at=excluded.ingested_at
+            where source_file.content_hash != excluded.content_hash
+               or source_file.license != excluded.license
+               or source_file.language != excluded.language
+            """,
+            (
+                source.repository,
+                source.commit,
+                source.path,
+                source.language,
+                source.license.spdx_id,
+                source.license.source,
+                source.content_hash,
+                snapshot_path,
+                ingested_at.isoformat(),
+            ),
+        )
+        return self.connection.total_changes > before
 
     def upsert_object(self, parsed: ParsedObject) -> bool:
         before = self.connection.total_changes
@@ -123,6 +170,32 @@ class ScienceStore:
         )
         return self.connection.total_changes > before
 
+    def prune_objects_for_file(
+        self, repository: str, commit: str, path: str, keep_object_ids: set[str]
+    ) -> int:
+        before = self.connection.total_changes
+        if keep_object_ids:
+            placeholders = ",".join("?" for _ in keep_object_ids)
+            self.connection.execute(
+                f"""
+                delete from source_object
+                where repository = ?
+                  and commit_sha = ?
+                  and path = ?
+                  and object_id not in ({placeholders})
+                """,
+                (repository, commit, path, *sorted(keep_object_ids)),
+            )
+        else:
+            self.connection.execute(
+                """
+                delete from source_object
+                where repository = ? and commit_sha = ? and path = ?
+                """,
+                (repository, commit, path),
+            )
+        return self.connection.total_changes - before
+
     def commit(self) -> None:
         self.connection.commit()
 
@@ -134,6 +207,16 @@ class ScienceStore:
                 "select count(*) from source_object where repository = ?", (repository,)
             ).fetchone()[0]
         )
+
+    def source_file_hash(self, repository: str, commit: str, path: str) -> str | None:
+        row = self.connection.execute(
+            """
+            select content_hash from source_file
+            where repository = ? and commit_sha = ? and path = ?
+            """,
+            (repository, commit, path),
+        ).fetchone()
+        return str(row[0]) if row else None
 
 
 def _json_ready(value: object) -> object:

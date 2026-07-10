@@ -37,6 +37,22 @@ class LicenseFinding:
 
 
 @dataclass(frozen=True)
+class LicensePolicy:
+    allowed: tuple[str, ...]
+    reference_only: tuple[str, ...]
+    unknown_policy: str
+
+    def allows(self, finding: LicenseFinding, repository_policy: str) -> bool:
+        if finding.spdx_id == "NOASSERTION":
+            return self.unknown_policy == "include"
+        if finding.spdx_id in self.allowed:
+            return True
+        if finding.spdx_id in self.reference_only:
+            return repository_policy == "reference-only"
+        return False
+
+
+@dataclass(frozen=True)
 class SourceFile:
     repository: str
     commit: str

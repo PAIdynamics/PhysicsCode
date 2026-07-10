@@ -34,6 +34,7 @@ Phase 1 modules:
 - `ingestion`: filters files, hashes content, invokes parsers, and writes reports.
 - `parsers`: extracts first-pass semantic objects with stable provenance.
 - `storage`: persists repository revisions and parsed objects.
+- `storage.content_store`: stores source snapshots by content hash.
 - `cli`: exposes deterministic ingestion jobs.
 
 Future phases will add embeddings, hybrid search, MCP tools, scientific

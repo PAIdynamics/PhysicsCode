@@ -29,3 +29,14 @@ Run a local ingestion report against the configured reference repositories:
 cd physicscode-science
 python -m physicscode_science.cli.main ingest --registry config/repositories.yaml --db .science/physicscode-science.sqlite --report .science/reports
 ```
+
+The CLI also accepts explicit license policy and source snapshot locations:
+
+```sh
+python -m physicscode_science.cli.main ingest \
+  --registry config/repositories.yaml \
+  --licenses config/licenses.yaml \
+  --db .science/physicscode-science.sqlite \
+  --report .science/reports \
+  --content-store .science/content
+```

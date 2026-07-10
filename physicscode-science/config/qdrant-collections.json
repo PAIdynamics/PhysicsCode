@@ -1,0 +1,43 @@
+{
+  "collections": [
+    {
+      "name": "physicscode_science_raw_source",
+      "vector_size": 1536,
+      "distance": "Cosine",
+      "payload_indexes": [
+        "repository",
+        "commit",
+        "path",
+        "object_type",
+        "language",
+        "license",
+        "domains",
+        "algorithms"
+      ]
+    },
+    {
+      "name": "physicscode_science_signature",
+      "vector_size": 1536,
+      "distance": "Cosine",
+      "payload_indexes": [
+        "repository",
+        "commit",
+        "symbol",
+        "language",
+        "license"
+      ]
+    },
+    {
+      "name": "physicscode_science_summary",
+      "vector_size": 1536,
+      "distance": "Cosine",
+      "payload_indexes": [
+        "repository",
+        "commit",
+        "object_type",
+        "domains",
+        "confidence"
+      ]
+    }
+  ]
+}

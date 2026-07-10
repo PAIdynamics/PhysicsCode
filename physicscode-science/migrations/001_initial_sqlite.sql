@@ -27,3 +27,16 @@ create table if not exists source_object (
   metadata_json text not null,
   updated_at text not null
 );
+
+create table if not exists source_file (
+  repository text not null,
+  commit_sha text not null,
+  path text not null,
+  language text not null,
+  license text not null,
+  license_source text not null,
+  content_hash text not null,
+  snapshot_path text not null,
+  ingested_at text not null,
+  primary key (repository, commit_sha, path)
+);

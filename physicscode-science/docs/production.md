@@ -57,7 +57,7 @@ Run the MCP/API process with:
 ```sh
 PHYSICSCODE_SCIENCE_VECTOR_BACKEND=qdrant
 PHYSICSCODE_SCIENCE_QDRANT_URL=http://127.0.0.1:6333
-PHYSICSCODE_SCIENCE_QDRANT_COLLECTION=physicscode_science_bge_large
+PHYSICSCODE_SCIENCE_QDRANT_COLLECTION=physicscode_science_bge_m3
 ```
 
 ## Embeddings
@@ -69,19 +69,18 @@ when an embedding model is served:
 PYTHONPATH=src python3 -m physicscode_science.cli.main build-vector-index \
   --db .science/physicscode-science.sqlite \
   --backend qdrant \
-  --qdrant-collection physicscode_science_bge_large \
+  --qdrant-collection physicscode_science_bge_m3 \
   --embedding-provider vllm \
   --embedding-url http://127.0.0.1:8000 \
-  --embedding-model paidynamics/bge-large-en-v1.5-pai \
+  --embedding-model paidynamics/bge-m3-pai \
   --embedding-api-key "$(cat ~/.config/vllm/client_api_key)"
 ```
 
 The local vLLM proxy exposes `/v1/embeddings` through
-`paidynamics/bge-large-en-v1.5-pai`, backed by `BAAI/bge-large-en-v1.5`, for
-the production 1024-dimensional collection. `paidynamics/bge-small-en-v1.5-pai`
-is also available as a lightweight 384-dimensional fallback. On single-GPU
-hosts, the proxy may stop the large chat model while the embedding model is
-warm.
+`paidynamics/bge-m3-pai`, backed by `BAAI/bge-m3`, for the preferred production
+collection. `paidynamics/bge-large-en-v1.5-pai` remains available as a proven
+1024-dimensional fallback, and `paidynamics/bge-small-en-v1.5-pai` is available
+as a lightweight 384-dimensional fallback.
 
 ## Readiness
 

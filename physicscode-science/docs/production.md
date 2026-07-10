@@ -63,7 +63,7 @@ PYTHONPATH=src python3 -m physicscode_science.cli.main build-vector-index \
   --db .science/physicscode-science.sqlite \
   --backend qdrant \
   --qdrant-url http://127.0.0.1:6333 \
-  --qdrant-collection physicscode_science_multiview \
+  --qdrant-collection physicscode_science_multiview_bge_m3 \
   --qdrant-vector-mode multi \
   --embedding-provider vllm \
   --embedding-url http://127.0.0.1:8000 \
@@ -77,7 +77,7 @@ Run the MCP/API process with:
 ```sh
 PHYSICSCODE_SCIENCE_VECTOR_BACKEND=qdrant
 PHYSICSCODE_SCIENCE_QDRANT_URL=http://127.0.0.1:6333
-PHYSICSCODE_SCIENCE_QDRANT_COLLECTION=physicscode_science_multiview
+PHYSICSCODE_SCIENCE_QDRANT_COLLECTION=physicscode_science_multiview_bge_m3
 PHYSICSCODE_SCIENCE_EMBEDDING_PROVIDER=vllm
 PHYSICSCODE_SCIENCE_EMBEDDING_URL=http://127.0.0.1:8000
 PHYSICSCODE_SCIENCE_EMBEDDING_MODEL=paidynamics/bge-m3-pai

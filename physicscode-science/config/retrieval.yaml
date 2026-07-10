@@ -10,7 +10,7 @@ retrieval:
     qdrant_url_env: PHYSICSCODE_SCIENCE_QDRANT_URL
     qdrant_backend_env: PHYSICSCODE_SCIENCE_VECTOR_BACKEND
     qdrant_collection_env: PHYSICSCODE_SCIENCE_QDRANT_COLLECTION
-    qdrant_default_collection: physicscode_science_summary
+    qdrant_default_collection: physicscode_science_multiview_bge_m3
   sparse_enabled: true
   symbol_enabled: true
   license_filter:

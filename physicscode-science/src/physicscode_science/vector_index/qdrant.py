@@ -86,7 +86,10 @@ class QdrantVectorIndex:
 
     def upsert_store(self, store: ScienceStore, batch_size: int = 128) -> dict[str, object]:
         candidates = store.search_candidates(SearchQuery(query="", top_k=1_000_000))
-        provider = self.embedding_provider or configured_embedding_provider(dimensions=self.dimensions)
+        provider = self.embedding_provider or configured_embedding_provider(
+            dimensions=self.dimensions,
+            allow_fallback=False,
+        )
         model = provider.model()
         self.dimensions = model.dimensions
         self.ensure_collection()

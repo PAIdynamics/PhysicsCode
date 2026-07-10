@@ -8,29 +8,43 @@ from physicscode_science.retrieval.tokenize import split_identifier, tokenize
 from physicscode_science.retrieval.views import generated_view_text, scientific_metadata_text
 
 
+DEFAULT_VECTOR_DIMENSIONS = 1536
+
+
 def hashed_vector_scores(query: str, candidates: list[SearchCandidate], dimensions: int = 256) -> dict[str, float]:
-    query_vector = _vector(tokenize(query), dimensions)
+    query_vector = vectorize_tokens(tokenize(query), dimensions)
     if not query_vector:
         return {}
     scores: dict[str, float] = {}
     for candidate in candidates:
         score = _cosine(
             query_vector,
-            _vector(
-                split_identifier(candidate.symbol)
-                + tokenize(candidate.path)
-                + tokenize(generated_view_text(candidate))
-                + tokenize(scientific_metadata_text(candidate))
-                + tokenize(candidate.raw_content[:8000]),
-                dimensions,
-            ),
+            vectorize_candidate(candidate, dimensions),
         )
         if score > 0:
             scores[candidate.object_id] = score
     return scores
 
 
-def _vector(tokens: list[str], dimensions: int) -> dict[int, float]:
+def vectorize_candidate(
+    candidate: SearchCandidate,
+    dimensions: int = DEFAULT_VECTOR_DIMENSIONS,
+) -> dict[int, float]:
+    return vectorize_tokens(
+        split_identifier(candidate.symbol)
+        + tokenize(candidate.path)
+        + tokenize(generated_view_text(candidate))
+        + tokenize(scientific_metadata_text(candidate))
+        + tokenize(candidate.raw_content[:8000]),
+        dimensions,
+    )
+
+
+def vectorize_query(query: str, dimensions: int = DEFAULT_VECTOR_DIMENSIONS) -> dict[int, float]:
+    return vectorize_tokens(tokenize(query), dimensions)
+
+
+def vectorize_tokens(tokens: list[str], dimensions: int) -> dict[int, float]:
     vector: dict[int, float] = {}
     for token in tokens:
         digest = hashlib.sha256(token.encode("utf-8")).digest()
@@ -40,7 +54,7 @@ def _vector(tokens: list[str], dimensions: int) -> dict[int, float]:
     return vector
 
 
-def _cosine(left: dict[int, float], right: dict[int, float]) -> float:
+def cosine(left: dict[int, float], right: dict[int, float]) -> float:
     if not left or not right:
         return 0.0
     dot = sum(value * right.get(index, 0.0) for index, value in left.items())
@@ -49,3 +63,13 @@ def _cosine(left: dict[int, float], right: dict[int, float]) -> float:
     if left_norm == 0 or right_norm == 0:
         return 0.0
     return max(0.0, dot / (left_norm * right_norm))
+
+
+def dense_vector(vector: dict[int, float], dimensions: int) -> list[float]:
+    dense = [0.0] * dimensions
+    for index, value in vector.items():
+        dense[index] = value
+    return dense
+
+
+_cosine = cosine

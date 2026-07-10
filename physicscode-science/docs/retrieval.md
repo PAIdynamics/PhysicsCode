@@ -4,7 +4,7 @@ Phase 2 implements an offline, deterministic hybrid retrieval MVP over the
 SQLite development store. It provides:
 
 - sparse BM25 search
-- deterministic hashed-vector search as a local dense-search stand-in
+- persisted vector-index search with deterministic hashed-vector fallback
 - exact symbol search
 - reciprocal-rank fusion
 - repository, domain, language, object-type, and license filters
@@ -27,9 +27,37 @@ service:
 - raw content and structured metadata JSON
 - source-file snapshot hash through the content-addressed store
 
-The local hashed-vector channel is not a replacement for production embeddings.
-It is a deterministic acceptance-test scaffold that preserves the dense-channel
-interface until Qdrant and configured embedding providers are enabled.
+The local hashed-vector channel is not a replacement for production embeddings,
+but dense retrieval now has a real vector-index boundary. Local development uses
+`.science/vector-index.json` when present; production deployments should use
+Qdrant for nearest-neighbor search while SQLite remains the provenance and
+metadata store.
+
+Build the local development vector index after ingestion:
+
+```sh
+python -m physicscode_science.cli.main build-vector-index \
+  --db .science/physicscode-science.sqlite \
+  --backend local \
+  --output .science/vector-index.json
+```
+
+Build or refresh a Qdrant production collection:
+
+```sh
+python -m physicscode_science.cli.main build-vector-index \
+  --db .science/physicscode-science.sqlite \
+  --backend qdrant \
+  --qdrant-url http://127.0.0.1:6333 \
+  --qdrant-collection physicscode_science_summary
+```
+
+At query time, set `PHYSICSCODE_SCIENCE_VECTOR_BACKEND=qdrant` and optionally
+`PHYSICSCODE_SCIENCE_QDRANT_URL`,
+`PHYSICSCODE_SCIENCE_QDRANT_COLLECTION`, and
+`PHYSICSCODE_SCIENCE_QDRANT_API_KEY`. If Qdrant is unavailable, search falls
+back to the local vector index when present and otherwise to deterministic dense
+scoring.
 
 Generated views are included in local sparse and hashed-vector retrieval. They
 are clearly marked as deterministic generated metadata and should be retained

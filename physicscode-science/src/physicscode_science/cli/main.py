@@ -19,6 +19,8 @@ from physicscode_science.registry.config import enabled_repositories
 from physicscode_science.retrieval.search import search
 from physicscode_science.storage.content_store import ContentStore
 from physicscode_science.storage.sqlite import ScienceStore
+from physicscode_science.vector_index.local import build_local_vector_index
+from physicscode_science.vector_index.qdrant import QdrantVectorIndex
 
 
 def main() -> None:
@@ -63,6 +65,17 @@ def main() -> None:
     agentic.add_argument("--db", default=".science/physicscode-science.sqlite")
     agentic.add_argument("--tasks", required=True)
     agentic.add_argument("--output", default=".science/agentic-reports")
+    vector_index = subcommands.add_parser(
+        "build-vector-index",
+        help="Build or refresh the dense vector index used by search",
+    )
+    vector_index.add_argument("--db", default=".science/physicscode-science.sqlite")
+    vector_index.add_argument("--backend", choices=["local", "qdrant"], default="local")
+    vector_index.add_argument("--output", default=".science/vector-index.json")
+    vector_index.add_argument("--dimensions", type=int, default=1536)
+    vector_index.add_argument("--qdrant-url", default="http://127.0.0.1:6333")
+    vector_index.add_argument("--qdrant-collection", default="physicscode_science_summary")
+    vector_index.add_argument("--qdrant-api-key")
     serve = subcommands.add_parser("serve", help="Run the science retrieval HTTP API")
     serve.add_argument("--db", default=".science/physicscode-science.sqlite")
     serve.add_argument("--host", default="127.0.0.1")
@@ -132,6 +145,26 @@ def main() -> None:
                 load_agentic_tasks(args.tasks),
                 args.output,
             )
+        finally:
+            store.close()
+        print(json.dumps(report, indent=2, sort_keys=True))
+    if args.command == "build-vector-index":
+        store = ScienceStore(args.db)
+        try:
+            store.migrate()
+            if args.backend == "qdrant":
+                report = QdrantVectorIndex(
+                    args.qdrant_url,
+                    args.qdrant_collection,
+                    dimensions=args.dimensions,
+                    api_key=args.qdrant_api_key,
+                ).upsert_store(store)
+            else:
+                report = build_local_vector_index(
+                    store,
+                    args.output,
+                    dimensions=args.dimensions,
+                )
         finally:
             store.close()
         print(json.dumps(report, indent=2, sort_keys=True))

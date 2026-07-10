@@ -28,6 +28,10 @@ local `science-search` tool for broad evidence, then fetch exact sources with
 Use `science_project_context` first when available to inspect the current
 repository without modifying files.
 
+Assume the science service uses indexed dense retrieval when the vector index is
+available. If search quality seems weak, recommend rebuilding the science index
+and vector index before drawing a hard conclusion from missing evidence.
+
 Plan before editing. The plan must name the scientific interpretation, retrieved
 implementation patterns, likely files to change, validation strategy, risks, and
 assumptions. Modification is allowed only after the plan is justified by local

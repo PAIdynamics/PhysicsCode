@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from physicscode_science.models import SearchCandidate, SearchQuery, SearchResult
 from physicscode_science.retrieval.bm25 import bm25_scores
 from physicscode_science.retrieval.fusion import reciprocal_rank_fusion
@@ -9,6 +11,8 @@ from physicscode_science.retrieval.views import generated_view_text
 from physicscode_science.reranking.deduplicate import deduplicate_ranked, diversity_select
 from physicscode_science.reranking.scoring import RankedCandidate, rerank_candidates
 from physicscode_science.storage.sqlite import ScienceStore
+from physicscode_science.vector_index.local import default_vector_index_path, local_vector_scores
+from physicscode_science.vector_index.qdrant import QdrantVectorIndex
 
 
 def search(store: ScienceStore, query: SearchQuery) -> list[SearchResult]:
@@ -16,7 +20,7 @@ def search(store: ScienceStore, query: SearchQuery) -> list[SearchResult]:
     by_id = {candidate.object_id: candidate for candidate in candidates}
     all_channels = {
         "sparse": bm25_scores(query.query, candidates),
-        "dense": hashed_vector_scores(query.query, candidates),
+        "dense": _dense_scores(store, query, candidates),
         "symbol": symbol_scores(query.query, candidates),
     }
     channels = {
@@ -54,6 +58,32 @@ def _rank(
     if query.diversity:
         return diversity_select(ranked, query.top_k)
     return ranked[: query.top_k]
+
+
+def _dense_scores(
+    store: ScienceStore,
+    query: SearchQuery,
+    candidates: list[SearchCandidate],
+) -> dict[str, float]:
+    if os.environ.get("PHYSICSCODE_SCIENCE_VECTOR_BACKEND") == "qdrant":
+        candidate_ids = {candidate.object_id for candidate in candidates}
+        try:
+            scores = QdrantVectorIndex(
+                os.environ.get("PHYSICSCODE_SCIENCE_QDRANT_URL", "http://127.0.0.1:6333"),
+                os.environ.get("PHYSICSCODE_SCIENCE_QDRANT_COLLECTION", "physicscode_science_summary"),
+                api_key=os.environ.get("PHYSICSCODE_SCIENCE_QDRANT_API_KEY"),
+            ).search(query.query, limit=max(query.top_k * 20, 50))
+            return {
+                object_id: score
+                for object_id, score in scores.items()
+                if object_id in candidate_ids
+            }
+        except OSError:
+            pass
+    index_path = default_vector_index_path(store)
+    if index_path.exists():
+        return local_vector_scores(query.query, candidates, index_path)
+    return hashed_vector_scores(query.query, candidates)
 
 
 def _result(

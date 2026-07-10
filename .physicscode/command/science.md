@@ -15,7 +15,8 @@ Workflow:
 3. Build several complementary retrieval queries.
 4. Retrieve source-backed evidence with the `science` MCP tools or local
    `science-search` / `science-source` tools when the science index is available.
-5. Rerank and filter by relevance, compatibility, and license.
+5. Use indexed dense retrieval when available, then rerank and filter by
+   relevance, compatibility, and license.
 6. Present an evidence-backed plan before editing.
 7. Modify code only when authorized.
 8. Validate with build, tests, and scientific checks where applicable.

@@ -79,6 +79,11 @@ outside the retrieval service while recording the plan-before-edit workflow,
 retrieval evidence, source/license provenance, compilation checks, test checks,
 scientific validation checks, and no-retrieval baseline comparisons.
 
+The dense retrieval channel now has a vector-index boundary. Local development
+uses a persisted JSON index beside the SQLite database; production deployments
+should use Qdrant through the same build/search contract. SQLite remains the
+source of truth for metadata, provenance, licenses, and source reconstruction.
+
 ## Integration Plan
 
 1. Keep ingestion and retrieval independently testable in `physicscode-science/`.

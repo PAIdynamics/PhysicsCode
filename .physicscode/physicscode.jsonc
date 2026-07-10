@@ -19,6 +19,7 @@
       ],
       "environment": {
         "PYTHONPATH": "/home/mohsen/github/code/physicscode-science/src",
+        "PHYSICSCODE_SCIENCE_VECTOR_BACKEND": "local",
       },
       "enabled": true,
     },

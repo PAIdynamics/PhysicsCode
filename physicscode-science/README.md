@@ -51,6 +51,15 @@ python -m physicscode_science.cli.main search \
   --top-k 10
 ```
 
+Build the dense vector index used by the search channel:
+
+```sh
+python -m physicscode_science.cli.main build-vector-index \
+  --db .science/physicscode-science.sqlite \
+  --backend local \
+  --output .science/vector-index.json
+```
+
 Compare retrieval modes on a benchmark file:
 
 ```sh
@@ -85,6 +94,10 @@ neighbors under a strict budget.
 
 Reranking is enabled by default. Use `--no-rerank`, `--no-deduplicate`, or
 `--no-diversity` on `search` for retrieval experiments.
+
+Dense retrieval prefers a persisted vector index when `.science/vector-index.json`
+exists. Production can use Qdrant by building the index with `--backend qdrant`
+and setting `PHYSICSCODE_SCIENCE_VECTOR_BACKEND=qdrant`.
 
 Agentic validation records a plan-before-edit workflow, retrieval evidence,
 source/license provenance, compilation, tests, scientific validation, and a

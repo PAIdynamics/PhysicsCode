@@ -69,6 +69,11 @@ stored in the relational database and are used by `science_get_context` to add
 declarations, called helpers, tests, examples, documentation, and includes when
 they fit the context budget.
 
+Phase 6 adds deterministic reranking, duplicate suppression, diversity-aware
+selection, result explanations, retrieval-mode evaluation, and context budget
+accounting. The reranker is interface-shaped so model-based rerankers can be
+added later without changing retrieval callers.
+
 ## Integration Plan
 
 1. Keep ingestion and retrieval independently testable in `physicscode-science/`.

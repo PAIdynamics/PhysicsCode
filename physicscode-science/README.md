@@ -74,6 +74,9 @@ Relationship-aware context is available through the MCP tool
 `science_get_context`; it retrieves matching objects and expands selected graph
 neighbors under a strict budget.
 
+Reranking is enabled by default. Use `--no-rerank`, `--no-deduplicate`, or
+`--no-diversity` on `search` for retrieval experiments.
+
 Run the local HTTP API:
 
 ```sh

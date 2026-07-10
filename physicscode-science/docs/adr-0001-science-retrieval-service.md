@@ -50,3 +50,5 @@ PhysicsCode integration will happen through command, agent, and MCP boundaries:
   views, metadata regeneration, and metadata review reports.
 - Phase 5: add relationship extraction, relational graph storage, and
   budget-constrained context expansion.
+- Phase 6: add reranking, deduplication, diversity-aware selection, context
+  compression, and retrieval explanations.

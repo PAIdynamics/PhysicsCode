@@ -13,6 +13,8 @@ SQLite development store. It provides:
 - retrieval-mode comparison through the evaluation harness
 - generated scientific summary/query views from Phase 4
 - relationship-aware context expansion from Phase 5
+- deterministic reranking, deduplication, diversity selection, and context
+  compression from Phase 6
 
 The storage schema keeps the fields required by the future production retrieval
 service:
@@ -37,6 +39,10 @@ only while benchmark results show they improve retrieval quality.
 relationship graph neighbors. Expansion obeys a character budget and includes
 relationship type, confidence, evidence, and exact source provenance for each
 neighbor.
+
+Search results include reranking explanations. Reranking can be disabled for
+benchmark comparisons with `--no-rerank`, and deduplication/diversity selection
+can be disabled independently.
 
 Example search:
 

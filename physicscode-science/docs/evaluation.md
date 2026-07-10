@@ -5,7 +5,8 @@ Phase 2 includes a deterministic retrieval evaluator. It compares:
 - dense only
 - sparse only
 - symbol only
-- hybrid dense+sparse+symbol
+- hybrid dense+sparse+symbol without reranking
+- hybrid dense+sparse+symbol with reranking
 
 Metrics currently reported:
 
@@ -31,3 +32,7 @@ tests, examples, and license-constrained retrieval.
 
 Phase 4 generated views should be evaluated against this benchmark before they
 are expanded or replaced with model-generated summaries.
+
+Phase 6 reranking should be evaluated by comparing `hybrid_no_rerank` and
+`hybrid_rerank`, including latency and result diversity once production
+instrumentation is added.

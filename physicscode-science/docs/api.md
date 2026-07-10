@@ -56,6 +56,9 @@ Request:
   "object_types": ["function", "example"],
   "licenses": ["Apache-2.0"],
   "retrieval_channels": ["dense", "sparse", "symbol"],
+  "rerank": true,
+  "deduplicate": true,
+  "diversity": true,
   "top_k": 10,
   "include_content": false
 }

@@ -98,7 +98,16 @@ class QdrantVectorIndex:
         }
 
     def search(self, query: str, limit: int = 50) -> dict[str, float]:
-        provider = self.embedding_provider or configured_embedding_provider(dimensions=self.dimensions)
+        provider = self.embedding_provider or configured_embedding_provider(
+            dimensions=self.dimensions,
+            allow_fallback=False,
+        )
+        model = provider.model()
+        if model.dimensions != self.dimensions:
+            raise ValueError(
+                f"Qdrant collection {self.collection!r} expects {self.dimensions}-dimensional "
+                f"vectors, but embedding model {model.model!r} returns {model.dimensions}"
+            )
         payload = {
             "vector": provider.embed_text(query),
             "limit": limit,

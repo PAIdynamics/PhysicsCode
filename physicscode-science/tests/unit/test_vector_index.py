@@ -2,6 +2,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from physicscode_science.ingestion.pipeline import ingest_repository
 from physicscode_science.models import RepositoryConfig, SearchQuery
@@ -113,6 +114,21 @@ int poisson_multigrid_solver() { return 1; }
 
         with self.assertRaisesRegex(ValueError, "vector size 1536, expected 384"):
             index.ensure_collection()
+
+    def test_qdrant_search_does_not_use_hash_fallback(self):
+        index = QdrantVectorIndex("http://qdrant.invalid", "science", dimensions=1024)
+
+        with mock.patch.dict(
+            "os.environ",
+            {
+                "PHYSICSCODE_SCIENCE_EMBEDDING_PROVIDER": "vllm",
+                "PHYSICSCODE_SCIENCE_EMBEDDING_MODEL": "paidynamics/bge-m3-pai",
+                "PHYSICSCODE_SCIENCE_EMBEDDING_URL": "http://127.0.0.1:1",
+            },
+            clear=True,
+        ):
+            with self.assertRaises(Exception):
+                index.search("poisson")
 
 
 def _store_with_repo(root: Path, repo: Path) -> ScienceStore:

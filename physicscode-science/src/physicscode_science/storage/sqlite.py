@@ -373,6 +373,30 @@ class ScienceStore:
     def relationship_count(self) -> int:
         return int(self.connection.execute("select count(*) from source_relationship").fetchone()[0])
 
+    def relationship_neighbors(self, object_id: str, limit: int = 20) -> list[dict[str, object]]:
+        rows = self.connection.execute(
+            """
+            select relationship.source_id,
+                   relationship.target_id,
+                   relationship.relationship_type,
+                   relationship.confidence,
+                   relationship.evidence,
+                   relationship.extractor,
+                   source.symbol as source_symbol,
+                   target.symbol as target_symbol,
+                   source.path as source_path,
+                   target.path as target_path
+            from source_relationship relationship
+            join source_object source on source.object_id = relationship.source_id
+            join source_object target on target.object_id = relationship.target_id
+            where relationship.source_id = ? or relationship.target_id = ?
+            order by relationship.confidence desc, relationship.relationship_type, relationship.target_id
+            limit ?
+            """,
+            (object_id, object_id, limit),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
 
 def _json_ready(value: object) -> object:
     if isinstance(value, datetime):

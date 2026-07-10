@@ -5,6 +5,7 @@ from typing import Any
 
 from physicscode_science.models import SearchQuery
 from physicscode_science.context.project import inspect_project
+from physicscode_science.graph.context import get_context
 from physicscode_science.retrieval.search import search
 from physicscode_science.storage.sqlite import ScienceStore
 
@@ -58,6 +59,7 @@ def tool_definitions() -> list[dict[str, Any]]:
                 "properties": {
                     "query": {"type": "string"},
                     "top_k": {"type": "integer", "minimum": 1, "maximum": 20},
+                    "max_chars": {"type": "integer", "minimum": 500, "maximum": 50000},
                 },
                 "required": ["query"],
             },
@@ -106,29 +108,12 @@ def call_tool(db_path: str, name: str, arguments: dict[str, Any]) -> dict[str, A
                 ]
             }
         if name == "science_get_context":
-            results = search(
+            return get_context(
                 store,
-                SearchQuery(
-                    query=str(arguments["query"]),
-                    top_k=int(arguments.get("top_k", 5)),
-                    include_content=False,
-                ),
+                str(arguments["query"]),
+                top_k=int(arguments.get("top_k", 5)),
+                max_chars=int(arguments.get("max_chars", 6000)),
             )
-            return {
-                "context": [
-                    {
-                        "repository": result.repository,
-                        "commit": result.commit,
-                        "path": result.path,
-                        "line_range": [result.start_line, result.end_line],
-                        "symbol": result.symbol,
-                        "license": result.license,
-                        "summary": result.summary,
-                        "result_id": result.result_id,
-                    }
-                    for result in results
-                ]
-            }
         if name == "science_check_license":
             candidate = store.get_candidate(str(arguments["object_id"]))
             if not candidate:

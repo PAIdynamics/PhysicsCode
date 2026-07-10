@@ -6,6 +6,8 @@ from dataclasses import asdict
 from pathlib import Path
 
 from physicscode_science.api.server import run_server
+from physicscode_science.agentic.tasks import load_agentic_tasks
+from physicscode_science.agentic.workflow import run_agentic_benchmark
 from physicscode_science.enrichment.rebuild import metadata_report, rebuild_metadata
 from physicscode_science.enrichment.taxonomy import load_taxonomy
 from physicscode_science.ingestion.pipeline import ingest_repositories
@@ -54,6 +56,13 @@ def main() -> None:
     evaluate.add_argument("--db", default=".science/physicscode-science.sqlite")
     evaluate.add_argument("--queries", required=True)
     evaluate.add_argument("--top-k", type=int, default=10)
+    agentic = subcommands.add_parser(
+        "agentic-evaluate",
+        help="Run plan/evidence/compile/test/scientific validation tasks with a no-retrieval baseline",
+    )
+    agentic.add_argument("--db", default=".science/physicscode-science.sqlite")
+    agentic.add_argument("--tasks", required=True)
+    agentic.add_argument("--output", default=".science/agentic-reports")
     serve = subcommands.add_parser("serve", help="Run the science retrieval HTTP API")
     serve.add_argument("--db", default=".science/physicscode-science.sqlite")
     serve.add_argument("--host", default="127.0.0.1")
@@ -111,6 +120,18 @@ def main() -> None:
         try:
             store.migrate()
             report = evaluate_search(store, load_benchmark_queries(args.queries), top_k=args.top_k)
+        finally:
+            store.close()
+        print(json.dumps(report, indent=2, sort_keys=True))
+    if args.command == "agentic-evaluate":
+        store = ScienceStore(args.db)
+        try:
+            store.migrate()
+            report = run_agentic_benchmark(
+                store,
+                load_agentic_tasks(args.tasks),
+                args.output,
+            )
         finally:
             store.close()
         print(json.dumps(report, indent=2, sort_keys=True))

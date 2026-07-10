@@ -5,6 +5,8 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
+from physicscode_science.enrichment.scientific import enrich_scientific_metadata
+from physicscode_science.enrichment.taxonomy import Taxonomy
 from physicscode_science.ingestion.filtering import iter_indexable_files
 from physicscode_science.licensing.detect import detect_file_license, detect_repository_license
 from physicscode_science.models import LicensePolicy, RepositoryConfig, SourceFile
@@ -22,6 +24,7 @@ def ingest_repositories(
     max_files_per_repo: int | None = None,
     license_policy: LicensePolicy | None = None,
     content_store: ContentStore | None = None,
+    taxonomy: Taxonomy | None = None,
 ) -> list[dict[str, object]]:
     store.migrate()
     reports = [
@@ -32,6 +35,7 @@ def ingest_repositories(
             max_files_per_repo=max_files_per_repo,
             license_policy=license_policy,
             content_store=content_store,
+            taxonomy=taxonomy,
         )
         for repository in repositories
     ]
@@ -46,6 +50,7 @@ def ingest_repository(
     max_files_per_repo: int | None = None,
     license_policy: LicensePolicy | None = None,
     content_store: ContentStore | None = None,
+    taxonomy: Taxonomy | None = None,
 ) -> dict[str, object]:
     store.migrate()
     started_at = datetime.now(UTC)
@@ -82,7 +87,10 @@ def ingest_repository(
                 else absolute_path
             )
             files_changed += int(store.upsert_source_file(source, str(snapshot_path), started_at))
-            parsed_objects = parse_source_file(source, revision)
+            parsed_objects = [
+                enrich_scientific_metadata(parsed, taxonomy)
+                for parsed in parse_source_file(source, revision)
+            ]
             keep_object_ids = {parsed.object_id for parsed in parsed_objects}
             for parsed in parsed_objects:
                 objects_seen += 1

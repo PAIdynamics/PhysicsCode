@@ -13,6 +13,10 @@ domains:
     aliases: [amr, block structured]
   scientific-data:
     aliases: [hdf5, netcdf, adios]
+  plasma-physics:
+    aliases: [plasma, vlasov, poisson, particle-in-cell, pic]
+  particle-in-cell:
+    aliases: [particle in cell, particle-in-cell, pic, charge deposition]
 
 algorithms:
   charge-deposition:
@@ -21,3 +25,49 @@ algorithms:
     aliases: [matrix free, jfnk, newton krylov]
   finite-volume-boundary-conditions:
     aliases: [ghost cells, flux boundary]
+  poisson-solver:
+    aliases: [poisson solver, poisson equation, elliptic solve]
+  finite-element-assembly:
+    aliases: [finite element assembly, weak form, bilinear form]
+  amr-regrid:
+    aliases: [regrid, refinement, adaptive mesh refinement]
+
+equations:
+  Vlasov-Poisson:
+    aliases: [vlasov poisson, vlasov-poisson]
+  Poisson:
+    aliases: [poisson equation, laplacian, elliptic]
+  Navier-Stokes:
+    aliases: [navier stokes, navier-stokes]
+  Euler:
+    aliases: [euler equations, compressible euler]
+
+parallel_models:
+  MPI:
+    aliases: [mpi, mpi_comm, mpi communicator]
+  OpenMP:
+    aliases: [openmp, omp parallel]
+  Kokkos:
+    aliases: [kokkos, parallel_for, team_policy, range_policy]
+  CUDA:
+    aliases: [cuda, __global__, threadidx, blockidx]
+  HIP:
+    aliases: [hip, hipcc, rocm]
+
+hardware_backends:
+  CPU:
+    aliases: [cpu, host]
+  CUDA:
+    aliases: [cuda, nvidia, gpu]
+  HIP:
+    aliases: [hip, rocm, amd]
+
+numerical_properties:
+  conservation:
+    aliases: [conservative, conservation, conserved]
+  charge-conservation:
+    aliases: [charge conserving, charge conservation]
+  positivity:
+    aliases: [positivity, positive definite, nonnegative]
+  stability:
+    aliases: [stable, stability, cfl]

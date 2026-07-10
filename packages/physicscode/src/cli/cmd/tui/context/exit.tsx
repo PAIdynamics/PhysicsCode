@@ -1,4 +1,5 @@
 import { useRenderer } from "@opentui/solid"
+import { onCleanup } from "solid-js"
 import { createSimpleContext } from "./helper"
 import { FormatError, FormatUnknownError } from "@/cli/error"
 import { win32FlushInputBuffer } from "../win32"
@@ -16,6 +17,15 @@ export const { use: useExit, provider: ExitProvider } = createSimpleContext({
     const renderer = useRenderer()
     let message: string | undefined
     let task: Promise<void> | undefined
+    const restoreTerminal = () => {
+      try {
+        if (process.stdin.isTTY) process.stdin.setRawMode?.(false)
+      } catch {}
+      try {
+        process.stdout.write("\x1b[0m\x1b[?25h")
+      } catch {}
+      win32FlushInputBuffer()
+    }
     const store = {
       set: (value?: string) => {
         const prev = message
@@ -33,20 +43,24 @@ export const { use: useExit, provider: ExitProvider } = createSimpleContext({
       (reason?: unknown) => {
         if (task) return task
         task = (async () => {
-          await input.onBeforeExit?.()
-          // Reset window title before destroying renderer
-          renderer.setTerminalTitle("")
-          renderer.destroy()
-          win32FlushInputBuffer()
-          if (reason) {
-            const formatted = FormatError(reason) ?? FormatUnknownError(reason)
-            if (formatted) {
-              process.stderr.write(formatted + "\n")
+          try {
+            await input.onBeforeExit?.()
+            // Reset window title before destroying renderer
+            renderer.setTerminalTitle("")
+            renderer.destroy()
+            restoreTerminal()
+            if (reason) {
+              const formatted = FormatError(reason) ?? FormatUnknownError(reason)
+              if (formatted) {
+                process.stderr.write(formatted + "\n")
+              }
             }
+            const text = store.get()
+            if (text) process.stdout.write(text + "\n")
+            await input.onExit?.()
+          } finally {
+            restoreTerminal()
           }
-          const text = store.get()
-          if (text) process.stdout.write(text + "\n")
-          await input.onExit?.()
         })()
         return task
       },
@@ -54,7 +68,19 @@ export const { use: useExit, provider: ExitProvider } = createSimpleContext({
         message: store,
       },
     )
-    process.on("SIGHUP", () => exit())
+    const handleSignal = (signal: NodeJS.Signals) => {
+      if (signal === "SIGINT") process.exitCode = 130
+      if (signal === "SIGTERM") process.exitCode = 143
+      void exit()
+    }
+    process.on("SIGHUP", handleSignal)
+    process.on("SIGINT", handleSignal)
+    process.on("SIGTERM", handleSignal)
+    onCleanup(() => {
+      process.off("SIGHUP", handleSignal)
+      process.off("SIGINT", handleSignal)
+      process.off("SIGTERM", handleSignal)
+    })
     return exit
   },
 })

@@ -48,3 +48,5 @@ PhysicsCode integration will happen through command, agent, and MCP boundaries:
   validation workflows.
 - Phase 4: add deterministic scientific enrichment, generated summary/query
   views, metadata regeneration, and metadata review reports.
+- Phase 5: add relationship extraction, relational graph storage, and
+  budget-constrained context expansion.

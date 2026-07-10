@@ -64,6 +64,11 @@ enrichment layer is separate from parsing and retrieval so metadata versions can
 be regenerated from stored records without recloning repositories. Generated
 metadata is stored with explicit extractor/model versions and confidence values.
 
+Phase 5 adds relationship extraction and controlled graph expansion. Edges are
+stored in the relational database and are used by `science_get_context` to add
+declarations, called helpers, tests, examples, documentation, and includes when
+they fit the context budget.
+
 ## Integration Plan
 
 1. Keep ingestion and retrieval independently testable in `physicscode-science/`.

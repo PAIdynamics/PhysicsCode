@@ -70,6 +70,10 @@ python -m physicscode_science.cli.main metadata-report \
   --db .science/physicscode-science.sqlite
 ```
 
+Relationship-aware context is available through the MCP tool
+`science_get_context`; it retrieves matching objects and expands selected graph
+neighbors under a strict budget.
+
 Run the local HTTP API:
 
 ```sh

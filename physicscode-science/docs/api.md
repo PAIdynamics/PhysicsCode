@@ -28,6 +28,19 @@ Tools:
 - `science_check_license`
 - `science_project_context`
 
+`science_get_context` accepts:
+
+```json
+{
+  "query": "matrix-free Newton Krylov helper",
+  "top_k": 5,
+  "max_chars": 6000
+}
+```
+
+It returns retrieved objects plus selected relationship neighbors under the
+configured budget.
+
 ## Search
 
 `POST /v1/search`

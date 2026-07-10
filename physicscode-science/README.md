@@ -57,6 +57,18 @@ python -m physicscode_science.cli.main ingest \
   --max-objects-per-repo 1000
 ```
 
+Limit ingestion to selected repositories when growing the local index
+incrementally:
+
+```sh
+python -m physicscode_science.cli.main ingest \
+  --repository fftw3 \
+  --repository lammps \
+  --skip-relationships \
+  --stream-reports \
+  --max-objects-per-repo 50
+```
+
 Search the local index:
 
 ```sh

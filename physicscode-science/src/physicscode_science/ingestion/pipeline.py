@@ -65,8 +65,8 @@ def ingest_repository(
     revision = resolve_revision(repository)
     repo_license = detect_repository_license(repository.local_path)
     store.upsert_revision(revision, started_at)
-    files = iter_indexable_files(repository.local_path)
-    selected_files = files[:max_files_per_repo] if max_files_per_repo else files
+    files = iter_indexable_files(repository.local_path, limit=max_files_per_repo)
+    selected_files = files
     files_changed = 0
     files_skipped_license = 0
     objects_seen = 0

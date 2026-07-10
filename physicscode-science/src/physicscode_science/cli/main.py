@@ -33,6 +33,12 @@ def main() -> None:
     ingest.add_argument("--db", default=".science/physicscode-science.sqlite")
     ingest.add_argument("--report", default=".science/reports")
     ingest.add_argument("--content-store", default=".science/content")
+    ingest.add_argument(
+        "--repository",
+        action="append",
+        default=[],
+        help="Limit ingestion to one repository name. Repeat for multiple repositories.",
+    )
     ingest.add_argument("--max-files-per-repo", type=int)
     ingest.add_argument("--max-objects-per-repo", type=int)
     ingest.add_argument(
@@ -104,6 +110,12 @@ def main() -> None:
         store = ScienceStore(args.db)
         try:
             repositories = enabled_repositories(Path(args.registry))
+            if args.repository:
+                selected = set(args.repository)
+                repositories = [repository for repository in repositories if repository.name in selected]
+                missing = selected - {repository.name for repository in repositories}
+                if missing:
+                    raise ValueError(f"unknown or disabled repositories: {', '.join(sorted(missing))}")
             license_policy = load_license_policy(args.licenses)
             content_store = ContentStore(args.content_store)
             taxonomy = load_taxonomy(args.taxonomy)

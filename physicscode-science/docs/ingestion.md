@@ -22,6 +22,9 @@ needed. Add `--stream-reports` for long runs so each repository is committed and
 reported independently. Add `--max-objects-per-repo` when you want a bounded but
 useful initial index before running an exhaustive corpus pass.
 
+Use repeated `--repository` flags to grow or refresh selected repositories
+without rerunning the whole registry.
+
 Parser failures are captured in the report instead of being swallowed. Unchanged
 objects are idempotent: reingesting the same revision does not create duplicate
 records.

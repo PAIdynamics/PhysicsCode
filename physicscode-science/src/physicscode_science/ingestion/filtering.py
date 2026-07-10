@@ -54,7 +54,11 @@ SPECIAL_NAMES = {
 }
 
 
-def iter_indexable_files(root: str | Path, max_bytes: int = 500_000) -> list[tuple[Path, str]]:
+def iter_indexable_files(
+    root: str | Path,
+    max_bytes: int = 500_000,
+    limit: int | None = None,
+) -> list[tuple[Path, str]]:
     root_path = Path(root)
     files: list[tuple[Path, str]] = []
     for path in root_path.rglob("*"):
@@ -68,7 +72,9 @@ def iter_indexable_files(root: str | Path, max_bytes: int = 500_000) -> list[tup
         if path.stat().st_size > max_bytes:
             continue
         files.append((path, language))
-    return sorted(files, key=lambda item: str(item[0]))
+        if limit is not None and len(files) >= limit:
+            break
+    return files
 
 
 def language_for(path: str | Path) -> str | None:

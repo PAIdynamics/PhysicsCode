@@ -49,6 +49,11 @@ The API is intentionally small:
 The API returns the same provenance-bearing result shape as the CLI. MCP tools
 in Phase 3 should wrap this service rather than reimplement retrieval logic.
 
+Phase 3 now adds an MCP stdio boundary over the same retrieval/tool dispatcher.
+PhysicsCode can start it from `.physicscode/physicscode.jsonc`, and the local
+`/science` command directs the agent to retrieve evidence before planning
+scientific code changes.
+
 ## Integration Plan
 
 1. Keep ingestion and retrieval independently testable in `physicscode-science/`.

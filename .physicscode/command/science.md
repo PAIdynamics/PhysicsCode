@@ -12,7 +12,8 @@ Workflow:
 1. Inspect the current project without modifying files.
 2. Interpret the scientific and engineering request.
 3. Build several complementary retrieval queries.
-4. Retrieve source-backed evidence when the science service is available.
+4. Retrieve source-backed evidence with the `science` MCP tools or local
+   `science-search` / `science-source` tools when the science index is available.
 5. Rerank and filter by relevance, compatibility, and license.
 6. Present an evidence-backed plan before editing.
 7. Modify code only when authorized.

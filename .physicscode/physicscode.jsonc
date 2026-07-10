@@ -6,7 +6,23 @@
       "packages/physicscode/migration/*": "deny",
     },
   },
-  "mcp": {},
+  "mcp": {
+    "science": {
+      "type": "local",
+      "command": [
+        "python3",
+        "-m",
+        "physicscode_science.cli.main",
+        "mcp",
+        "--db",
+        "/home/mohsen/github/code/physicscode-science/.science/physicscode-science.sqlite",
+      ],
+      "environment": {
+        "PYTHONPATH": "/home/mohsen/github/code/physicscode-science/src",
+      },
+      "enabled": true,
+    },
+  },
   "tools": {
     "github-triage": false,
     "github-pr-search": false,

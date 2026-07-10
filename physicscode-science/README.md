@@ -67,3 +67,10 @@ python -m physicscode_science.cli.main serve \
   --host 127.0.0.1 \
   --port 8765
 ```
+
+Run the MCP stdio server for PhysicsCode or other MCP clients:
+
+```sh
+PYTHONPATH=src python3 -m physicscode_science.cli.main mcp \
+  --db .science/physicscode-science.sqlite
+```

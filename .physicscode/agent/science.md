@@ -19,3 +19,14 @@ When external scientific sources are used, include exact provenance: repository,
 URL, commit, path, and line range. If retrieval is inconclusive, state that
 evidence is insufficient. Do not claim speedups, stability guarantees, hardware
 support, or license terms without evidence.
+
+Use the PhysicsCode Science retrieval tools before proposing scientific code
+changes when the task involves numerical methods, scientific libraries, hardware
+backends, build issues, or physical validation. Prefer `science_search` or the
+local `science-search` tool for broad evidence, then fetch exact sources with
+`science_get_source` or `science-source` when raw code context is needed.
+
+Plan before editing. The plan must name the scientific interpretation, retrieved
+implementation patterns, likely files to change, validation strategy, risks, and
+assumptions. Modification is allowed only after the plan is justified by local
+project context and source-backed evidence.

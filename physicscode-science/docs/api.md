@@ -10,6 +10,23 @@ Phase 2 exposes a small HTTP API for retrieval experiments.
 { "status": "ok" }
 ```
 
+## MCP
+
+Phase 3 also exposes the same retrieval layer as an MCP stdio server:
+
+```sh
+PYTHONPATH=src python3 -m physicscode_science.cli.main mcp \
+  --db .science/physicscode-science.sqlite
+```
+
+Tools:
+
+- `science_search`
+- `science_get_source`
+- `science_get_symbol`
+- `science_get_context`
+- `science_check_license`
+
 ## Search
 
 `POST /v1/search`

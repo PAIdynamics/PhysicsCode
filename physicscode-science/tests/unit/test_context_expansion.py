@@ -34,6 +34,8 @@ class ContextExpansionTest(unittest.TestCase):
 
             self.assertEqual(payload["query"], "solve helper")
             self.assertLessEqual(len(str(payload)), 1800)
+            self.assertLessEqual(payload["used_chars"], payload["max_chars"])
+            self.assertIn("related_budget", payload["omitted"])
             self.assertIn("context", payload)
 
 

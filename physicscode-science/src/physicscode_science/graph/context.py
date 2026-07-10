@@ -28,21 +28,34 @@ def get_context(
     results = search(store, SearchQuery(query=query, top_k=top_k, include_content=False))
     remaining = max_chars
     context: list[dict[str, Any]] = []
+    omitted = {"results_budget": 0, "related_budget": 0}
     for result in results:
-        item = _base_context(result)
-        remaining -= len(str(item))
-        if remaining <= 0:
+        item = _base_context(result, summary_chars=360)
+        cost = _cost(item)
+        if cost > remaining:
+            omitted["results_budget"] += 1
             break
+        remaining -= cost
         related = _related(store, result, remaining)
         item["related"] = related["items"]
         remaining = related["remaining"]
+        omitted["related_budget"] += related["omitted_budget"]
         context.append(item)
-    return {"query": query, "max_chars": max_chars, "context": context}
-
-
-def _base_context(result: SearchResult) -> dict[str, Any]:
     return {
-        "result": asdict(result) | {"content": None},
+        "query": query,
+        "max_chars": max_chars,
+        "used_chars": max_chars - remaining,
+        "remaining_chars": remaining,
+        "omitted": omitted,
+        "context": context,
+    }
+
+
+def _base_context(result: SearchResult, summary_chars: int) -> dict[str, Any]:
+    result_payload = asdict(result) | {"content": None}
+    result_payload["summary"] = _compress_text(str(result_payload["summary"]), summary_chars)
+    return {
+        "result": result_payload,
         "provenance": {
             "repository": result.repository,
             "repository_url": result.repository_url,
@@ -56,6 +69,7 @@ def _base_context(result: SearchResult) -> dict[str, Any]:
 
 def _related(store: ScienceStore, result: SearchResult, remaining: int) -> dict[str, Any]:
     related: list[dict[str, Any]] = []
+    omitted_budget = 0
     relationships = sorted(
         store.relationship_neighbors(result.result_id, limit=20),
         key=lambda item: (
@@ -87,15 +101,16 @@ def _related(store: ScienceStore, result: SearchResult, remaining: int) -> dict[
                 "object_type": candidate.object_type,
                 "language": candidate.language,
                 "license": candidate.license,
-                "summary": _candidate_summary(candidate),
+                "summary": _compress_text(_candidate_summary(candidate), 260),
             },
         }
-        cost = len(str(item))
+        cost = _cost(item)
         if cost > remaining:
-            break
+            omitted_budget += 1
+            continue
         related.append(item)
         remaining -= cost
-    return {"items": related, "remaining": remaining}
+    return {"items": related, "remaining": remaining, "omitted_budget": omitted_budget}
 
 
 def _candidate_summary(candidate: Any) -> str:
@@ -104,3 +119,14 @@ def _candidate_summary(candidate: Any) -> str:
         return str(generated["summary"])
     text = " ".join(candidate.raw_content.strip().split())
     return text[:240] + ("..." if len(text) > 240 else "")
+
+
+def _compress_text(text: str, max_chars: int) -> str:
+    compact = " ".join(text.split())
+    if len(compact) <= max_chars:
+        return compact
+    return compact[: max(0, max_chars - 3)].rstrip() + "..."
+
+
+def _cost(value: object) -> int:
+    return len(str(value))

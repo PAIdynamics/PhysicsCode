@@ -1,36 +1,25 @@
 repositories:
-  - name: kokkos
-    url: https://github.com/kokkos/kokkos
-    local_path: /home/mohsen/ref-codes/kokkos
-    default_branch: develop
-    revision_policy: fixed-local
-    license_policy: allowed
-    domains:
-      - performance-portability
-      - high-performance-computing
-    languages:
-      - cpp
-      - cmake
-    priority: high
-    enabled: true
-
-  - name: mfem
-    url: https://github.com/mfem/mfem
-    local_path: /home/mohsen/ref-codes/mfem
+  - name: adios2
+    url: https://github.com/ornladios/ADIOS2.git
+    local_path: /home/mohsen/ref-codes/ADIOS2
     default_branch: master
     revision_policy: fixed-local
     license_policy: allowed
     domains:
-      - finite-element
-      - partial-differential-equations
+      - scientific-data
+      - io
+      - high-performance-computing
     languages:
+      - c
       - cpp
+      - fortran
+      - python
       - cmake
     priority: high
     enabled: true
 
   - name: amrex
-    url: https://github.com/AMReX-Codes/amrex
+    url: https://github.com/AMReX-Codes/amrex.git
     local_path: /home/mohsen/ref-codes/amrex
     default_branch: development
     revision_policy: fixed-local
@@ -38,15 +27,84 @@ repositories:
     domains:
       - adaptive-mesh-refinement
       - computational-fluid-dynamics
+      - high-performance-computing
     languages:
       - cpp
       - fortran
+      - python
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: cmake
+    url: https://github.com/Kitware/CMake.git
+    local_path: /home/mohsen/ref-codes/CMake
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - build-systems
+      - scientific-software-infrastructure
+    languages:
+      - c
+      - cpp
+      - cmake
+      - python
+    priority: medium
+    enabled: true
+
+  - name: dealii
+    url: https://github.com/dealii/dealii.git
+    local_path: /home/mohsen/ref-codes/dealii
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - finite-element
+      - partial-differential-equations
+      - high-performance-computing
+    languages:
+      - cpp
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: enzyme
+    url: https://github.com/EnzymeAD/Enzyme.git
+    local_path: /home/mohsen/ref-codes/Enzyme
+    default_branch: main
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - automatic-differentiation
+      - compiler-infrastructure
+      - scientific-machine-learning
+    languages:
+      - c
+      - cpp
+      - python
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: fftw3
+    url: https://github.com/FFTW/fftw3.git
+    local_path: /home/mohsen/ref-codes/fftw3
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - spectral-methods
+      - numerical-linear-algebra
+      - high-performance-computing
+    languages:
+      - c
       - cmake
     priority: high
     enabled: true
 
   - name: hdf5
-    url: https://github.com/HDFGroup/hdf5
+    url: https://github.com/HDFGroup/hdf5.git
     local_path: /home/mohsen/ref-codes/hdf5
     default_branch: develop
     revision_policy: fixed-local
@@ -54,26 +112,389 @@ repositories:
     domains:
       - scientific-data
       - io
+      - high-performance-computing
     languages:
       - c
       - cpp
       - fortran
       - cmake
+    priority: high
+    enabled: true
+
+  - name: ippl
+    url: https://github.com/IPPL-framework/ippl.git
+    local_path: /home/mohsen/ref-codes/ippl
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - particle-methods
+      - plasma-physics
+      - high-performance-computing
+    languages:
+      - cpp
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: jax
+    url: https://github.com/jax-ml/jax.git
+    local_path: /home/mohsen/ref-codes/jax
+    default_branch: main
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - automatic-differentiation
+      - scientific-machine-learning
+      - array-computing
+    languages:
+      - python
+      - cpp
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: jaxfluids
+    url: https://github.com/tumaer/JAXFLUIDS.git
+    local_path: /home/mohsen/ref-codes/JAXFLUIDS
+    default_branch: main
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - computational-fluid-dynamics
+      - scientific-machine-learning
+      - differentiable-simulation
+    languages:
+      - python
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: kokkos
+    url: https://github.com/kokkos/kokkos.git
+    local_path: /home/mohsen/ref-codes/kokkos
+    default_branch: develop
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - performance-portability
+      - high-performance-computing
+      - accelerator-programming
+    languages:
+      - cpp
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: kokkos-kernels
+    url: https://github.com/kokkos/kokkos-kernels.git
+    local_path: /home/mohsen/ref-codes/kokkos-kernels
+    default_branch: develop
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - performance-portability
+      - numerical-linear-algebra
+      - sparse-linear-algebra
+    languages:
+      - cpp
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: lammps
+    url: https://github.com/lammps/lammps.git
+    local_path: /home/mohsen/ref-codes/lammps
+    default_branch: develop
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - molecular-dynamics
+      - materials-science
+      - high-performance-computing
+    languages:
+      - c
+      - cpp
+      - python
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: lapack
+    url: https://github.com/Reference-LAPACK/lapack.git
+    local_path: /home/mohsen/ref-codes/lapack
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - numerical-linear-algebra
+      - dense-linear-algebra
+    languages:
+      - fortran
+      - c
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: mfem
+    url: https://github.com/mfem/mfem.git
+    local_path: /home/mohsen/ref-codes/mfem
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - finite-element
+      - partial-differential-equations
+      - high-performance-computing
+    languages:
+      - cpp
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: occt
+    url: https://github.com/Open-Cascade-SAS/OCCT.git
+    local_path: /home/mohsen/ref-codes/OCCT
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - computational-geometry
+      - cad
+      - engineering-software
+    languages:
+      - c
+      - cpp
+      - cmake
+    priority: medium
+    enabled: true
+
+  - name: ompi
+    url: https://github.com/open-mpi/ompi.git
+    local_path: /home/mohsen/ref-codes/ompi
+    default_branch: main
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - distributed-computing
+      - high-performance-computing
+      - mpi
+    languages:
+      - c
+      - cpp
+      - fortran
+      - python
+      - shell
+    priority: high
+    enabled: true
+
+  - name: openblas
+    url: https://github.com/OpenMathLib/OpenBLAS.git
+    local_path: /home/mohsen/ref-codes/OpenBLAS
+    default_branch: develop
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - numerical-linear-algebra
+      - dense-linear-algebra
+      - high-performance-computing
+    languages:
+      - c
+      - fortran
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: openfoam
+    url: https://gitlab.com/openfoam/core/openfoam.git
+    local_path: /home/mohsen/ref-codes/openfoam
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - computational-fluid-dynamics
+      - finite-volume
+      - multiphysics
+    languages:
+      - c
+      - cpp
+      - shell
+    priority: high
+    enabled: true
+
+  - name: petsc
+    url: https://gitlab.com/petsc/petsc.git
+    local_path: /home/mohsen/ref-codes/petsc
+    default_branch: main
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - numerical-linear-algebra
+      - nonlinear-solvers
+      - partial-differential-equations
+    languages:
+      - c
+      - cpp
+      - fortran
+      - python
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: picongpu
+    url: https://github.com/ComputationalRadiationPhysics/picongpu.git
+    local_path: /home/mohsen/ref-codes/picongpu
+    default_branch: dev
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - particle-in-cell
+      - plasma-physics
+      - accelerator-programming
+    languages:
+      - cpp
+      - python
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: pytorch
+    url: https://github.com/pytorch/pytorch.git
+    local_path: /home/mohsen/ref-codes/pytorch
+    default_branch: main
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - machine-learning
+      - tensor-computing
+      - accelerator-programming
+    languages:
+      - c
+      - cpp
+      - python
+      - cmake
+    priority: medium
+    enabled: true
+
+  - name: smilei
+    url: https://github.com/SmileiPIC/Smilei.git
+    local_path: /home/mohsen/ref-codes/Smilei
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - particle-in-cell
+      - plasma-physics
+      - high-performance-computing
+    languages:
+      - c
+      - cpp
+      - python
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: spack
+    url: https://github.com/spack/spack.git
+    local_path: /home/mohsen/ref-codes/spack
+    default_branch: develop
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - package-management
+      - scientific-software-infrastructure
+      - build-systems
+    languages:
+      - python
+      - shell
+    priority: medium
+    enabled: true
+
+  - name: sparta
+    url: https://github.com/sparta/sparta.git
+    local_path: /home/mohsen/ref-codes/sparta
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - particle-methods
+      - rarefied-gas-dynamics
+      - high-performance-computing
+    languages:
+      - c
+      - cpp
+      - python
+      - cmake
     priority: medium
     enabled: true
 
   - name: su2
-    url: https://github.com/su2code/SU2
+    url: https://github.com/su2code/SU2.git
     local_path: /home/mohsen/ref-codes/SU2
-    default_branch: develop
+    default_branch: master
     revision_policy: fixed-local
     license_policy: allowed
     domains:
       - computational-fluid-dynamics
       - optimization
+      - adjoint-methods
     languages:
       - cpp
       - python
       - cmake
-    priority: medium
+    priority: high
+    enabled: true
+
+  - name: trilinos
+    url: https://github.com/trilinos/Trilinos.git
+    local_path: /home/mohsen/ref-codes/Trilinos
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - numerical-linear-algebra
+      - nonlinear-solvers
+      - high-performance-computing
+    languages:
+      - c
+      - cpp
+      - fortran
+      - python
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: warp
+    url: https://github.com/NVIDIA/warp.git
+    local_path: /home/mohsen/ref-codes/warp
+    default_branch: main
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - differentiable-simulation
+      - accelerator-programming
+      - scientific-machine-learning
+    languages:
+      - c
+      - cpp
+      - python
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: warpx
+    url: https://github.com/BLAST-WarpX/warpx.git
+    local_path: /home/mohsen/ref-codes/warpx
+    default_branch: development
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - particle-in-cell
+      - plasma-physics
+      - accelerator-programming
+    languages:
+      - cpp
+      - python
+      - cmake
+    priority: high
     enabled: true

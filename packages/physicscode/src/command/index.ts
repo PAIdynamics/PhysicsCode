@@ -12,6 +12,7 @@ import { MCP } from "../mcp"
 import { Skill } from "../skill"
 import PROMPT_INITIALIZE from "./template/initialize.txt"
 import PROMPT_REVIEW from "./template/review.txt"
+import PROMPT_SCIENCE from "./template/science.txt"
 
 type State = {
   commands: Record<string, Info>
@@ -59,6 +60,7 @@ export function hints(template: string) {
 export const Default = {
   INIT: "init",
   REVIEW: "review",
+  SCIENCE: "science",
 } as const
 
 export interface Interface {
@@ -98,6 +100,16 @@ export const layer = Layer.effect(
         },
         subtask: true,
         hints: hints(PROMPT_REVIEW),
+      }
+      commands[Default.SCIENCE] = {
+        name: Default.SCIENCE,
+        description: "evidence-backed scientific coding workflow",
+        agent: "science",
+        source: "command",
+        get template() {
+          return PROMPT_SCIENCE
+        },
+        hints: hints(PROMPT_SCIENCE),
       }
 
       for (const [name, command] of Object.entries(cfg.command ?? {})) {

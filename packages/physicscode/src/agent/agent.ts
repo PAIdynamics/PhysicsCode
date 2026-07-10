@@ -10,6 +10,7 @@ import { ProviderTransform } from "@/provider/transform"
 import PROMPT_GENERATE from "./generate.txt"
 import PROMPT_COMPACTION from "./prompt/compaction.txt"
 import PROMPT_EXPLORE from "./prompt/explore.txt"
+import PROMPT_SCIENCE from "./prompt/science.txt"
 import PROMPT_SUMMARY from "./prompt/summary.txt"
 import PROMPT_TITLE from "./prompt/title.txt"
 import { Permission } from "@/permission"
@@ -186,6 +187,24 @@ export const layer = Layer.effect(
             options: {},
             mode: "subagent",
             native: true,
+          },
+          science: {
+            name: "science",
+            description:
+              "Evidence-backed scientific software engineering agent for numerical methods, simulations, HPC libraries, and validation.",
+            permission: Permission.merge(
+              defaults,
+              Permission.fromConfig({
+                question: "allow",
+                plan_enter: "allow",
+              }),
+              user,
+            ),
+            prompt: PROMPT_SCIENCE,
+            options: {},
+            mode: "primary",
+            native: true,
+            color: "cyan",
           },
           compaction: {
             name: "compaction",

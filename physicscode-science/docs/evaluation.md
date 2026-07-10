@@ -28,3 +28,6 @@ scientific software questions covering exact API lookup, symbol search,
 numerical methods, equation-to-code retrieval, build troubleshooting,
 accelerator debugging, Kokkos patterns, solver selection, boundary conditions,
 tests, examples, and license-constrained retrieval.
+
+Phase 4 generated views should be evaluated against this benchmark before they
+are expanded or replaced with model-generated summaries.

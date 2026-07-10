@@ -59,6 +59,11 @@ keeps repository context collection separate from retrieval and gives the agent 
 structured way to understand languages, build systems, dependencies, tests, git
 state, and candidate source files before searching external evidence.
 
+Phase 4 adds deterministic scientific enrichment over parsed objects. The
+enrichment layer is separate from parsing and retrieval so metadata versions can
+be regenerated from stored records without recloning repositories. Generated
+metadata is stored with explicit extractor/model versions and confidence values.
+
 ## Integration Plan
 
 1. Keep ingestion and retrieval independently testable in `physicscode-science/`.

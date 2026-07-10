@@ -59,6 +59,17 @@ python -m physicscode_science.cli.main evaluate \
   --queries benchmarks/queries/phase2-smoke.json
 ```
 
+Regenerate and review scientific metadata:
+
+```sh
+python -m physicscode_science.cli.main enrich-metadata \
+  --db .science/physicscode-science.sqlite \
+  --taxonomy config/taxonomy.yaml
+
+python -m physicscode_science.cli.main metadata-report \
+  --db .science/physicscode-science.sqlite
+```
+
 Run the local HTTP API:
 
 ```sh

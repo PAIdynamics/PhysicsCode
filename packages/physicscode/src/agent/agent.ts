@@ -204,7 +204,7 @@ export const layer = Layer.effect(
             options: {},
             mode: "primary",
             native: true,
-            color: "cyan",
+            color: "#22d3ee",
           },
           compaction: {
             name: "compaction",

@@ -109,8 +109,8 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           if (agent?.color) {
             const color = agent.color
             if (color.startsWith("#")) return RGBA.fromHex(color)
-            // already validated by config, just satisfying TS here
-            return theme[color as keyof typeof theme] as RGBA
+            const themed = theme[color as keyof typeof theme]
+            if (themed instanceof RGBA) return themed
           }
           return colors()[index % colors().length]
         },

@@ -1,6 +1,29 @@
 {
   "collections": [
     {
+      "name": "physicscode_science_multiview",
+      "vector_size": 1536,
+      "distance": "Cosine",
+      "mode": "named-vectors",
+      "named_vectors": [
+        "summary",
+        "signature",
+        "source",
+        "documentation"
+      ],
+      "payload_indexes": [
+        "repository",
+        "commit",
+        "path",
+        "symbol",
+        "object_type",
+        "language",
+        "license",
+        "domains",
+        "algorithms"
+      ]
+    },
+    {
       "name": "physicscode_science_raw_source",
       "vector_size": 1536,
       "distance": "Cosine",

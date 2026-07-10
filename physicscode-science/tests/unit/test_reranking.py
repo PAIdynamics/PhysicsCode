@@ -19,7 +19,8 @@ class RerankingTest(unittest.TestCase):
                 results = search(store, SearchQuery("poisson solver", top_k=1))
 
                 self.assertEqual(results[0].symbol, "poisson_solver")
-                self.assertEqual(results[0].explanation["reranker"], "deterministic-reranker-v1")
+                self.assertEqual(results[0].explanation["reranker"], "deterministic-reranker-v2")
+                self.assertIn("generated_overlap", results[0].explanation)
                 self.assertIn("reranked", results[0].reason)
             finally:
                 store.close()

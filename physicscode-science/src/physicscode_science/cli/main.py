@@ -105,10 +105,12 @@ def main() -> None:
     vector_index.add_argument("--qdrant-url", default="http://127.0.0.1:6333")
     vector_index.add_argument("--qdrant-collection", default="physicscode_science_summary")
     vector_index.add_argument("--qdrant-api-key")
+    vector_index.add_argument("--qdrant-vector-mode", choices=["single", "multi"], default="single")
     vector_index.add_argument("--embedding-provider", choices=["hash", "vllm", "openai-compatible"])
     vector_index.add_argument("--embedding-url")
     vector_index.add_argument("--embedding-model")
     vector_index.add_argument("--embedding-api-key")
+    vector_index.add_argument("--embedding-max-chars", type=int)
     status = subcommands.add_parser("status", help="Report science DB and vector-index readiness")
     status.add_argument("--db", default=".science/physicscode-science.sqlite")
     serve = subcommands.add_parser("serve", help="Run the science retrieval HTTP API")
@@ -228,6 +230,7 @@ def main() -> None:
                         args.qdrant_collection,
                         dimensions=args.dimensions,
                         api_key=args.qdrant_api_key,
+                        vector_mode=args.qdrant_vector_mode,
                     ).upsert_store(store)
                 except URLError as error:
                     raise SystemExit(
@@ -297,6 +300,8 @@ def _configure_embedding_environment(args: argparse.Namespace) -> None:
         os.environ["PHYSICSCODE_SCIENCE_EMBEDDING_MODEL"] = args.embedding_model
     if args.embedding_api_key:
         os.environ["PHYSICSCODE_SCIENCE_EMBEDDING_API_KEY"] = args.embedding_api_key
+    if getattr(args, "embedding_max_chars", None):
+        os.environ["PHYSICSCODE_SCIENCE_EMBEDDING_MAX_CHARS"] = str(args.embedding_max_chars)
 
 
 if __name__ == "__main__":

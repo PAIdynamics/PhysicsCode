@@ -63,7 +63,7 @@ class OpenAICompatibleEmbeddingProvider(EmbeddingProvider):
         dimensions: int = DEFAULT_VECTOR_DIMENSIONS,
         api_key: str | None = None,
         timeout_seconds: int = 60,
-        max_candidate_chars: int = 900,
+        max_candidate_chars: int = 4000,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model_name = model
@@ -139,7 +139,7 @@ def configured_embedding_provider(
                 model,
                 dimensions=dimensions,
                 api_key=key,
-                max_candidate_chars=int(os.environ.get("PHYSICSCODE_SCIENCE_EMBEDDING_MAX_CHARS", "900")),
+                max_candidate_chars=int(os.environ.get("PHYSICSCODE_SCIENCE_EMBEDDING_MAX_CHARS", "4000")),
             )
             embedding_provider.embed_text("embedding health check")
             return embedding_provider
@@ -163,3 +163,48 @@ def candidate_embedding_text(candidate: SearchCandidate, *, max_raw_chars: int =
             candidate.raw_content[:max_raw_chars],
         ]
     )
+
+
+def candidate_embedding_views(candidate: SearchCandidate, *, max_raw_chars: int = 8000) -> dict[str, str]:
+    metadata = candidate.metadata.get("metadata", {})
+    generated = metadata.get("generated_views", {}) if isinstance(metadata, dict) else {}
+    scientific = metadata.get("scientific_metadata", {}) if isinstance(metadata, dict) else {}
+    summary = ""
+    queries: list[str] = []
+    if isinstance(generated, dict):
+        summary = str(generated.get("summary", ""))
+        queries = [str(query) for query in generated.get("queries", []) if isinstance(query, str)]
+    documentation = "\n".join(
+        [
+            f"repository: {candidate.repository}",
+            f"path: {candidate.path}",
+            f"symbol: {candidate.symbol}",
+            f"summary: {summary}",
+            f"queries: {' | '.join(queries)}",
+            f"scientific_metadata: {json.dumps(scientific, sort_keys=True)}",
+        ]
+    )
+    signature = "\n".join(
+        [
+            f"repository: {candidate.repository}",
+            f"path: {candidate.path}",
+            f"symbol: {candidate.symbol}",
+            f"type: {candidate.object_type}",
+            f"language: {candidate.language}",
+            candidate.raw_content.splitlines()[0] if candidate.raw_content else "",
+        ]
+    )
+    source = "\n".join(
+        [
+            f"repository: {candidate.repository}",
+            f"path: {candidate.path}",
+            f"symbol: {candidate.symbol}",
+            candidate.raw_content[:max_raw_chars],
+        ]
+    )
+    return {
+        "summary": candidate_embedding_text(candidate, max_raw_chars=max_raw_chars),
+        "signature": signature,
+        "source": source,
+        "documentation": documentation,
+    }

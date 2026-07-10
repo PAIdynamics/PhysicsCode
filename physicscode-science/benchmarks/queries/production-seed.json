@@ -1,0 +1,74 @@
+{
+  "queries": [
+    {
+      "query_id": "petsc-gmres-preconditioner",
+      "query": "PETSc GMRES Krylov solver preconditioner setup",
+      "relevant_repositories": ["petsc"],
+      "domains": ["numerical-linear-algebra", "nonlinear-solvers"],
+      "languages": ["c", "cpp", "python"]
+    },
+    {
+      "query_id": "amrex-ghost-fill",
+      "query": "AMReX ghost cell fill boundary exchange multifab",
+      "relevant_repositories": ["amrex"],
+      "domains": ["adaptive-mesh-refinement", "high-performance-computing"],
+      "languages": ["cpp"]
+    },
+    {
+      "query_id": "warpx-current-deposition",
+      "query": "WarpX particle in cell current deposition charge conservation",
+      "relevant_repositories": ["warpx"],
+      "domains": ["particle-in-cell", "plasma-physics"],
+      "languages": ["cpp", "python"]
+    },
+    {
+      "query_id": "kokkos-parallel-reduction",
+      "query": "Kokkos parallel_reduce execution policy device lambda",
+      "relevant_repositories": ["kokkos"],
+      "domains": ["performance-portability", "accelerator-programming"],
+      "languages": ["cpp"]
+    },
+    {
+      "query_id": "dealii-multigrid",
+      "query": "deal.II finite element multigrid preconditioner",
+      "relevant_repositories": ["dealii"],
+      "domains": ["finite-element", "partial-differential-equations"],
+      "languages": ["cpp"]
+    },
+    {
+      "query_id": "openfoam-finite-volume-gradient",
+      "query": "OpenFOAM finite volume gradient divergence operator",
+      "relevant_repositories": ["openfoam"],
+      "domains": ["computational-fluid-dynamics", "finite-volume"],
+      "languages": ["cpp"]
+    },
+    {
+      "query_id": "enzyme-adjoint",
+      "query": "Enzyme automatic differentiation adjoint gradient",
+      "relevant_repositories": ["enzyme"],
+      "domains": ["automatic-differentiation", "compiler-infrastructure"],
+      "languages": ["cpp"]
+    },
+    {
+      "query_id": "adios2-bp-engine",
+      "query": "ADIOS2 BP engine variable write read steps",
+      "relevant_repositories": ["adios2"],
+      "domains": ["scientific-data", "io"],
+      "languages": ["cpp", "python"]
+    },
+    {
+      "query_id": "hdf5-dataset-hyperslab",
+      "query": "HDF5 dataset hyperslab selection collective IO",
+      "relevant_repositories": ["hdf5"],
+      "domains": ["scientific-data", "io"],
+      "languages": ["c", "cpp"]
+    },
+    {
+      "query_id": "jax-jit-vmap",
+      "query": "JAX jit vmap transformation array program",
+      "relevant_repositories": ["jax"],
+      "domains": ["automatic-differentiation", "array-computing"],
+      "languages": ["python"]
+    }
+  ]
+}

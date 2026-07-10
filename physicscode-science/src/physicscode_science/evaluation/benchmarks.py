@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from time import perf_counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -57,6 +58,8 @@ def evaluate_search(store: ScienceStore, queries: list[BenchmarkQuery], top_k: i
                 "recall_at_10": _mean(item["recall_at_10"] for item in reports),
                 "mrr": _mean(item["reciprocal_rank"] for item in reports),
                 "ndcg_at_10": _mean(item["ndcg_at_10"] for item in reports),
+                "mean_latency_ms": _mean(item["latency_ms"] for item in reports),
+                "missing_relevance_count": sum(1 for item in reports if item["relevant_count"] == 0),
                 "queries": reports,
             }
             for mode, reports in mode_reports.items()
@@ -70,6 +73,7 @@ def _evaluate_one(
     mode: EvaluationMode,
     top_k: int,
 ) -> dict[str, object]:
+    start = perf_counter()
     results = search(
         store,
         SearchQuery(
@@ -85,6 +89,7 @@ def _evaluate_one(
             top_k=top_k,
         ),
     )
+    latency_ms = round((perf_counter() - start) * 1000, 3)
     relevant_ids = _relevant_ids(store, benchmark)
     return {
         "query": asdict(benchmark),
@@ -92,7 +97,20 @@ def _evaluate_one(
         "rerank": mode.rerank,
         "deduplicate": mode.deduplicate,
         "diversity": mode.diversity,
+        "latency_ms": latency_ms,
+        "relevant_count": len(relevant_ids),
         "result_ids": [result.result_id for result in results],
+        "top_results": [
+            {
+                "repository": result.repository,
+                "path": result.path,
+                "symbol": result.symbol,
+                "score": result.score,
+                "channels": result.retrieval_channels,
+                "reason": result.reason,
+            }
+            for result in results[:5]
+        ],
         "recall_at_5": recall_at_k(results, relevant_ids, 5),
         "recall_at_10": recall_at_k(results, relevant_ids, 10),
         "reciprocal_rank": reciprocal_rank(results, relevant_ids),

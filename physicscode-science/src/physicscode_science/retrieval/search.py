@@ -125,6 +125,7 @@ def _reason(channels: tuple[str, ...], explanation: dict[str, object]) -> str:
         (
             ("symbol overlap", float(explanation.get("symbol_overlap", 0.0))),
             ("scientific metadata", float(explanation.get("metadata_overlap", 0.0))),
+            ("generated retrieval views", float(explanation.get("generated_overlap", 0.0))),
             ("path terms", float(explanation.get("path_overlap", 0.0))),
             ("content terms", float(explanation.get("content_overlap", 0.0))),
         ),

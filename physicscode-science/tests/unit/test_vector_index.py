@@ -216,6 +216,87 @@ int poisson_multigrid_solver() { return 1; }
         self.assertEqual(index.dimensions, 1024)
         self.assertEqual(len(index.last_request[2]["vector"]), 1024)
 
+    def test_qdrant_multi_vector_collection_payload(self):
+        class CreatedCollection(QdrantVectorIndex):
+            def __init__(self):  # noqa: ANN204
+                super().__init__(
+                    "http://qdrant.invalid",
+                    "science",
+                    dimensions=384,
+                    vector_mode="multi",
+                    named_vectors=("summary", "source"),
+                )
+                self.requests = []
+
+            def _request(self, method, path, payload=None, **kwargs):  # noqa: ANN001, ANN202
+                self.requests.append((method, path, payload))
+                if method == "GET":
+                    from urllib.error import HTTPError
+
+                    raise HTTPError("http://qdrant.invalid", 404, "not found", {}, None)
+                return {}
+
+        index = CreatedCollection()
+
+        index.ensure_collection()
+
+        self.assertEqual(index.requests[-1][0], "PUT")
+        self.assertEqual(index.requests[-1][2]["vectors"]["summary"]["size"], 384)
+        self.assertEqual(index.requests[-1][2]["vectors"]["source"]["distance"], "Cosine")
+
+    def test_qdrant_multi_vector_search_fuses_named_vectors(self):
+        class Provider:
+            def model(self):  # noqa: ANN202
+                from physicscode_science.embeddings.providers import EmbeddingModel
+
+                return EmbeddingModel(
+                    provider="test",
+                    model="test-embedding",
+                    dimensions=384,
+                    version="test",
+                )
+
+            def embed_text(self, text):  # noqa: ANN001, ANN202
+                return [0.1] * 384
+
+        class ExistingCollection(QdrantVectorIndex):
+            def _request(self, method, path, payload=None, **kwargs):  # noqa: ANN001, ANN202
+                if path == "/collections/science":
+                    return {
+                        "result": {
+                            "config": {
+                                "params": {
+                                    "vectors": {
+                                        "summary": {"size": 384, "distance": "Cosine"},
+                                        "source": {"size": 384, "distance": "Cosine"},
+                                    }
+                                }
+                            }
+                        }
+                    }
+                self.last_search_payload = payload
+                return {
+                    "result": [
+                        {
+                            "id": "point-1",
+                            "score": 0.8,
+                            "payload": {"object_id": "object-1"},
+                        }
+                    ]
+                }
+
+        index = ExistingCollection(
+            "http://qdrant.invalid",
+            "science",
+            embedding_provider=Provider(),
+        )
+
+        scores = index.search("poisson")
+
+        self.assertIn("object-1", scores)
+        self.assertEqual(index.vector_mode, "multi")
+        self.assertEqual(index.last_search_payload["vector"]["name"], "source")
+
 
 def _store_with_repo(root: Path, repo: Path) -> ScienceStore:
     store = ScienceStore(root / ".science" / "physicscode-science.sqlite")

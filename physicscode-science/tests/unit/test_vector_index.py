@@ -130,6 +130,59 @@ int poisson_multigrid_solver() { return 1; }
             with self.assertRaises(Exception):
                 index.search("poisson")
 
+    def test_qdrant_search_infers_collection_dimensions(self):
+        class Provider:
+            def model(self):  # noqa: ANN202
+                from physicscode_science.embeddings.providers import EmbeddingModel
+
+                return EmbeddingModel(
+                    provider="test",
+                    model="test-embedding",
+                    dimensions=1024,
+                    version="test",
+                )
+
+            def embed_text(self, text):  # noqa: ANN001, ANN202
+                return [0.1] * 1024
+
+        class ExistingCollection(QdrantVectorIndex):
+            def _request(self, method, path, payload=None, **kwargs):  # noqa: ANN001, ANN202
+                self.last_request = (method, path, payload)
+                if path == "/collections/science":
+                    return {
+                        "result": {
+                            "config": {
+                                "params": {
+                                    "vectors": {
+                                        "size": 1024,
+                                    }
+                                }
+                            }
+                        }
+                    }
+                return {
+                    "result": [
+                        {
+                            "id": "point-1",
+                            "score": 0.42,
+                            "payload": {"object_id": "object-1"},
+                        }
+                    ]
+                }
+
+        index = ExistingCollection(
+            "http://qdrant.invalid",
+            "science",
+            dimensions=1536,
+            embedding_provider=Provider(),
+        )
+
+        scores = index.search("poisson")
+
+        self.assertEqual(scores, {"object-1": 0.42})
+        self.assertEqual(index.dimensions, 1024)
+        self.assertEqual(len(index.last_request[2]["vector"]), 1024)
+
 
 def _store_with_repo(root: Path, repo: Path) -> ScienceStore:
     store = ScienceStore(root / ".science" / "physicscode-science.sqlite")

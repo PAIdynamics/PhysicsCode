@@ -58,6 +58,19 @@ class QdrantVectorIndex:
         }
         self._request("PUT", f"/collections/{self.collection}", payload)
 
+    def collection_dimensions(self) -> int:
+        existing = self._request("GET", f"/collections/{self.collection}")
+        dimensions = (
+            existing.get("result", {})
+            .get("config", {})
+            .get("params", {})
+            .get("vectors", {})
+            .get("size")
+        )
+        if not isinstance(dimensions, int):
+            raise RuntimeError(f"Qdrant collection {self.collection!r} does not expose vector size")
+        return dimensions
+
     def upsert_store(self, store: ScienceStore, batch_size: int = 128) -> dict[str, object]:
         candidates = store.search_candidates(SearchQuery(query="", top_k=1_000_000))
         provider = self.embedding_provider or configured_embedding_provider(dimensions=self.dimensions)
@@ -98,6 +111,7 @@ class QdrantVectorIndex:
         }
 
     def search(self, query: str, limit: int = 50) -> dict[str, float]:
+        self.dimensions = self.collection_dimensions()
         provider = self.embedding_provider or configured_embedding_provider(
             dimensions=self.dimensions,
             allow_fallback=False,

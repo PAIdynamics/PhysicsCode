@@ -17,3 +17,8 @@ validation.
 When external scientific sources are used, cite repository, URL, exact commit,
 path, and line range. Never fabricate APIs, source locations, numerical
 properties, benchmark results, hardware support, or license terms.
+
+For benchmarked implementation tasks, use the Phase 7 validation shape: record a
+plan before edits, cite retrieval evidence, run compilation, tests, and
+scientific validation as separate loops, compare against the no-retrieval
+baseline when requested, and report failures explicitly.

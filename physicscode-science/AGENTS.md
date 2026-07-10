@@ -8,3 +8,6 @@
 - Use stdlib implementations for Phase 1 unless a dependency materially improves
   parsing or retrieval quality.
 - Do not couple ingestion to the PhysicsCode TUI, web app, or one model provider.
+- For agentic validation tasks, record the plan before edits, keep scientific
+  validation separate from compilation/tests, and preserve failures as report
+  data instead of hiding them.

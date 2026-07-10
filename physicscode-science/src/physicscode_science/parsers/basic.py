@@ -18,6 +18,20 @@ FORTRAN_SUBPROGRAM = re.compile(
 )
 CMAKE_TARGET = re.compile(r"^\s*(?P<signature>(?P<name>add_(?:executable|library|test))\s*\([^)]*)", re.I)
 DOC_HEADING = re.compile(r"^(?P<marks>#{1,6})\s+(?P<name>.+)$")
+CALL_PATTERN = re.compile(r"\b([A-Za-z_]\w*)\s*\(")
+INCLUDE_PATTERN = re.compile(r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]")
+PYTHON_IMPORT_PATTERN = re.compile(r"^\s*(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))")
+IGNORED_CALLS = {
+    "if",
+    "for",
+    "while",
+    "switch",
+    "return",
+    "sizeof",
+    "static_cast",
+    "reinterpret_cast",
+    "const_cast",
+}
 
 
 def parse_source_file(source: SourceFile, revision: RepositoryRevision) -> list[ParsedObject]:
@@ -149,7 +163,7 @@ def _parsed_object(
         documentation=_leading_comment(lines, start_line),
         parent_symbol=parent_symbol,
         dependencies=(),
-        calls=(),
+        calls=tuple(_calls(raw_content, name, source.language)),
         called_by=(),
         tests=(),
         examples=(),
@@ -161,6 +175,7 @@ def _parsed_object(
         metadata={
             "domains": list(revision.repository.domains),
             "repository_priority": revision.repository.priority,
+            "includes": _includes(raw_content, source.language),
         },
     )
 
@@ -176,3 +191,26 @@ def _leading_comment(lines: list[str], start_line: int) -> str:
             continue
         break
     return "\n".join(reversed(comments))
+
+
+def _calls(raw_content: str, name: str, language: str) -> list[str]:
+    if language not in {"c", "cpp", "cuda", "hip", "python"}:
+        return []
+    return sorted(
+        {
+            match.group(1)
+            for match in CALL_PATTERN.finditer(raw_content)
+            if match.group(1) not in IGNORED_CALLS and match.group(1) != name.split("::")[-1]
+        }
+    )
+
+
+def _includes(raw_content: str, language: str) -> list[str]:
+    if language in {"c", "cpp", "cuda", "hip"}:
+        return [match.group(1) for match in INCLUDE_PATTERN.finditer(raw_content)]
+    if language == "python":
+        return [
+            next(group for group in match.groups() if group)
+            for match in PYTHON_IMPORT_PATTERN.finditer(raw_content)
+        ]
+    return []

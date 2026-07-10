@@ -6,6 +6,7 @@ from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
+from physicscode_science.graph.relationships import Relationship
 from physicscode_science.models import ParsedObject, RepositoryRevision, SearchCandidate, SearchQuery, SourceFile
 
 
@@ -65,10 +66,23 @@ class ScienceStore:
               primary key (repository, commit_sha, path)
             );
 
+            create table if not exists source_relationship (
+              source_id text not null,
+              target_id text not null,
+              relationship_type text not null,
+              confidence real not null,
+              evidence text not null,
+              extractor text not null,
+              updated_at text not null,
+              primary key (source_id, target_id, relationship_type, evidence)
+            );
+
             create index if not exists source_object_repo_idx on source_object(repository);
             create index if not exists source_object_symbol_idx on source_object(symbol);
             create index if not exists source_object_hash_idx on source_object(content_hash);
             create index if not exists source_file_hash_idx on source_file(content_hash);
+            create index if not exists source_relationship_source_idx on source_relationship(source_id);
+            create index if not exists source_relationship_target_idx on source_relationship(target_id);
             """
         )
         self.connection.commit()
@@ -299,6 +313,65 @@ class ScienceStore:
     def get_symbol(self, symbol: str, repository: str | None = None) -> list[SearchCandidate]:
         query = SearchQuery(query=symbol, repositories=(repository,) if repository else ())
         return [candidate for candidate in self.search_candidates(query) if candidate.symbol == symbol]
+
+    def replace_relationships_for_repository(
+        self,
+        repository: str,
+        commit: str,
+        relationships: list[Relationship],
+        updated_at: datetime,
+    ) -> None:
+        object_ids = [
+            row["object_id"]
+            for row in self.connection.execute(
+                "select object_id from source_object where repository = ? and commit_sha = ?",
+                (repository, commit),
+            ).fetchall()
+        ]
+        if object_ids:
+            placeholders = ",".join("?" for _ in object_ids)
+            self.connection.execute(
+                f"""
+                delete from source_relationship
+                where source_id in ({placeholders}) or target_id in ({placeholders})
+                """,
+                (*object_ids, *object_ids),
+            )
+        self.connection.executemany(
+            """
+            insert or replace into source_relationship
+              (source_id, target_id, relationship_type, confidence, evidence, extractor, updated_at)
+            values (?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    relationship.source_id,
+                    relationship.target_id,
+                    relationship.relationship_type,
+                    relationship.confidence,
+                    relationship.evidence,
+                    relationship.extractor,
+                    updated_at.isoformat(),
+                )
+                for relationship in relationships
+            ],
+        )
+
+    def relationships_for_object(self, object_id: str, limit: int = 20) -> list[dict[str, object]]:
+        rows = self.connection.execute(
+            """
+            select source_id, target_id, relationship_type, confidence, evidence, extractor
+            from source_relationship
+            where source_id = ? or target_id = ?
+            order by confidence desc, relationship_type, target_id
+            limit ?
+            """,
+            (object_id, object_id, limit),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def relationship_count(self) -> int:
+        return int(self.connection.execute("select count(*) from source_relationship").fetchone()[0])
 
 
 def _json_ready(value: object) -> object:

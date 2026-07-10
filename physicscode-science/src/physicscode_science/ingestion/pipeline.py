@@ -8,6 +8,7 @@ from pathlib import Path
 from physicscode_science.enrichment.scientific import enrich_scientific_metadata
 from physicscode_science.enrichment.taxonomy import Taxonomy
 from physicscode_science.enrichment.views import add_generated_views
+from physicscode_science.graph.relationships import extract_relationships
 from physicscode_science.ingestion.filtering import iter_indexable_files
 from physicscode_science.licensing.detect import detect_file_license, detect_repository_license
 from physicscode_science.models import LicensePolicy, RepositoryConfig, SourceFile
@@ -65,6 +66,7 @@ def ingest_repository(
     objects_seen = 0
     objects_changed = 0
     objects_deleted = 0
+    repository_objects = []
     parser_failures: list[dict[str, str]] = []
 
     for absolute_path, language in selected_files:
@@ -94,6 +96,7 @@ def ingest_repository(
             ]
             keep_object_ids = {parsed.object_id for parsed in parsed_objects}
             for parsed in parsed_objects:
+                repository_objects.append(parsed)
                 objects_seen += 1
                 objects_changed += int(store.upsert_object(parsed))
             objects_deleted += store.prune_objects_for_file(
@@ -102,6 +105,8 @@ def ingest_repository(
         except Exception as error:  # noqa: BLE001 - failures are reported, not hidden
             parser_failures.append({"path": relative_path, "error": str(error)})
 
+    relationships = extract_relationships(repository_objects)
+    store.replace_relationships_for_repository(repository.name, revision.commit, relationships, datetime.now(UTC))
     report = {
         "repository": repository.name,
         "url": repository.url,
@@ -118,6 +123,7 @@ def ingest_repository(
         "objects_seen": objects_seen,
         "objects_changed": objects_changed,
         "objects_deleted": objects_deleted,
+        "relationships": len(relationships),
         "parser_failures": parser_failures,
         "started_at": started_at.isoformat(),
         "finished_at": datetime.now(UTC).isoformat(),

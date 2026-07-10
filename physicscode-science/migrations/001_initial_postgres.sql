@@ -44,7 +44,20 @@ create table if not exists source_object (
     on delete cascade
 );
 
+create table if not exists source_relationship (
+  source_id text not null references source_object(object_id) on delete cascade,
+  target_id text not null references source_object(object_id) on delete cascade,
+  relationship_type text not null,
+  confidence double precision not null,
+  evidence text not null,
+  extractor text not null,
+  updated_at timestamptz not null,
+  primary key (source_id, target_id, relationship_type, evidence)
+);
+
 create index if not exists source_object_repo_idx on source_object(repository);
 create index if not exists source_object_symbol_idx on source_object(symbol);
 create index if not exists source_object_hash_idx on source_object(content_hash);
 create index if not exists source_file_hash_idx on source_file(content_hash);
+create index if not exists source_relationship_source_idx on source_relationship(source_id);
+create index if not exists source_relationship_target_idx on source_relationship(target_id);

@@ -40,3 +40,14 @@ create table if not exists source_file (
   ingested_at text not null,
   primary key (repository, commit_sha, path)
 );
+
+create table if not exists source_relationship (
+  source_id text not null,
+  target_id text not null,
+  relationship_type text not null,
+  confidence real not null,
+  evidence text not null,
+  extractor text not null,
+  updated_at text not null,
+  primary key (source_id, target_id, relationship_type, evidence)
+);

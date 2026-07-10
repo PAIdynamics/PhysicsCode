@@ -96,3 +96,51 @@ class ParsedObject:
     summary_model: str | None = None
     summary_model_version: str | None = None
     metadata: dict[str, object] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class SearchQuery:
+    query: str
+    repositories: tuple[str, ...] = ()
+    languages: tuple[str, ...] = ()
+    object_types: tuple[str, ...] = ()
+    licenses: tuple[str, ...] = ()
+    top_k: int = 10
+    include_content: bool = False
+
+
+@dataclass(frozen=True)
+class SearchCandidate:
+    object_id: str
+    repository: str
+    repository_url: str
+    commit: str
+    path: str
+    start_line: int
+    end_line: int
+    symbol: str
+    object_type: str
+    language: str
+    license: str
+    raw_content: str
+    metadata: dict[str, object]
+
+
+@dataclass(frozen=True)
+class SearchResult:
+    result_id: str
+    repository: str
+    repository_url: str
+    commit: str
+    path: str
+    start_line: int
+    end_line: int
+    symbol: str
+    object_type: str
+    language: str
+    license: str
+    score: float
+    retrieval_channels: tuple[str, ...]
+    reason: str
+    summary: str
+    content: str | None = None

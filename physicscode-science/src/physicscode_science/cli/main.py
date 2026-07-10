@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 from physicscode_science.ingestion.pipeline import ingest_repositories
 from physicscode_science.licensing.policy import load_license_policy
+from physicscode_science.models import SearchQuery
 from physicscode_science.registry.config import enabled_repositories
+from physicscode_science.retrieval.search import search
 from physicscode_science.storage.content_store import ContentStore
 from physicscode_science.storage.sqlite import ScienceStore
 
@@ -21,6 +24,15 @@ def main() -> None:
     ingest.add_argument("--report", default=".science/reports")
     ingest.add_argument("--content-store", default=".science/content")
     ingest.add_argument("--max-files-per-repo", type=int)
+    search_command = subcommands.add_parser("search", help="Search indexed scientific source objects")
+    search_command.add_argument("query")
+    search_command.add_argument("--db", default=".science/physicscode-science.sqlite")
+    search_command.add_argument("--repository", action="append", default=[])
+    search_command.add_argument("--language", action="append", default=[])
+    search_command.add_argument("--object-type", action="append", default=[])
+    search_command.add_argument("--license", action="append", default=[])
+    search_command.add_argument("--top-k", type=int, default=10)
+    search_command.add_argument("--include-content", action="store_true")
     args = parser.parse_args()
 
     if args.command == "ingest":
@@ -37,6 +49,25 @@ def main() -> None:
         finally:
             store.close()
         print(json.dumps(reports, indent=2, sort_keys=True))
+    if args.command == "search":
+        store = ScienceStore(args.db)
+        try:
+            store.migrate()
+            results = search(
+                store,
+                SearchQuery(
+                    query=args.query,
+                    repositories=tuple(args.repository),
+                    languages=tuple(args.language),
+                    object_types=tuple(args.object_type),
+                    licenses=tuple(args.license),
+                    top_k=args.top_k,
+                    include_content=args.include_content,
+                ),
+            )
+        finally:
+            store.close()
+        print(json.dumps([asdict(result) for result in results], indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

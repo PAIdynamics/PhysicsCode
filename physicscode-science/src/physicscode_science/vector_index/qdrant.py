@@ -5,12 +5,10 @@ import uuid
 from pathlib import Path
 from urllib import request
 
+from physicscode_science.embeddings.providers import EmbeddingProvider, configured_embedding_provider
 from physicscode_science.models import SearchQuery
 from physicscode_science.retrieval.vector import (
     DEFAULT_VECTOR_DIMENSIONS,
-    dense_vector,
-    vectorize_candidate,
-    vectorize_query,
 )
 from physicscode_science.storage.sqlite import ScienceStore
 
@@ -23,11 +21,13 @@ class QdrantVectorIndex:
         *,
         dimensions: int = DEFAULT_VECTOR_DIMENSIONS,
         api_key: str | None = None,
+        embedding_provider: EmbeddingProvider | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.collection = collection
         self.dimensions = dimensions
         self.api_key = api_key
+        self.embedding_provider = embedding_provider
 
     def ensure_collection(self) -> None:
         payload = {
@@ -40,6 +40,9 @@ class QdrantVectorIndex:
 
     def upsert_store(self, store: ScienceStore, batch_size: int = 128) -> dict[str, object]:
         candidates = store.search_candidates(SearchQuery(query="", top_k=1_000_000))
+        provider = self.embedding_provider or configured_embedding_provider(dimensions=self.dimensions)
+        model = provider.model()
+        self.dimensions = model.dimensions
         self.ensure_collection()
         written = 0
         for offset in range(0, len(candidates), batch_size):
@@ -47,7 +50,7 @@ class QdrantVectorIndex:
             points = [
                 {
                     "id": _point_id(candidate.object_id),
-                    "vector": dense_vector(vectorize_candidate(candidate, self.dimensions), self.dimensions),
+                    "vector": provider.embed_candidate(candidate),
                     "payload": {
                         "object_id": candidate.object_id,
                         "repository": candidate.repository,
@@ -58,6 +61,7 @@ class QdrantVectorIndex:
                         "language": candidate.language,
                         "license": candidate.license,
                         "metadata": candidate.metadata,
+                        "embedding_model": model.__dict__,
                     },
                 }
                 for candidate in batch
@@ -69,12 +73,14 @@ class QdrantVectorIndex:
             "url": self.base_url,
             "collection": self.collection,
             "dimensions": self.dimensions,
+            "embedding_model": model.__dict__,
             "object_count": written,
         }
 
     def search(self, query: str, limit: int = 50) -> dict[str, float]:
+        provider = self.embedding_provider or configured_embedding_provider(dimensions=self.dimensions)
         payload = {
-            "vector": dense_vector(vectorize_query(query, self.dimensions), self.dimensions),
+            "vector": provider.embed_text(query),
             "limit": limit,
             "with_payload": True,
         }

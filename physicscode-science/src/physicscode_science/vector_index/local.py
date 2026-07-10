@@ -3,14 +3,18 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import math
 from pathlib import Path
 
+from physicscode_science.embeddings.providers import (
+    EmbeddingProvider,
+    HashEmbeddingProvider,
+    configured_embedding_provider,
+)
 from physicscode_science.models import SearchCandidate, SearchQuery
 from physicscode_science.retrieval.vector import (
     DEFAULT_VECTOR_DIMENSIONS,
-    cosine,
-    vectorize_candidate,
-    vectorize_query,
+    dense_vector,
 )
 from physicscode_science.storage.sqlite import ScienceStore
 
@@ -24,7 +28,7 @@ class VectorIndexEntry:
     repository: str
     commit: str
     path: str
-    vector: dict[int, float]
+    vector: list[float]
 
 
 def default_vector_index_path(store: ScienceStore) -> Path:
@@ -36,9 +40,12 @@ def build_local_vector_index(
     path: str | Path | None = None,
     *,
     dimensions: int = DEFAULT_VECTOR_DIMENSIONS,
+    embedding_provider: EmbeddingProvider | None = None,
 ) -> dict[str, object]:
     target = Path(path) if path else default_vector_index_path(store)
     target.parent.mkdir(parents=True, exist_ok=True)
+    provider = embedding_provider or configured_embedding_provider(dimensions=dimensions)
+    model = provider.model()
     candidates = store.search_candidates(SearchQuery(query="", top_k=1_000_000))
     entries = [
         {
@@ -46,14 +53,15 @@ def build_local_vector_index(
             "repository": candidate.repository,
             "commit": candidate.commit,
             "path": candidate.path,
-            "vector": _pack(vectorize_candidate(candidate, dimensions)),
+            "vector": provider.embed_candidate(candidate),
         }
         for candidate in candidates
     ]
     payload = {
         "version": LOCAL_INDEX_VERSION,
         "backend": "local_json",
-        "dimensions": dimensions,
+        "embedding_model": model.__dict__,
+        "dimensions": model.dimensions,
         "object_count": len(entries),
         "built_at": datetime.now(UTC).isoformat(),
         "entries": entries,
@@ -62,7 +70,8 @@ def build_local_vector_index(
     return {
         "backend": "local_json",
         "path": str(target),
-        "dimensions": dimensions,
+        "dimensions": model.dimensions,
+        "embedding_model": model.__dict__,
         "object_count": len(entries),
     }
 
@@ -74,12 +83,19 @@ def local_vector_scores(
 ) -> dict[str, float]:
     candidate_ids = {candidate.object_id for candidate in candidates}
     index = load_local_vector_index(path)
-    query_vector = vectorize_query(query, int(index["dimensions"]))
+    embedding_model = index.get("embedding_model", {})
+    if isinstance(embedding_model, dict) and embedding_model.get("fallback") is False:
+        query_vector = configured_embedding_provider(
+            dimensions=int(index["dimensions"]),
+            allow_fallback=True,
+        ).embed_text(query)
+    else:
+        query_vector = HashEmbeddingProvider(int(index["dimensions"])).embed_text(query)
     scores: dict[str, float] = {}
     for entry in index["entries"]:
         if entry.object_id not in candidate_ids:
             continue
-        score = cosine(query_vector, entry.vector)
+        score = _cosine_dense(query_vector, entry.vector)
         if score > 0:
             scores[entry.object_id] = score
     return scores
@@ -94,7 +110,7 @@ def load_local_vector_index(path: str | Path) -> dict[str, object]:
             repository=str(item.get("repository", "")),
             commit=str(item.get("commit", "")),
             path=str(item.get("path", "")),
-            vector=_unpack(item.get("vector", [])),
+            vector=_vector(item.get("vector", []), dimensions),
         )
         for item in payload.get("entries", [])
         if isinstance(item, dict)
@@ -102,6 +118,7 @@ def load_local_vector_index(path: str | Path) -> dict[str, object]:
     return {
         "version": payload.get("version", ""),
         "backend": payload.get("backend", "local_json"),
+        "embedding_model": payload.get("embedding_model", {}),
         "dimensions": dimensions,
         "object_count": int(payload.get("object_count", len(entries))),
         "built_at": payload.get("built_at", ""),
@@ -109,16 +126,23 @@ def load_local_vector_index(path: str | Path) -> dict[str, object]:
     }
 
 
-def _pack(vector: dict[int, float]) -> list[list[float]]:
-    return [[index, value] for index, value in sorted(vector.items())]
-
-
-def _unpack(items: object) -> dict[int, float]:
-    vector: dict[int, float] = {}
+def _vector(items: object, dimensions: int) -> list[float]:
     if not isinstance(items, list):
-        return vector
-    for item in items:
-        if isinstance(item, list) and len(item) == 2:
-            vector[int(item[0])] = float(item[1])
-    return vector
+        return []
+    if items and isinstance(items[0], list):
+        return dense_vector(
+            {int(item[0]): float(item[1]) for item in items if isinstance(item, list) and len(item) == 2},
+            dimensions,
+        )
+    return [float(item) for item in items]
 
+
+def _cosine_dense(left: list[float], right: list[float]) -> float:
+    if not left or not right or len(left) != len(right):
+        return 0.0
+    dot = sum(a * b for a, b in zip(left, right, strict=True))
+    left_norm = math.sqrt(sum(value * value for value in left))
+    right_norm = math.sqrt(sum(value * value for value in right))
+    if left_norm == 0 or right_norm == 0:
+        return 0.0
+    return max(0.0, dot / (left_norm * right_norm))

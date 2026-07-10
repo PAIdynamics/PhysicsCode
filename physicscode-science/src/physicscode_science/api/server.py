@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 from physicscode_science.models import SearchQuery
+from physicscode_science.production import production_status
 from physicscode_science.retrieval.search import search
 from physicscode_science.storage.sqlite import ScienceStore
 
@@ -20,6 +21,10 @@ def _handler(db_path: str) -> type[BaseHTTPRequestHandler]:
         def do_GET(self) -> None:  # noqa: N802
             if self.path == "/health":
                 _send_json(self, 200, {"status": "ok"})
+                return
+            if self.path in {"/ready", "/v1/status"}:
+                payload = status_payload(db_path)
+                _send_json(self, 200 if payload["ready"] else 503, payload)
                 return
             _send_json(self, 404, {"error": "not found"})
 
@@ -47,6 +52,15 @@ def search_payload(db_path: str, payload: dict[str, Any]) -> dict[str, Any]:
     finally:
         store.close()
     return {"results": [asdict(result) for result in results]}
+
+
+def status_payload(db_path: str) -> dict[str, Any]:
+    store = ScienceStore(db_path)
+    try:
+        store.migrate()
+        return production_status(store)
+    finally:
+        store.close()
 
 
 def _query(payload: dict[str, Any]) -> SearchQuery:

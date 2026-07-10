@@ -27,6 +27,7 @@ Tools:
 - `science_get_context`
 - `science_check_license`
 - `science_project_context`
+- `science_status`
 
 Agentic validation is exposed as a CLI benchmark harness rather than an HTTP or
 MCP mutation endpoint. Implementation edits stay in the normal agent workflow;
@@ -35,6 +36,12 @@ the harness records evidence, validation loops, and baseline comparisons.
 Dense retrieval is backed by a vector index when one is available. For
 production Qdrant search, set `PHYSICSCODE_SCIENCE_VECTOR_BACKEND=qdrant` in the
 MCP/API process environment.
+
+Readiness endpoints:
+
+- `GET /health`
+- `GET /ready`
+- `GET /v1/status`
 
 `science_get_context` accepts:
 

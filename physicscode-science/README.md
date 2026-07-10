@@ -88,6 +88,13 @@ python -m physicscode_science.cli.main build-vector-index \
   --output .science/vector-index.json
 ```
 
+Report production readiness:
+
+```sh
+python -m physicscode_science.cli.main status \
+  --db .science/physicscode-science.sqlite
+```
+
 Compare retrieval modes on a benchmark file:
 
 ```sh
@@ -126,6 +133,8 @@ Reranking is enabled by default. Use `--no-rerank`, `--no-deduplicate`, or
 Dense retrieval prefers a persisted vector index when `.science/vector-index.json`
 exists. Production can use Qdrant by building the index with `--backend qdrant`
 and setting `PHYSICSCODE_SCIENCE_VECTOR_BACKEND=qdrant`.
+See `docs/production.md` for repository sync, Qdrant, embeddings, API, and MCP
+readiness steps.
 
 Agentic validation records a plan-before-edit workflow, retrieval evidence,
 source/license provenance, compilation, tests, scientific validation, and a

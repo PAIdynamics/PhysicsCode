@@ -10,6 +10,7 @@ from physicscode_science.mcp.server import _read_message, _write_message, handle
 from physicscode_science.mcp.tools import call_tool
 from physicscode_science.models import RepositoryConfig
 from physicscode_science.storage.sqlite import ScienceStore
+from physicscode_science.vector_index.local import build_local_vector_index
 
 
 class McpTest(unittest.TestCase):
@@ -45,6 +46,23 @@ class McpTest(unittest.TestCase):
 
             self.assertEqual(source_payload["source"]["object_id"], object_id)
             self.assertEqual(symbol_payload["results"][0]["symbol"], "poisson_solver")
+
+    def test_science_status_reports_ready_index(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db = _index_fixture(root)
+            store = ScienceStore(db)
+            try:
+                store.migrate()
+                build_local_vector_index(store)
+            finally:
+                store.close()
+
+            payload = call_tool(str(db), "science_status", {})
+
+            self.assertTrue(payload["ready"])
+            self.assertEqual(payload["database"]["object_count"], 1)
+            self.assertTrue(payload["vector_index"]["present"])
 
     def test_mcp_content_length_framing_round_trips(self):
         stream = BytesIO()

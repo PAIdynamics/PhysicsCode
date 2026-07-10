@@ -52,6 +52,17 @@ python -m physicscode_science.cli.main build-vector-index \
   --qdrant-collection physicscode_science_summary
 ```
 
+Use an embedding-capable OpenAI-compatible server when available:
+
+```sh
+python -m physicscode_science.cli.main build-vector-index \
+  --db .science/physicscode-science.sqlite \
+  --backend qdrant \
+  --embedding-provider vllm \
+  --embedding-url http://127.0.0.1:8000 \
+  --embedding-model your-embedding-model
+```
+
 At query time, set `PHYSICSCODE_SCIENCE_VECTOR_BACKEND=qdrant` and optionally
 `PHYSICSCODE_SCIENCE_QDRANT_URL`,
 `PHYSICSCODE_SCIENCE_QDRANT_COLLECTION`, and

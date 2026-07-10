@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from dataclasses import asdict
 from pathlib import Path
 
@@ -14,11 +15,13 @@ from physicscode_science.ingestion.pipeline import ingest_repositories, ingest_r
 from physicscode_science.evaluation.benchmarks import evaluate_search, load_benchmark_queries
 from physicscode_science.licensing.policy import load_license_policy
 from physicscode_science.mcp.server import serve_stdio
-from physicscode_science.models import SearchQuery
+from physicscode_science.models import RepositoryConfig, SearchQuery
+from physicscode_science.production import production_status
 from physicscode_science.registry.config import enabled_repositories
 from physicscode_science.retrieval.search import search
 from physicscode_science.storage.content_store import ContentStore
 from physicscode_science.storage.sqlite import ScienceStore
+from physicscode_science.sync.repositories import sync_repositories
 from physicscode_science.vector_index.local import build_local_vector_index
 from physicscode_science.vector_index.qdrant import QdrantVectorIndex
 
@@ -51,6 +54,14 @@ def main() -> None:
         action="store_true",
         help="Print and commit one repository report at a time.",
     )
+    sync = subcommands.add_parser(
+        "sync-repositories",
+        help="Report, fetch, or clone configured reference repositories.",
+    )
+    sync.add_argument("--registry", default="config/repositories.yaml")
+    sync.add_argument("--repository", action="append", default=[])
+    sync.add_argument("--fetch", action="store_true")
+    sync.add_argument("--clone-missing", action="store_true")
     search_command = subcommands.add_parser("search", help="Search indexed scientific source objects")
     search_command.add_argument("query")
     search_command.add_argument("--db", default=".science/physicscode-science.sqlite")
@@ -93,6 +104,12 @@ def main() -> None:
     vector_index.add_argument("--qdrant-url", default="http://127.0.0.1:6333")
     vector_index.add_argument("--qdrant-collection", default="physicscode_science_summary")
     vector_index.add_argument("--qdrant-api-key")
+    vector_index.add_argument("--embedding-provider", choices=["hash", "vllm", "openai-compatible"])
+    vector_index.add_argument("--embedding-url")
+    vector_index.add_argument("--embedding-model")
+    vector_index.add_argument("--embedding-api-key")
+    status = subcommands.add_parser("status", help="Report science DB and vector-index readiness")
+    status.add_argument("--db", default=".science/physicscode-science.sqlite")
     serve = subcommands.add_parser("serve", help="Run the science retrieval HTTP API")
     serve.add_argument("--db", default=".science/physicscode-science.sqlite")
     serve.add_argument("--host", default="127.0.0.1")
@@ -109,13 +126,7 @@ def main() -> None:
     if args.command == "ingest":
         store = ScienceStore(args.db)
         try:
-            repositories = enabled_repositories(Path(args.registry))
-            if args.repository:
-                selected = set(args.repository)
-                repositories = [repository for repository in repositories if repository.name in selected]
-                missing = selected - {repository.name for repository in repositories}
-                if missing:
-                    raise ValueError(f"unknown or disabled repositories: {', '.join(sorted(missing))}")
+            repositories = _selected_repositories(args.registry, args.repository)
             license_policy = load_license_policy(args.licenses)
             content_store = ContentStore(args.content_store)
             taxonomy = load_taxonomy(args.taxonomy)
@@ -152,6 +163,14 @@ def main() -> None:
             store.close()
         if not args.stream_reports:
             print(json.dumps(reports, indent=2, sort_keys=True))
+    if args.command == "sync-repositories":
+        repositories = _selected_repositories(args.registry, args.repository)
+        reports = sync_repositories(
+            repositories,
+            fetch=bool(args.fetch),
+            clone_missing=bool(args.clone_missing),
+        )
+        print(json.dumps(reports, indent=2, sort_keys=True))
     if args.command == "search":
         store = ScienceStore(args.db)
         try:
@@ -197,6 +216,7 @@ def main() -> None:
             store.close()
         print(json.dumps(report, indent=2, sort_keys=True))
     if args.command == "build-vector-index":
+        _configure_embedding_environment(args)
         store = ScienceStore(args.db)
         try:
             store.migrate()
@@ -213,6 +233,14 @@ def main() -> None:
                     args.output,
                     dimensions=args.dimensions,
                 )
+        finally:
+            store.close()
+        print(json.dumps(report, indent=2, sort_keys=True))
+    if args.command == "status":
+        store = ScienceStore(args.db)
+        try:
+            store.migrate()
+            report = production_status(store)
         finally:
             store.close()
         print(json.dumps(report, indent=2, sort_keys=True))
@@ -237,6 +265,28 @@ def main() -> None:
         finally:
             store.close()
         print(json.dumps(report, indent=2, sort_keys=True))
+
+
+def _selected_repositories(registry: str, names: list[str]) -> list[RepositoryConfig]:
+    repositories = enabled_repositories(Path(registry))
+    if names:
+        selected = set(names)
+        repositories = [repository for repository in repositories if repository.name in selected]
+        missing = selected - {repository.name for repository in repositories}
+        if missing:
+            raise ValueError(f"unknown or disabled repositories: {', '.join(sorted(missing))}")
+    return repositories
+
+
+def _configure_embedding_environment(args: argparse.Namespace) -> None:
+    if args.embedding_provider:
+        os.environ["PHYSICSCODE_SCIENCE_EMBEDDING_PROVIDER"] = args.embedding_provider
+    if args.embedding_url:
+        os.environ["PHYSICSCODE_SCIENCE_EMBEDDING_URL"] = args.embedding_url
+    if args.embedding_model:
+        os.environ["PHYSICSCODE_SCIENCE_EMBEDDING_MODEL"] = args.embedding_model
+    if args.embedding_api_key:
+        os.environ["PHYSICSCODE_SCIENCE_EMBEDDING_API_KEY"] = args.embedding_api_key
 
 
 if __name__ == "__main__":

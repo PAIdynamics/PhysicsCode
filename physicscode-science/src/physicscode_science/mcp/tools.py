@@ -6,6 +6,7 @@ from typing import Any
 from physicscode_science.models import SearchQuery
 from physicscode_science.context.project import inspect_project
 from physicscode_science.graph.context import get_context
+from physicscode_science.production import production_status
 from physicscode_science.retrieval.search import search
 from physicscode_science.storage.sqlite import ScienceStore
 
@@ -88,6 +89,11 @@ def tool_definitions() -> list[dict[str, Any]]:
                 "required": ["path"],
             },
         },
+        {
+            "name": "science_status",
+            "description": "Report science database and vector-index readiness for production retrieval.",
+            "inputSchema": {"type": "object", "properties": {}},
+        },
     ]
 
 
@@ -131,6 +137,8 @@ def call_tool(db_path: str, name: str, arguments: dict[str, Any]) -> dict[str, A
             }
         if name == "science_project_context":
             return inspect_project(str(arguments["path"]), max_files=int(arguments.get("max_files", 5000)))
+        if name == "science_status":
+            return production_status(store)
         raise ValueError(f"unknown science tool: {name}")
     finally:
         store.close()

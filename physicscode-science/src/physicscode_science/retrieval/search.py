@@ -5,6 +5,7 @@ from physicscode_science.retrieval.bm25 import bm25_scores
 from physicscode_science.retrieval.fusion import reciprocal_rank_fusion
 from physicscode_science.retrieval.symbol import symbol_scores
 from physicscode_science.retrieval.vector import hashed_vector_scores
+from physicscode_science.retrieval.views import generated_view_text
 from physicscode_science.storage.sqlite import ScienceStore
 
 
@@ -56,5 +57,8 @@ def _result(
 
 
 def _summary(candidate: SearchCandidate) -> str:
+    generated = candidate.metadata.get("metadata", {}).get("generated_views", {})
+    if isinstance(generated, dict) and generated.get("summary"):
+        return str(generated["summary"])
     text = " ".join(candidate.raw_content.strip().split())
     return text[:240] + ("..." if len(text) > 240 else "")

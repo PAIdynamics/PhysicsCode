@@ -5,6 +5,7 @@ from pathlib import Path
 
 from physicscode_science.enrichment.scientific import enrich_scientific_metadata
 from physicscode_science.enrichment.taxonomy import load_taxonomy
+from physicscode_science.enrichment.views import add_generated_views
 from physicscode_science.ingestion.pipeline import ingest_repository
 from physicscode_science.models import LicenseFinding, ParsedObject, RepositoryConfig
 from physicscode_science.storage.sqlite import ScienceStore
@@ -22,7 +23,9 @@ void deposit_charge() {
         )
 
         enriched = enrich_scientific_metadata(parsed, taxonomy)
+        enriched = add_generated_views(enriched)
         metadata = enriched.metadata["scientific_metadata"]
+        views = enriched.metadata["generated_views"]
 
         self.assertEqual(metadata["extractor"], "scientific-keyword-v1")
         self.assertIn("particle-in-cell", enriched.metadata["domains"])
@@ -30,6 +33,8 @@ void deposit_charge() {
         self.assertIn("Vlasov-Poisson", _values(metadata["equations"]))
         self.assertIn("Kokkos", _values(metadata["parallel_models"]))
         self.assertGreater(metadata["algorithms"][0]["confidence"], 0)
+        self.assertEqual(views["model_version"], "deterministic-template-v1")
+        self.assertIn("charge-deposition", views["summary"])
 
     def test_ingestion_persists_scientific_metadata(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -56,7 +61,9 @@ void deposit_charge() {
                 result = store.get_symbol("deposit_charge")[0]
 
                 scientific = result.metadata["metadata"]["scientific_metadata"]
+                generated = result.metadata["metadata"]["generated_views"]
                 self.assertIn("charge-deposition", _values(scientific["algorithms"]))
+                self.assertIn("Example", generated["queries"][1])
             finally:
                 store.close()
 

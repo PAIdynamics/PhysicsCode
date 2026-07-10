@@ -7,6 +7,7 @@ from pathlib import Path
 
 from physicscode_science.enrichment.scientific import enrich_scientific_metadata
 from physicscode_science.enrichment.taxonomy import Taxonomy
+from physicscode_science.enrichment.views import add_generated_views
 from physicscode_science.ingestion.filtering import iter_indexable_files
 from physicscode_science.licensing.detect import detect_file_license, detect_repository_license
 from physicscode_science.models import LicensePolicy, RepositoryConfig, SourceFile
@@ -88,7 +89,7 @@ def ingest_repository(
             )
             files_changed += int(store.upsert_source_file(source, str(snapshot_path), started_at))
             parsed_objects = [
-                enrich_scientific_metadata(parsed, taxonomy)
+                add_generated_views(enrich_scientific_metadata(parsed, taxonomy))
                 for parsed in parse_source_file(source, revision)
             ]
             keep_object_ids = {parsed.object_id for parsed in parsed_objects}

@@ -5,6 +5,7 @@ from collections import Counter
 
 from physicscode_science.models import SearchCandidate
 from physicscode_science.retrieval.tokenize import split_identifier, tokenize
+from physicscode_science.retrieval.views import generated_view_text, scientific_metadata_text
 
 
 def bm25_scores(query: str, candidates: list[SearchCandidate]) -> dict[str, float]:
@@ -37,5 +38,7 @@ def _document_terms(candidate: SearchCandidate) -> list[str]:
         + tokenize(candidate.path)
         + tokenize(candidate.object_type)
         + tokenize(candidate.language)
+        + tokenize(generated_view_text(candidate))
+        + tokenize(scientific_metadata_text(candidate))
         + tokenize(candidate.raw_content)
     )

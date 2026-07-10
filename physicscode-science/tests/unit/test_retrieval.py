@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from physicscode_science.ingestion.pipeline import ingest_repository
+from physicscode_science.enrichment.taxonomy import load_taxonomy
 from physicscode_science.models import RepositoryConfig, SearchQuery
 from physicscode_science.retrieval.search import search
 from physicscode_science.storage.sqlite import ScienceStore
@@ -42,6 +43,32 @@ void solve_heat_equation() {
                 self.assertEqual(results[0].commit, _head(repo))
                 self.assertIn("sparse", results[0].retrieval_channels)
                 self.assertTrue(results[0].path.endswith("kernels.cpp"))
+            finally:
+                store.close()
+
+    def test_search_uses_generated_summary_view_when_available(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = _repo(root)
+            (repo / "deposit.cpp").write_text(
+                "void deposit_charge() {\n  // cloud-in-cell charge deposition\n}\n",
+                encoding="utf-8",
+            )
+            _init_git_repo(repo)
+            store = ScienceStore(root / "science.sqlite")
+            try:
+                ingest_repository(
+                    _config(repo),
+                    store,
+                    root / "reports",
+                    taxonomy=load_taxonomy(Path(__file__).parents[2] / "config" / "taxonomy.yaml"),
+                )
+                store.commit()
+
+                results = search(store, SearchQuery("charge-deposition example", top_k=1))
+
+                self.assertEqual(results[0].symbol, "deposit_charge")
+                self.assertIn("algorithm tags charge-deposition", results[0].summary)
             finally:
                 store.close()
 

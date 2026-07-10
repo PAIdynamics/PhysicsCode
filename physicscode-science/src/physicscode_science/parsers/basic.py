@@ -10,9 +10,6 @@ from physicscode_science.utils import sha256_text
 PARSER_VERSION = "basic-regex-v1"
 MAX_DECLARATION_LINE_CHARS = 600
 
-CPP_FUNCTION = re.compile(
-    r"^\s*(?:template\s*<[^;{}]+>\s*)?(?P<signature>(?:[\w:<>,~*&\s]+\s+)+(?P<name>[A-Za-z_]\w*(?:::[A-Za-z_]\w*)?)\s*\([^;{}]*\)\s*(?:const\s*)?(?:noexcept\s*)?(?:override\s*)?)\{?"
-)
 PYTHON_DEF = re.compile(r"^\s*(?P<signature>(?:async\s+)?def\s+(?P<name>[A-Za-z_]\w*)\s*\([^)]*\)\s*:)")
 FORTRAN_SUBPROGRAM = re.compile(
     r"^\s*(?P<signature>(?:subroutine|function)\s+(?P<name>[A-Za-z_]\w*)\b.*)", re.I
@@ -35,10 +32,14 @@ IGNORED_CALLS = {
 }
 
 
-def parse_source_file(source: SourceFile, revision: RepositoryRevision) -> list[ParsedObject]:
+def parse_source_file(
+    source: SourceFile,
+    revision: RepositoryRevision,
+    max_objects: int | None = None,
+) -> list[ParsedObject]:
     text = Path(source.absolute_path).read_text(encoding="utf-8", errors="replace")
     lines = text.splitlines()
-    matches = _matches_for_language(source.language, lines)
+    matches = _matches_for_language(source.language, lines, limit=max_objects)
     if not matches:
         return [_file_object(source, revision, text, lines)]
     return [
@@ -57,7 +58,11 @@ def parse_source_file(source: SourceFile, revision: RepositoryRevision) -> list[
     ]
 
 
-def _matches_for_language(language: str, lines: list[str]) -> list[dict[str, object]]:
+def _matches_for_language(
+    language: str,
+    lines: list[str],
+    limit: int | None = None,
+) -> list[dict[str, object]]:
     matcher = (
         PYTHON_DEF
         if language == "python"
@@ -67,18 +72,18 @@ def _matches_for_language(language: str, lines: list[str]) -> list[dict[str, obj
         if language == "cmake"
         else DOC_HEADING
         if language in {"markdown", "restructuredtext"}
-        else CPP_FUNCTION
-        if language in {"c", "cpp", "cuda", "hip"}
         else None
     )
-    if matcher is None:
+    if matcher is None and language not in {"c", "cpp", "cuda", "hip"}:
         return []
     objects = []
     for index, line in enumerate(lines, start=1):
         if len(line) > MAX_DECLARATION_LINE_CHARS:
             continue
-        match = matcher.match(line)
-        if match:
+        if not _could_match(language, line):
+            continue
+        match = _cpp_function_match(line) if language in {"c", "cpp", "cuda", "hip"} else matcher.match(line)
+        if match is not None:
             objects.append(
                 {
                     "object_type": _object_type(language, match.group("name")),
@@ -87,7 +92,62 @@ def _matches_for_language(language: str, lines: list[str]) -> list[dict[str, obj
                     "line": index,
                 }
             )
+            if limit is not None and len(objects) >= limit:
+                break
     return objects
+
+
+class _SimpleMatch:
+    def __init__(self, values: dict[str, str]) -> None:
+        self.values = values
+
+    def group(self, name: str) -> str:
+        return self.values[name]
+
+    def groupdict(self) -> dict[str, str]:
+        return dict(self.values)
+
+
+def _cpp_function_match(line: str) -> _SimpleMatch | None:
+    stripped = line.strip()
+    before_paren, _paren, after_paren = stripped.partition("(")
+    if not before_paren or ")" not in after_paren:
+        return None
+    if any(token in before_paren for token in ("=", "[", "]")):
+        return None
+    before_paren = before_paren.removeprefix("template").strip()
+    raw_name = before_paren.split()[-1].strip("*&")
+    raw_name = raw_name.split("::")[-1] if "::" in raw_name else raw_name
+    if raw_name.startswith("~"):
+        raw_name = raw_name[1:]
+    if not re.match(r"^[A-Za-z_]\w*$", raw_name):
+        return None
+    if raw_name in IGNORED_CALLS:
+        return None
+    signature = stripped[: stripped.find(")") + 1]
+    return _SimpleMatch({"name": raw_name, "signature": signature})
+
+
+def _could_match(language: str, line: str) -> bool:
+    stripped = line.strip()
+    if not stripped:
+        return False
+    if language in {"c", "cpp", "cuda", "hip"}:
+        if "(" not in stripped or ")" not in stripped:
+            return False
+        if stripped.startswith(("#", "//", "/*", "*", "using ", "typedef ", "return ")):
+            return False
+        if stripped.endswith((";", ",", "\\")):
+            return False
+    if language == "python":
+        return stripped.startswith(("def ", "async def "))
+    if language == "fortran":
+        return stripped.lower().startswith(("subroutine ", "function "))
+    if language == "cmake":
+        return stripped.lower().startswith(("add_executable", "add_library", "add_test"))
+    if language in {"markdown", "restructuredtext"}:
+        return stripped.startswith("#")
+    return True
 
 
 def _object_type(language: str, name: str) -> str:

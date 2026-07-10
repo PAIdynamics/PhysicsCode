@@ -50,6 +50,13 @@ repositories:
       - cpp
       - cmake
       - python
+    include_paths:
+      - Source
+      - Modules
+      - Help/command
+      - Help/module
+      - Help/guide
+      - Tests/RunCMake
     priority: medium
     enabled: true
 
@@ -392,6 +399,18 @@ repositories:
       - cpp
       - python
       - cmake
+    include_paths:
+      - aten/src
+      - c10/core
+      - c10/cuda
+      - c10/util
+      - torch/csrc
+      - torch/distributed
+      - torch/autograd
+      - torch/_inductor
+      - torch/_dynamo
+      - benchmarks/operator_benchmark
+      - test/distributed
     priority: medium
     enabled: true
 
@@ -426,6 +445,11 @@ repositories:
     languages:
       - python
       - shell
+    include_paths:
+      - lib/spack/spack
+      - var/spack/repos/builtin/packages
+      - etc/spack
+      - share/spack
     priority: medium
     enabled: true
 

@@ -22,6 +22,11 @@ repositories:
       - plasma-physics
     languages:
       - cpp
+    include_paths:
+      - src
+      - docs
+    exclude_paths:
+      - src/generated
     priority: high
     enabled: true
 """,
@@ -33,6 +38,8 @@ repositories:
             self.assertEqual(len(repositories), 1)
             self.assertEqual(repositories[0].name, "example")
             self.assertEqual(repositories[0].domains, ("plasma-physics",))
+            self.assertEqual(repositories[0].include_paths, ("src", "docs"))
+            self.assertEqual(repositories[0].exclude_paths, ("src/generated",))
             self.assertTrue(repositories[0].enabled)
 
 

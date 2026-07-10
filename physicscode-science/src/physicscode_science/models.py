@@ -16,6 +16,8 @@ class RepositoryConfig:
     languages: tuple[str, ...]
     priority: str
     enabled: bool
+    include_paths: tuple[str, ...] = ()
+    exclude_paths: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

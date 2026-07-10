@@ -58,13 +58,23 @@ def iter_indexable_files(
     root: str | Path,
     max_bytes: int = 500_000,
     limit: int | None = None,
+    include_paths: tuple[str, ...] = (),
+    exclude_paths: tuple[str, ...] = (),
 ) -> list[tuple[Path, str]]:
     root_path = Path(root)
+    includes = tuple(_clean_prefix(path) for path in include_paths if path)
+    excludes = tuple(_clean_prefix(path) for path in exclude_paths if path)
     files: list[tuple[Path, str]] = []
     for path in root_path.rglob("*"):
         if not path.is_file():
             continue
-        if any(part in EXCLUDED_DIRS for part in path.relative_to(root_path).parts):
+        relative = path.relative_to(root_path)
+        relative_text = relative.as_posix()
+        if includes and not any(_matches_prefix(relative_text, prefix) for prefix in includes):
+            continue
+        if excludes and any(_matches_prefix(relative_text, prefix) for prefix in excludes):
+            continue
+        if any(part in EXCLUDED_DIRS for part in relative.parts):
             continue
         language = language_for(path)
         if language is None:
@@ -75,6 +85,14 @@ def iter_indexable_files(
         if limit is not None and len(files) >= limit:
             break
     return files
+
+
+def _clean_prefix(path: str) -> str:
+    return path.strip().strip("/")
+
+
+def _matches_prefix(path: str, prefix: str) -> bool:
+    return path == prefix or path.startswith(prefix + "/")
 
 
 def language_for(path: str | Path) -> str | None:

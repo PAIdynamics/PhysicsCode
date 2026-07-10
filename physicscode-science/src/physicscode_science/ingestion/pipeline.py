@@ -65,7 +65,12 @@ def ingest_repository(
     revision = resolve_revision(repository)
     repo_license = detect_repository_license(repository.local_path)
     store.upsert_revision(revision, started_at)
-    files = iter_indexable_files(repository.local_path, limit=max_files_per_repo)
+    files = iter_indexable_files(
+        repository.local_path,
+        limit=max_files_per_repo,
+        include_paths=repository.include_paths,
+        exclude_paths=repository.exclude_paths,
+    )
     selected_files = files
     files_changed = 0
     files_skipped_license = 0
@@ -98,9 +103,16 @@ def ingest_repository(
                 else absolute_path
             )
             files_changed += int(store.upsert_source_file(source, str(snapshot_path), started_at))
+            remaining_objects = (
+                None
+                if max_objects_per_repo is None
+                else max(0, max_objects_per_repo - objects_seen)
+            )
+            if remaining_objects == 0:
+                break
             parsed_objects = [
                 add_generated_views(enrich_scientific_metadata(parsed, taxonomy))
-                for parsed in parse_source_file(source, revision)
+                for parsed in parse_source_file(source, revision, max_objects=remaining_objects)
             ]
             keep_object_ids = {parsed.object_id for parsed in parsed_objects}
             file_truncated = False
@@ -145,6 +157,8 @@ def ingest_repository(
         "objects_deleted": objects_deleted,
         "relationships": len(relationships),
         "relationship_extraction": "enabled" if extract_relationship_graph else "skipped",
+        "include_paths": repository.include_paths,
+        "exclude_paths": repository.exclude_paths,
         "parser_failures": parser_failures,
         "started_at": started_at.isoformat(),
         "finished_at": datetime.now(UTC).isoformat(),

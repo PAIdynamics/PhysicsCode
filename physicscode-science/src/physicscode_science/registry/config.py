@@ -29,6 +29,8 @@ def _repository_config(item: dict[str, object]) -> RepositoryConfig:
         languages=tuple(_string_list(item.get("languages", []))),
         priority=str(item.get("priority", "medium")),
         enabled=bool(item.get("enabled", False)),
+        include_paths=tuple(_string_list(item.get("include_paths", []))),
+        exclude_paths=tuple(_string_list(item.get("exclude_paths", []))),
     )
 
 

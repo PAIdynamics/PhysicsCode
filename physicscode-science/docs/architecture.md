@@ -74,6 +74,11 @@ selection, result explanations, retrieval-mode evaluation, and context budget
 accounting. The reranker is interface-shaped so model-based rerankers can be
 added later without changing retrieval callers.
 
+Phase 7 adds the agentic validation harness. It keeps implementation authority
+outside the retrieval service while recording the plan-before-edit workflow,
+retrieval evidence, source/license provenance, compilation checks, test checks,
+scientific validation checks, and no-retrieval baseline comparisons.
+
 ## Integration Plan
 
 1. Keep ingestion and retrieval independently testable in `physicscode-science/`.
@@ -86,3 +91,5 @@ added later without changing retrieval callers.
    the PhysicsCode-facing workflow.
 6. Keep implementation-authorized editing in the normal PhysicsCode agent loop,
    using retrieval results as evidence rather than generated patches.
+7. Use Phase 7 task reports to evaluate whether retrieval-backed implementation
+   improves end-to-end scientific coding outcomes over no-retrieval baselines.

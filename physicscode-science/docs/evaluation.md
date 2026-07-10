@@ -36,3 +36,8 @@ are expanded or replaced with model-generated summaries.
 Phase 6 reranking should be evaluated by comparing `hybrid_no_rerank` and
 `hybrid_rerank`, including latency and result diversity once production
 instrumentation is added.
+
+Phase 7 adds end-to-end agentic validation with `agentic-evaluate`. These
+reports are separate from retrieval metrics: they record plan-before-edit state,
+selected evidence, source/license provenance, compilation, tests, scientific
+validation, and a no-retrieval baseline for the same task definition.

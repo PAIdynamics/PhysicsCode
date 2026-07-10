@@ -28,6 +28,10 @@ Tools:
 - `science_check_license`
 - `science_project_context`
 
+Agentic validation is exposed as a CLI benchmark harness rather than an HTTP or
+MCP mutation endpoint. Implementation edits stay in the normal agent workflow;
+the harness records evidence, validation loops, and baseline comparisons.
+
 `science_get_context` accepts:
 
 ```json

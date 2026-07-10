@@ -52,3 +52,5 @@ PhysicsCode integration will happen through command, agent, and MCP boundaries:
   budget-constrained context expansion.
 - Phase 6: add reranking, deduplication, diversity-aware selection, context
   compression, and retrieval explanations.
+- Phase 7: add agentic implementation validation as an evaluation harness rather
+  than a code mutation API.

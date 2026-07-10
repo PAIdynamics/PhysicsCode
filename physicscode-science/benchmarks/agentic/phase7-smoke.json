@@ -1,0 +1,50 @@
+{
+  "tasks": [
+    {
+      "task_id": "stable-timestep-cfl",
+      "title": "Stable timestep helper",
+      "prompt": "Implement or verify a stable timestep helper that respects a CFL-style dt <= dx / wave_speed bound.",
+      "workdir": "benchmarks/agentic/workspaces/stable_timestep",
+      "plan": [
+        "Retrieve examples of timestep helpers and CFL validation before editing.",
+        "Keep the helper small and auditable.",
+        "Compile the candidate implementation.",
+        "Run unit tests.",
+        "Run the CFL scientific validation separately from compilation."
+      ],
+      "retrieval": {
+        "query": "stable timestep CFL condition finite volume",
+        "languages": ["cpp", "python"],
+        "top_k": 5
+      },
+      "expected_changes": [
+        {
+          "path": "candidate.py",
+          "description": "Provide the stable_timestep helper used by tests and validation."
+        }
+      ],
+      "compilation": [
+        {
+          "name": "compile candidate",
+          "command": ["python3", "-m", "py_compile", "candidate.py"]
+        }
+      ],
+      "tests": [
+        {
+          "name": "unit tests",
+          "command": ["python3", "test_candidate.py"]
+        }
+      ],
+      "scientific_validation": [
+        {
+          "name": "CFL bound",
+          "command": ["python3", "validate_science.py"],
+          "template": "conservation",
+          "criterion": "dt is positive and no larger than dx / wave_speed"
+        }
+      ],
+      "source_files": ["candidate.py"]
+    }
+  ]
+}
+

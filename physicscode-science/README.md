@@ -59,6 +59,15 @@ python -m physicscode_science.cli.main evaluate \
   --queries benchmarks/queries/phase2-smoke.json
 ```
 
+Run an agentic scientific coding validation benchmark:
+
+```sh
+python -m physicscode_science.cli.main agentic-evaluate \
+  --db .science/physicscode-science.sqlite \
+  --tasks benchmarks/agentic/phase7-smoke.json \
+  --output .science/agentic-reports
+```
+
 Regenerate and review scientific metadata:
 
 ```sh
@@ -76,6 +85,10 @@ neighbors under a strict budget.
 
 Reranking is enabled by default. Use `--no-rerank`, `--no-deduplicate`, or
 `--no-diversity` on `search` for retrieval experiments.
+
+Agentic validation records a plan-before-edit workflow, retrieval evidence,
+source/license provenance, compilation, tests, scientific validation, and a
+no-retrieval baseline comparison.
 
 Run the local HTTP API:
 

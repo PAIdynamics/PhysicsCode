@@ -9,6 +9,7 @@ from physicscode_science.api.server import run_server
 from physicscode_science.ingestion.pipeline import ingest_repositories
 from physicscode_science.evaluation.benchmarks import evaluate_search, load_benchmark_queries
 from physicscode_science.licensing.policy import load_license_policy
+from physicscode_science.mcp.server import serve_stdio
 from physicscode_science.models import SearchQuery
 from physicscode_science.registry.config import enabled_repositories
 from physicscode_science.retrieval.search import search
@@ -51,6 +52,8 @@ def main() -> None:
     serve.add_argument("--db", default=".science/physicscode-science.sqlite")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8765)
+    mcp = subcommands.add_parser("mcp", help="Run the science retrieval MCP stdio server")
+    mcp.add_argument("--db", default=".science/physicscode-science.sqlite")
     args = parser.parse_args()
 
     if args.command == "ingest":
@@ -98,6 +101,8 @@ def main() -> None:
         print(json.dumps(report, indent=2, sort_keys=True))
     if args.command == "serve":
         run_server(args.db, host=args.host, port=args.port)
+    if args.command == "mcp":
+        serve_stdio(args.db)
 
 
 if __name__ == "__main__":

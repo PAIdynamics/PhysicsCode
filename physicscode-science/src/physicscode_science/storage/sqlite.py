@@ -260,6 +260,38 @@ class ScienceStore:
         ]
         return [candidate for candidate in candidates if _domain_matches(candidate, query.domains)]
 
+    def get_candidate(self, object_id: str) -> SearchCandidate | None:
+        row = self.connection.execute(
+            """
+            select object_id, repository, repository_url, commit_sha, path, start_line, end_line,
+                   symbol, object_type, language, license, raw_content, metadata_json
+            from source_object
+            where object_id = ?
+            """,
+            (object_id,),
+        ).fetchone()
+        if not row:
+            return None
+        return SearchCandidate(
+            object_id=row["object_id"],
+            repository=row["repository"],
+            repository_url=row["repository_url"],
+            commit=row["commit_sha"],
+            path=row["path"],
+            start_line=int(row["start_line"]),
+            end_line=int(row["end_line"]),
+            symbol=row["symbol"],
+            object_type=row["object_type"],
+            language=row["language"],
+            license=row["license"],
+            raw_content=row["raw_content"],
+            metadata=json.loads(row["metadata_json"]),
+        )
+
+    def get_symbol(self, symbol: str, repository: str | None = None) -> list[SearchCandidate]:
+        query = SearchQuery(query=symbol, repositories=(repository,) if repository else ())
+        return [candidate for candidate in self.search_candidates(query) if candidate.symbol == symbol]
+
 
 def _json_ready(value: object) -> object:
     if isinstance(value, datetime):

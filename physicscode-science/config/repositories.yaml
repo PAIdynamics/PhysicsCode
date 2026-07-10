@@ -121,6 +121,25 @@ repositories:
     priority: high
     enabled: true
 
+  - name: heffte
+    url: https://github.com/icl-utk-edu/heffte.git
+    local_path: /home/mohsen/ref-codes/heffte
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - spectral-methods
+      - fast-fourier-transform
+      - high-performance-computing
+      - accelerator-programming
+    languages:
+      - c
+      - cpp
+      - fortran
+      - cmake
+    priority: high
+    enabled: true
+
   - name: ippl
     url: https://github.com/IPPL-framework/ippl.git
     local_path: /home/mohsen/ref-codes/ippl

@@ -1,0 +1,93 @@
+from __future__ import annotations
+
+import subprocess
+from datetime import UTC, datetime
+from pathlib import Path
+
+from physicscode_science.models import RepositoryConfig
+from physicscode_science.registry.revision import resolve_revision
+from physicscode_science.utils import try_git
+
+
+def sync_repositories(
+    repositories: list[RepositoryConfig],
+    *,
+    fetch: bool = False,
+    clone_missing: bool = False,
+) -> list[dict[str, object]]:
+    return [
+        sync_repository(repository, fetch=fetch, clone_missing=clone_missing)
+        for repository in repositories
+    ]
+
+
+def sync_repository(
+    repository: RepositoryConfig,
+    *,
+    fetch: bool = False,
+    clone_missing: bool = False,
+) -> dict[str, object]:
+    path = Path(repository.local_path)
+    report: dict[str, object] = {
+        "repository": repository.name,
+        "url": repository.url,
+        "local_path": str(path),
+        "default_branch": repository.default_branch,
+        "started_at": datetime.now(UTC).isoformat(),
+        "actions": [],
+        "status": "ok",
+    }
+    try:
+        if not path.exists():
+            if not clone_missing:
+                report["status"] = "missing"
+                report["error"] = "local_path does not exist; rerun with --clone-missing to clone"
+                return _finish(report)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            _run(["git", "clone", repository.url, str(path)])
+            report["actions"].append("cloned")  # type: ignore[union-attr]
+        if fetch:
+            _run(["git", "-C", str(path), "fetch", "--tags", "origin"])
+            report["actions"].append("fetched")  # type: ignore[union-attr]
+        revision = resolve_revision(repository)
+        report.update(
+            {
+                "commit": revision.commit,
+                "branch": revision.branch,
+                "tag": revision.tag,
+                "dirty": revision.dirty,
+                "remote_head": _remote_head(path, repository.default_branch),
+                "ahead_behind": _ahead_behind(path),
+            }
+        )
+        return _finish(report)
+    except Exception as error:  # noqa: BLE001
+        report["status"] = "failed"
+        report["error"] = str(error)
+        return _finish(report)
+
+
+def _remote_head(path: Path, branch: str) -> str | None:
+    value = try_git(path, "rev-parse", f"origin/{branch}")
+    return value or None
+
+
+def _ahead_behind(path: Path) -> dict[str, int] | None:
+    upstream = try_git(path, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+    if not upstream:
+        return None
+    counts = try_git(path, "rev-list", "--left-right", "--count", f"HEAD...{upstream}")
+    if not counts:
+        return None
+    ahead, behind = counts.split()
+    return {"ahead": int(ahead), "behind": int(behind)}
+
+
+def _run(command: list[str]) -> None:
+    subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+
+def _finish(report: dict[str, object]) -> dict[str, object]:
+    report["finished_at"] = datetime.now(UTC).isoformat()
+    return report
+

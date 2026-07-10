@@ -1,0 +1,26 @@
+---
+description: Evidence-backed scientific coding workflow.
+agent: science
+---
+
+Use the PhysicsCode Science workflow for the following task:
+
+$ARGUMENTS
+
+Workflow:
+
+1. Inspect the current project without modifying files. Use
+   `science_project_context` when available.
+2. Check `science_status` when available. If the database or vector index is not
+   ready, say so before relying on retrieval.
+3. Interpret the scientific and engineering request.
+4. Build several complementary retrieval queries.
+5. Retrieve source-backed evidence with the `science` MCP tools or local
+   `science-search` / `science-source` tools when the science index is available.
+6. Use indexed dense retrieval when available, then rerank and filter by
+   relevance, compatibility, and license.
+7. Present an evidence-backed plan before editing.
+8. Modify code only when authorized.
+9. Validate with build, tests, and scientific checks where applicable.
+10. Report changed files, validation, limitations, sources, license notes, and
+   scientific assumptions.

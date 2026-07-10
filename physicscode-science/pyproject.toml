@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "physicscode-science"
+version = "0.1.0"
+description = "Provenance-aware scientific software retrieval foundation for PhysicsCode."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "PhysicsCode" }]
+dependencies = []
+
+[project.scripts]
+physicscode-science = "physicscode_science.cli.main:main"
+
+[tool.ruff]
+line-length = 100

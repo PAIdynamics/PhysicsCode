@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from physicscode_science.evaluation.metrics import ndcg_at_k, recall_at_k, reciprocal_rank
@@ -9,11 +9,20 @@ from physicscode_science.models import BenchmarkQuery, SearchQuery
 from physicscode_science.retrieval.search import search
 from physicscode_science.storage.sqlite import ScienceStore
 
-MODES: dict[str, tuple[str, ...]] = {
-    "dense": ("dense",),
-    "sparse": ("sparse",),
-    "symbol": ("symbol",),
-    "hybrid": ("dense", "sparse", "symbol"),
+@dataclass(frozen=True)
+class EvaluationMode:
+    channels: tuple[str, ...]
+    rerank: bool
+    deduplicate: bool = True
+    diversity: bool = True
+
+
+MODES: dict[str, EvaluationMode] = {
+    "dense": EvaluationMode(("dense",), rerank=False),
+    "sparse": EvaluationMode(("sparse",), rerank=False),
+    "symbol": EvaluationMode(("symbol",), rerank=False),
+    "hybrid_no_rerank": EvaluationMode(("dense", "sparse", "symbol"), rerank=False),
+    "hybrid_rerank": EvaluationMode(("dense", "sparse", "symbol"), rerank=True),
 }
 
 
@@ -37,8 +46,8 @@ def load_benchmark_queries(path: str | Path) -> list[BenchmarkQuery]:
 
 def evaluate_search(store: ScienceStore, queries: list[BenchmarkQuery], top_k: int = 10) -> dict[str, object]:
     mode_reports = {
-        mode: [_evaluate_one(store, query, channels, top_k) for query in queries]
-        for mode, channels in MODES.items()
+        mode: [_evaluate_one(store, query, config, top_k) for query in queries]
+        for mode, config in MODES.items()
     }
     return {
         "query_count": len(queries),
@@ -58,7 +67,7 @@ def evaluate_search(store: ScienceStore, queries: list[BenchmarkQuery], top_k: i
 def _evaluate_one(
     store: ScienceStore,
     benchmark: BenchmarkQuery,
-    channels: tuple[str, ...],
+    mode: EvaluationMode,
     top_k: int,
 ) -> dict[str, object]:
     results = search(
@@ -69,14 +78,20 @@ def _evaluate_one(
             languages=benchmark.languages,
             object_types=benchmark.object_types,
             licenses=benchmark.licenses,
-            retrieval_channels=channels,
+            retrieval_channels=mode.channels,
+            rerank=mode.rerank,
+            deduplicate=mode.deduplicate,
+            diversity=mode.diversity,
             top_k=top_k,
         ),
     )
     relevant_ids = _relevant_ids(store, benchmark)
     return {
         "query": asdict(benchmark),
-        "retrieval_channels": channels,
+        "retrieval_channels": mode.channels,
+        "rerank": mode.rerank,
+        "deduplicate": mode.deduplicate,
+        "diversity": mode.diversity,
         "result_ids": [result.result_id for result in results],
         "recall_at_5": recall_at_k(results, relevant_ids, 5),
         "recall_at_10": recall_at_k(results, relevant_ids, 10),

@@ -47,6 +47,9 @@ def main() -> None:
     )
     search_command.add_argument("--top-k", type=int, default=10)
     search_command.add_argument("--include-content", action="store_true")
+    search_command.add_argument("--no-rerank", action="store_true")
+    search_command.add_argument("--no-deduplicate", action="store_true")
+    search_command.add_argument("--no-diversity", action="store_true")
     evaluate = subcommands.add_parser("evaluate", help="Compare retrieval modes on benchmark queries")
     evaluate.add_argument("--db", default=".science/physicscode-science.sqlite")
     evaluate.add_argument("--queries", required=True)
@@ -93,6 +96,9 @@ def main() -> None:
                     object_types=tuple(args.object_type),
                     licenses=tuple(args.license),
                     retrieval_channels=tuple(args.channel or ["dense", "sparse", "symbol"]),
+                    rerank=not args.no_rerank,
+                    deduplicate=not args.no_deduplicate,
+                    diversity=not args.no_diversity,
                     top_k=args.top_k,
                     include_content=args.include_content,
                 ),

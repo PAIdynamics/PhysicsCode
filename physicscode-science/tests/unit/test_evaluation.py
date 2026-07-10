@@ -42,8 +42,13 @@ class EvaluationTest(unittest.TestCase):
                 )
 
                 self.assertEqual(report["query_count"], 1)
-                self.assertEqual(set(report["modes"].keys()), {"dense", "sparse", "symbol", "hybrid"})
-                self.assertGreater(report["modes"]["hybrid"]["recall_at_10"], 0)
+                self.assertEqual(
+                    set(report["modes"].keys()),
+                    {"dense", "sparse", "symbol", "hybrid_no_rerank", "hybrid_rerank"},
+                )
+                self.assertGreater(report["modes"]["hybrid_rerank"]["recall_at_10"], 0)
+                self.assertTrue(report["modes"]["hybrid_rerank"]["queries"][0]["rerank"])
+                self.assertFalse(report["modes"]["hybrid_no_rerank"]["queries"][0]["rerank"])
             finally:
                 store.close()
 

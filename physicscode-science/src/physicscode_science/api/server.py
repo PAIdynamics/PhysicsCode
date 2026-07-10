@@ -58,6 +58,9 @@ def _query(payload: dict[str, Any]) -> SearchQuery:
         object_types=tuple(payload.get("object_types", [])),
         licenses=tuple(payload.get("licenses", [])),
         retrieval_channels=tuple(payload.get("retrieval_channels", ["dense", "sparse", "symbol"])),
+        rerank=bool(payload.get("rerank", True)),
+        deduplicate=bool(payload.get("deduplicate", True)),
+        diversity=bool(payload.get("diversity", True)),
         top_k=int(payload.get("top_k", 10)),
         include_content=bool(payload.get("include_content", False)),
     )

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
-from urllib import request
+from urllib import error, request
 
 from physicscode_science.embeddings.providers import EmbeddingProvider, configured_embedding_provider
 from physicscode_science.models import SearchQuery
@@ -30,6 +30,26 @@ class QdrantVectorIndex:
         self.embedding_provider = embedding_provider
 
     def ensure_collection(self) -> None:
+        try:
+            existing = self._request("GET", f"/collections/{self.collection}", wrap_http_errors=False)
+        except error.HTTPError as exc:
+            if exc.code != 404:
+                raise
+        else:
+            existing_dimensions = (
+                existing.get("result", {})
+                .get("config", {})
+                .get("params", {})
+                .get("vectors", {})
+                .get("size")
+            )
+            if existing_dimensions != self.dimensions:
+                raise ValueError(
+                    f"Qdrant collection {self.collection!r} has vector size "
+                    f"{existing_dimensions}, expected {self.dimensions}"
+                )
+            return
+
         payload = {
             "vectors": {
                 "size": self.dimensions,
@@ -91,14 +111,27 @@ class QdrantVectorIndex:
             if isinstance(item, dict) and "id" in item and "score" in item
         }
 
-    def _request(self, method: str, path: str, payload: dict[str, object]) -> dict[str, object]:
-        body = json.dumps(payload).encode("utf-8")
+    def _request(
+        self,
+        method: str,
+        path: str,
+        payload: dict[str, object] | None = None,
+        *,
+        wrap_http_errors: bool = True,
+    ) -> dict[str, object]:
+        body = json.dumps(payload).encode("utf-8") if payload is not None else None
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["api-key"] = self.api_key
         req = request.Request(f"{self.base_url}{path}", data=body, headers=headers, method=method)
-        with request.urlopen(req, timeout=30) as response:  # noqa: S310 - configured internal service URL
-            content = response.read()
+        try:
+            with request.urlopen(req, timeout=30) as response:  # noqa: S310 - configured internal service URL
+                content = response.read()
+        except error.HTTPError as exc:
+            if not wrap_http_errors:
+                raise
+            content = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"Qdrant {method} {path} failed with HTTP {exc.code}: {content}") from exc
         if not content:
             return {}
         return json.loads(content.decode("utf-8"))

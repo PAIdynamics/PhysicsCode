@@ -55,12 +55,14 @@ python -m physicscode_science.cli.main build-vector-index \
 Use an embedding-capable OpenAI-compatible server when available:
 
 ```sh
-python -m physicscode_science.cli.main build-vector-index \
+PYTHONPATH=src python3 -m physicscode_science.cli.main build-vector-index \
   --db .science/physicscode-science.sqlite \
   --backend qdrant \
+  --qdrant-collection physicscode_science_bge_small \
   --embedding-provider vllm \
   --embedding-url http://127.0.0.1:8000 \
-  --embedding-model your-embedding-model
+  --embedding-model paidynamics/bge-small-en-v1.5-pai \
+  --embedding-api-key "$(cat ~/.config/vllm/client_api_key)"
 ```
 
 At query time, set `PHYSICSCODE_SCIENCE_VECTOR_BACKEND=qdrant` and optionally

@@ -13,6 +13,7 @@ from physicscode_science.vector_index.local import (
     load_local_vector_index,
     local_vector_scores,
 )
+from physicscode_science.vector_index.qdrant import QdrantVectorIndex
 
 
 class VectorIndexTest(unittest.TestCase):
@@ -92,6 +93,27 @@ int poisson_multigrid_solver() { return 1; }
             finally:
                 store.close()
 
+    def test_qdrant_collection_dimension_mismatch_fails(self):
+        class ExistingCollection(QdrantVectorIndex):
+            def _request(self, method, path, payload=None, **kwargs):  # noqa: ANN001, ANN202
+                self.last_request = (method, path, payload)
+                return {
+                    "result": {
+                        "config": {
+                            "params": {
+                                "vectors": {
+                                    "size": 1536,
+                                }
+                            }
+                        }
+                    }
+                }
+
+        index = ExistingCollection("http://qdrant.invalid", "science", dimensions=384)
+
+        with self.assertRaisesRegex(ValueError, "vector size 1536, expected 384"):
+            index.ensure_collection()
+
 
 def _store_with_repo(root: Path, repo: Path) -> ScienceStore:
     store = ScienceStore(root / ".science" / "physicscode-science.sqlite")
@@ -135,4 +157,3 @@ def _config(repo: Path) -> RepositoryConfig:
 
 if __name__ == "__main__":
     unittest.main()
-

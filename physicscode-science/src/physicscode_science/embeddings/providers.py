@@ -63,12 +63,14 @@ class OpenAICompatibleEmbeddingProvider(EmbeddingProvider):
         dimensions: int = DEFAULT_VECTOR_DIMENSIONS,
         api_key: str | None = None,
         timeout_seconds: int = 60,
+        max_candidate_chars: int = 900,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model_name = model
         self.dimensions = dimensions
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
+        self.max_candidate_chars = max_candidate_chars
 
     def model(self) -> EmbeddingModel:
         return EmbeddingModel(
@@ -96,7 +98,8 @@ class OpenAICompatibleEmbeddingProvider(EmbeddingProvider):
         return vector
 
     def embed_candidate(self, candidate: SearchCandidate) -> list[float]:
-        return self.embed_text(candidate_embedding_text(candidate))
+        text = candidate_embedding_text(candidate, max_raw_chars=self.max_candidate_chars)
+        return self.embed_text(text[: self.max_candidate_chars])
 
     def _request(self, path: str, payload: dict[str, object]) -> dict[str, object]:
         headers = {"Content-Type": "application/json"}
@@ -108,8 +111,12 @@ class OpenAICompatibleEmbeddingProvider(EmbeddingProvider):
             headers=headers,
             method="POST",
         )
-        with request.urlopen(req, timeout=self.timeout_seconds) as response:  # noqa: S310
-            return json.loads(response.read().decode("utf-8"))
+        try:
+            with request.urlopen(req, timeout=self.timeout_seconds) as response:  # noqa: S310
+                return json.loads(response.read().decode("utf-8"))
+        except error.HTTPError as exc:
+            content = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"embedding request failed with HTTP {exc.code}: {content}") from exc
 
 
 def configured_embedding_provider(
@@ -132,6 +139,7 @@ def configured_embedding_provider(
                 model,
                 dimensions=dimensions,
                 api_key=key,
+                max_candidate_chars=int(os.environ.get("PHYSICSCODE_SCIENCE_EMBEDDING_MAX_CHARS", "900")),
             )
             embedding_provider.embed_text("embedding health check")
             return embedding_provider
@@ -142,7 +150,7 @@ def configured_embedding_provider(
     return HashEmbeddingProvider(dimensions)
 
 
-def candidate_embedding_text(candidate: SearchCandidate) -> str:
+def candidate_embedding_text(candidate: SearchCandidate, *, max_raw_chars: int = 8000) -> str:
     metadata = candidate.metadata.get("metadata", {})
     return "\n".join(
         [
@@ -152,7 +160,6 @@ def candidate_embedding_text(candidate: SearchCandidate) -> str:
             f"type: {candidate.object_type}",
             f"language: {candidate.language}",
             f"metadata: {json.dumps(metadata, sort_keys=True)}",
-            candidate.raw_content[:8000],
+            candidate.raw_content[:max_raw_chars],
         ]
     )
-

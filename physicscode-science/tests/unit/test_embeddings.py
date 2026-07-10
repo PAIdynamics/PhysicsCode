@@ -4,8 +4,11 @@ from unittest import mock
 
 from physicscode_science.embeddings.providers import (
     HashEmbeddingProvider,
+    OpenAICompatibleEmbeddingProvider,
+    candidate_embedding_text,
     configured_embedding_provider,
 )
+from physicscode_science.models import SearchCandidate
 
 
 class EmbeddingProviderTest(unittest.TestCase):
@@ -26,6 +29,59 @@ class EmbeddingProviderTest(unittest.TestCase):
 
         self.assertIsInstance(provider, HashEmbeddingProvider)
         self.assertEqual(provider.model().dimensions, 8)
+
+    def test_candidate_embedding_text_limits_raw_content(self):
+        candidate = SearchCandidate(
+            object_id="obj",
+            repository="repo",
+            repository_url="https://example.invalid/repo",
+            commit="abc",
+            path="solver.cpp",
+            start_line=1,
+            end_line=1,
+            symbol="solve",
+            object_type="function",
+            language="cpp",
+            license="MIT",
+            raw_content="abcdef",
+            metadata={"metadata": {}},
+        )
+
+        text = candidate_embedding_text(candidate, max_raw_chars=3)
+
+        self.assertIn("abc", text)
+        self.assertNotIn("abcdef", text)
+
+    def test_openai_compatible_provider_limits_candidate_text(self):
+        class CapturingProvider(OpenAICompatibleEmbeddingProvider):
+            def embed_text(self, text):  # noqa: ANN001, ANN202
+                self.text = text
+                return [0.0]
+
+        candidate = SearchCandidate(
+            object_id="obj",
+            repository="repo",
+            repository_url="https://example.invalid/repo",
+            commit="abc",
+            path="solver.cpp",
+            start_line=1,
+            end_line=1,
+            symbol="solve",
+            object_type="function",
+            language="cpp",
+            license="MIT",
+            raw_content="x" * 1000,
+            metadata={"metadata": {"domain": "pde"}},
+        )
+        provider = CapturingProvider(
+            "http://example.invalid",
+            "embedding-model",
+            max_candidate_chars=64,
+        )
+
+        provider.embed_candidate(candidate)
+
+        self.assertLessEqual(len(provider.text), 64)
 
 
 if __name__ == "__main__":

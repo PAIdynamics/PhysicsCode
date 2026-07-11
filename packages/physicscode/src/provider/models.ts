@@ -282,9 +282,11 @@ const textModel = (input: {
 
 const OPENAI_FRONTIER_SUFFIX_ORDER = ["", "sol", "pro", "terra", "luna", "codex-max"] as const
 const OPENAI_FRONTIER_EXCLUDED_SUFFIXES = new Set(["mini", "nano", "instant", "chat", "chat-latest"])
+const OPENAI_FRONTIER_ALLOWED_MODEL_IDS = new Set<string>(OPENAI_FRONTIER_MODEL_IDS)
 
 function openAIDynamicFrontierModelIDs(provider: Provider | undefined) {
   const parsed = Object.keys(provider?.models ?? {}).flatMap((id) => {
+    if (!OPENAI_FRONTIER_ALLOWED_MODEL_IDS.has(id)) return []
     const match = /^gpt-(\d+)(?:\.(\d+))?(?:-([a-z0-9-]+))?$/.exec(id)
     if (!match) return []
 

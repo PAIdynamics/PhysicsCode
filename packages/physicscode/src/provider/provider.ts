@@ -146,15 +146,19 @@ function useLanguageModel(sdk: any) {
 
 function custom(dep: CustomDep): Record<string, CustomLoader> {
   const hasProviderCredential = async (provider: Info) => {
+    return Boolean(await providerCredential(provider))
+  }
+
+  const providerCredential = async (provider: Info) => {
     const [env, cfg, auth] = await Promise.all([
       Effect.runPromise(dep.env()),
       Effect.runPromise(dep.config()),
       Effect.runPromise(dep.auth(provider.id)),
     ])
-    return Boolean(
-      provider.env.some((item) => env[item]) ||
-        auth ||
-        cfg.provider?.[provider.id]?.options?.apiKey,
+    return (
+      provider.env.map((item) => env[item]).find(Boolean) ??
+      (auth?.type === "api" ? auth.key : auth?.type === "wellknown" ? auth.key : undefined) ??
+      cfg.provider?.[provider.id]?.options?.apiKey
     )
   }
 
@@ -228,8 +232,35 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         },
       }
     }),
-    openai: (input: Info) =>
-      Effect.succeed({
+    openai: Effect.fnUntraced(function* (input: Info) {
+      const apiKey = yield* Effect.promise(() => providerCredential(input)).pipe(Effect.catch(() => Effect.succeed(undefined)))
+      if (apiKey) {
+        yield* Effect.promise(async () => {
+          const response = await fetch("https://api.openai.com/v1/models", {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+            },
+            signal: AbortSignal.timeout(10000),
+          })
+          if (!response.ok) return
+          const body = (await response.json()) as { data?: Array<{ id?: unknown }> }
+          const available = new Set(
+            (body.data ?? []).flatMap((item) => (typeof item.id === "string" ? [item.id] : [])),
+          )
+          for (const modelID of Object.keys(input.models)) {
+            const apiID = input.models[modelID]?.id ?? modelID
+            if (!available.has(modelID) && !available.has(apiID)) delete input.models[modelID]
+          }
+        }).pipe(
+          Effect.catch((error) =>
+            Effect.sync(() => {
+              log.warn("openai model discovery failed", { error: String(error) })
+            }),
+          ),
+        )
+      }
+
+      return {
         autoload: true,
         async getModel(sdk: any, modelID: string, _options?: Record<string, any>) {
           if (!(await hasProviderCredential(input))) {
@@ -238,7 +269,8 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
           return sdk.responses(modelID)
         },
         options: {},
-      }),
+      }
+    }),
     xai: () =>
       Effect.succeed({
         autoload: false,

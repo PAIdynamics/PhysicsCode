@@ -32,6 +32,9 @@ class EmbeddingProvider:
     def embed_text(self, text: str) -> list[float]:
         raise NotImplementedError
 
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        return [self.embed_text(text) for text in texts]
+
     def embed_candidate(self, candidate: SearchCandidate) -> list[float]:
         raise NotImplementedError
 
@@ -51,6 +54,9 @@ class HashEmbeddingProvider(EmbeddingProvider):
 
     def embed_text(self, text: str) -> list[float]:
         return dense_vector(vectorize_query(text, self.dimensions), self.dimensions)
+
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        return [self.embed_text(text) for text in texts]
 
     def embed_candidate(self, candidate: SearchCandidate) -> list[float]:
         return dense_vector(vectorize_candidate(candidate, self.dimensions), self.dimensions)
@@ -85,28 +91,45 @@ class OpenAICompatibleEmbeddingProvider(EmbeddingProvider):
         )
 
     def embed_text(self, text: str) -> list[float]:
-        text = truncate_for_embedding(text, max_tokens=self.max_input_tokens)
+        return self.embed_texts([text])[0]
+
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        truncated = [truncate_for_embedding(text, max_tokens=self.max_input_tokens) for text in texts]
         payload: dict[str, object] = {
             "model": self.model_name,
-            "input": text,
+            "input": truncated,
         }
         try:
             response = self._request("/v1/embeddings", payload)
         except RuntimeError as exc:
             if "maximum context length" not in str(exc) and "input_tokens" not in str(exc):
                 raise
-            payload["input"] = truncate_for_embedding(text, max_tokens=max(1, self.max_input_tokens // 2))
+            payload["input"] = [
+                truncate_for_embedding(text, max_tokens=max(1, self.max_input_tokens // 2))
+                for text in truncated
+            ]
             response = self._request("/v1/embeddings", payload)
         data = response.get("data", [])
         if not data or not isinstance(data, list):
             raise RuntimeError("embedding response did not include data")
-        embedding = data[0].get("embedding") if isinstance(data[0], dict) else None
-        if not isinstance(embedding, list):
-            raise RuntimeError("embedding response did not include an embedding vector")
-        vector = [float(value) for value in embedding]
-        if len(vector) != self.dimensions:
-            self.dimensions = len(vector)
-        return vector
+        ordered = sorted(
+            (item for item in data if isinstance(item, dict)),
+            key=lambda item: int(item.get("index", 0)),
+        )
+        vectors: list[list[float]] = []
+        for item in ordered:
+            embedding = item.get("embedding")
+            if not isinstance(embedding, list):
+                raise RuntimeError("embedding response did not include an embedding vector")
+            vector = [float(value) for value in embedding]
+            if len(vector) != self.dimensions:
+                self.dimensions = len(vector)
+            vectors.append(vector)
+        if len(vectors) != len(texts):
+            raise RuntimeError(f"embedding response returned {len(vectors)} vectors for {len(texts)} texts")
+        return vectors
 
     def embed_candidate(self, candidate: SearchCandidate) -> list[float]:
         text = candidate_embedding_text(candidate, max_raw_chars=self.max_candidate_chars)

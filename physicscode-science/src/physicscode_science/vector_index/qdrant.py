@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 import uuid
 from pathlib import Path
 from urllib import error, request
 
 from physicscode_science.embeddings.providers import (
     EmbeddingProvider,
+    candidate_embedding_text,
     candidate_embedding_views,
     configured_embedding_provider,
 )
@@ -94,14 +97,18 @@ class QdrantVectorIndex:
         self.dimensions = model.dimensions
         self.ensure_collection()
         written = 0
+        batch_size = _effective_batch_size(batch_size, self.vector_mode)
         for offset in range(0, len(candidates), batch_size):
             batch = candidates[offset : offset + batch_size]
-            points = [
-                _point(candidate, provider, model.__dict__, self.vector_mode, self.named_vectors)
-                for candidate in batch
-            ]
+            points = _points(batch, provider, model.__dict__, self.vector_mode, self.named_vectors)
             self._request("PUT", f"/collections/{self.collection}/points", {"points": points})
             written += len(points)
+            if os.environ.get("PHYSICSCODE_SCIENCE_VECTOR_PROGRESS"):
+                print(
+                    f"indexed {written}/{len(candidates)} objects into {self.collection}",
+                    file=sys.stderr,
+                    flush=True,
+                )
         return {
             "backend": "qdrant",
             "url": self.base_url,
@@ -214,21 +221,55 @@ def qdrant_config_report(config_path: str | Path) -> dict[str, object]:
     return json.loads(Path(config_path).read_text(encoding="utf-8"))
 
 
-def _point(
-    candidate: SearchCandidate,
+def _points(
+    candidates: list[SearchCandidate],
     provider: EmbeddingProvider,
     model: dict[str, object],
     vector_mode: str,
     named_vectors: tuple[str, ...],
-) -> dict[str, object]:
+) -> list[dict[str, object]]:
     if vector_mode == "multi":
-        views = candidate_embedding_views(candidate, max_raw_chars=_max_candidate_chars(provider))
-        vector: list[float] | dict[str, list[float]] = {
-            name: provider.embed_text(views.get(name, views["summary"]))
-            for name in named_vectors
-        }
-    else:
-        vector = provider.embed_candidate(candidate)
+        return _multi_vector_points(candidates, provider, model, named_vectors)
+    max_chars = _max_candidate_chars(provider)
+    texts = [candidate_embedding_text(candidate, max_raw_chars=max_chars)[:max_chars] for candidate in candidates]
+    vectors = provider.embed_texts(texts)
+    return [
+        _point_payload(candidate, vector, model)
+        for candidate, vector in zip(candidates, vectors, strict=True)
+    ]
+
+
+def _multi_vector_points(
+    candidates: list[SearchCandidate],
+    provider: EmbeddingProvider,
+    model: dict[str, object],
+    named_vectors: tuple[str, ...],
+) -> list[dict[str, object]]:
+    candidate_views = [
+        candidate_embedding_views(candidate, max_raw_chars=_max_candidate_chars(provider))
+        for candidate in candidates
+    ]
+    vectors_by_name: dict[str, list[list[float]]] = {}
+    for name in named_vectors:
+        texts = [views.get(name, views["summary"]) for views in candidate_views]
+        vectors_by_name[name] = provider.embed_texts(texts)
+    points = []
+    for index, candidate in enumerate(candidates):
+        points.append(
+            _point_payload(
+                candidate,
+                {name: vectors_by_name[name][index] for name in named_vectors},
+                model,
+            )
+        )
+    return points
+
+
+def _point_payload(
+    candidate: SearchCandidate,
+    vector: list[float] | dict[str, list[float]],
+    model: dict[str, object],
+) -> dict[str, object]:
     return {
         "id": _point_id(candidate.object_id),
         "vector": vector,
@@ -257,6 +298,15 @@ def _scores_from_response(response: dict[str, object]) -> dict[str, float]:
 
 def _max_candidate_chars(provider: EmbeddingProvider) -> int:
     return int(getattr(provider, "max_candidate_chars", 8000))
+
+
+def _effective_batch_size(batch_size: int, vector_mode: str) -> int:
+    override = os.environ.get("PHYSICSCODE_SCIENCE_VECTOR_BATCH_SIZE")
+    if override:
+        return max(1, int(override))
+    if vector_mode == "multi":
+        return min(batch_size, 16)
+    return batch_size
 
 
 def _vectors_config(response: dict[str, object]) -> object:

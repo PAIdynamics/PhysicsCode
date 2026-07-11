@@ -110,6 +110,33 @@ class IngestionTest(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_reference_only_repository_keeps_unknown_sources(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = root / "repo"
+            repo.mkdir()
+            (repo / "solver.cpp").write_text("int solve_poisson() {\n  return 0;\n}\n", encoding="utf-8")
+            _init_git_repo(repo)
+            store = ScienceStore(root / "science.sqlite")
+            try:
+                report = ingest_repository(
+                    _config(repo, license_policy="reference-only"),
+                    store,
+                    root / "reports",
+                    license_policy=LicensePolicy(
+                        allowed=("MIT",),
+                        reference_only=(),
+                        unknown_policy="exclude",
+                    ),
+                )
+                store.commit()
+
+                self.assertEqual(report["files_skipped_license"], 0)
+                self.assertGreater(report["objects_seen"], 0)
+                self.assertGreater(store.count_objects("example"), 0)
+            finally:
+                store.close()
+
 
 def _init_git_repo(repo: Path) -> None:
     subprocess.run(["git", "-C", str(repo), "init", "-b", "main"], check=True, stdout=subprocess.PIPE)
@@ -132,14 +159,14 @@ def _head(repo: Path) -> str:
     ).stdout.strip()
 
 
-def _config(repo: Path) -> RepositoryConfig:
+def _config(repo: Path, license_policy: str = "allowed") -> RepositoryConfig:
     return RepositoryConfig(
         name="example",
         url="https://example.invalid/example",
         local_path=str(repo),
         default_branch="main",
         revision_policy="fixed-local",
-        license_policy="allowed",
+        license_policy=license_policy,
         domains=("pde",),
         languages=("cpp",),
         priority="high",

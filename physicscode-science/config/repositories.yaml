@@ -541,3 +541,189 @@ repositories:
       - cmake
     priority: high
     enabled: true
+
+  - name: vmecpp
+    url: https://github.com/proximafusion/vmecpp.git
+    local_path: /home/mohsen/ref-codes/vmecpp
+    default_branch: main
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - plasma-physics
+      - stellarator-optimization
+      - magnetohydrodynamics
+      - equilibrium
+    languages:
+      - c
+      - cpp
+      - python
+      - cmake
+      - markdown
+    priority: high
+    enabled: true
+
+  - name: gvec
+    url: https://gitlab.mpcdf.mpg.de/gvec-group/gvec.git
+    local_path: /home/mohsen/ref-codes/gvec
+    default_branch: develop
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - plasma-physics
+      - stellarator-optimization
+      - magnetohydrodynamics
+      - equilibrium
+    languages:
+      - fortran
+      - python
+      - cmake
+      - shell
+      - markdown
+    priority: high
+    enabled: true
+
+  - name: genex
+    url: https://gitlab.mpcdf.mpg.de/phoenix-public/genex.git
+    local_path: /home/mohsen/ref-codes/genex
+    default_branch: release
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - plasma-physics
+      - gyrokinetics
+      - stellarator-physics
+      - high-performance-computing
+    languages:
+      - fortran
+      - python
+      - cmake
+      - shell
+      - markdown
+    priority: high
+    enabled: true
+
+  - name: desc
+    url: https://github.com/PlasmaControl/DESC.git
+    local_path: /home/mohsen/ref-codes/DESC
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - plasma-physics
+      - stellarator-optimization
+      - equilibrium
+      - automatic-differentiation
+    languages:
+      - python
+      - cpp
+      - cmake
+      - markdown
+    priority: high
+    enabled: true
+
+  - name: hint3d
+    url: git@github.com:proximafusion/HINT3D.git
+    local_path: /home/mohsen/ref-codes/HINT3D
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - plasma-physics
+      - stellarator-physics
+      - magnetohydrodynamics
+      - equilibrium
+    languages:
+      - fortran
+      - c
+      - cpp
+      - python
+      - cmake
+      - shell
+      - markdown
+    priority: high
+    enabled: true
+
+  - name: gkw
+    url: https://bitbucket.org/gkw/gkw.git
+    local_path: /home/mohsen/ref-codes/gkw
+    default_branch: develop
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - plasma-physics
+      - gyrokinetics
+      - turbulence
+      - high-performance-computing
+    languages:
+      - fortran
+      - python
+      - shell
+      - markdown
+    priority: high
+    enabled: true
+
+  - name: gx
+    url: https://bitbucket.org/gyrokinetics/gx
+    local_path: /home/mohsen/ref-codes/gx
+    default_branch: gx
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - plasma-physics
+      - gyrokinetics
+      - turbulence
+      - accelerator-programming
+    languages:
+      - fortran
+      - cpp
+      - python
+      - cmake
+      - shell
+      - markdown
+    priority: high
+    enabled: true
+
+  - name: jorek_stellarator_gpu
+    url: git@github.com:PAIdynamics/jorek_stellarator_gpu.git
+    local_path: /home/mohsen/ref-codes/jorek_stellarator_gpu
+    default_branch: develop
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - plasma-physics
+      - stellarator-physics
+      - magnetohydrodynamics
+      - accelerator-programming
+    languages:
+      - fortran
+      - c
+      - cpp
+      - cuda
+      - python
+      - cmake
+      - shell
+      - markdown
+    priority: high
+    enabled: true
+
+  - name: orb5x
+    url: git@github.com:PAIdynamics/ORB5X.git
+    local_path: /home/mohsen/ref-codes/ORB5X
+    default_branch: main
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - plasma-physics
+      - gyrokinetics
+      - particle-in-cell
+      - high-performance-computing
+    languages:
+      - fortran
+      - c
+      - cpp
+      - python
+      - cmake
+      - shell
+      - markdown
+    priority: high
+    enabled: true

@@ -112,7 +112,7 @@ class EmbeddingProviderTest(unittest.TestCase):
         vector = provider.embed_text(" ".join(f"token{i}" for i in range(100)))
 
         self.assertEqual(vector, [0.0, 1.0])
-        self.assertGreater(len(provider.inputs[0]), len(provider.inputs[1]))
+        self.assertGreater(len(provider.inputs[0][0]), len(provider.inputs[1][0]))
 
 
 if __name__ == "__main__":

@@ -27,6 +27,7 @@ unknown_policy: exclude
             self.assertTrue(policy.allows(LicenseFinding("GPL-3.0", "repository"), "reference-only"))
             self.assertFalse(policy.allows(LicenseFinding("GPL-3.0", "repository"), "allowed"))
             self.assertFalse(policy.allows(LicenseFinding("NOASSERTION", "repository"), "allowed"))
+            self.assertTrue(policy.allows(LicenseFinding("NOASSERTION", "repository"), "reference-only"))
 
 
 if __name__ == "__main__":

@@ -46,7 +46,7 @@ class LicensePolicy:
 
     def allows(self, finding: LicenseFinding, repository_policy: str) -> bool:
         if finding.spdx_id == "NOASSERTION":
-            return self.unknown_policy == "include"
+            return repository_policy == "reference-only" or self.unknown_policy == "include"
         if finding.spdx_id in self.allowed:
             return True
         if finding.spdx_id in self.reference_only:

@@ -20,50 +20,20 @@ export function DialogModel(props: { providerID?: string }) {
   const connected = useConnected()
   const providers = createDialogProviderOptions()
 
-  const showExtra = createMemo(() => connected() && !props.providerID)
-
   const options = createMemo(() => {
     const needle = query().trim()
-    const showSections = showExtra() && needle.length === 0
     const favorites = connected() ? local.model.favorite() : []
-    const recents = local.model.recent()
-
-    function toOptions(items: typeof favorites, category: string) {
-      if (!showSections) return []
-      return items.flatMap((item) => {
-        const provider = sync.data.provider_next.all.find((x) => x.id === item.providerID)
-        if (!provider) return []
-        const model = provider.models[item.modelID]
-        if (!model) return []
-        return [
-          {
-            key: item,
-            value: { providerID: provider.id, modelID: model.id },
-            title: model.name ?? item.modelID,
-            description: provider.name,
-            category,
-            disabled: provider.id === "physicscode" && model.id.includes("-nano"),
-            footer: model.cost?.input === 0 && provider.id === "physicscode" ? "Free" : undefined,
-            onSelect: async () => {
-              await onSelect(provider.id, model.id)
-            },
-          },
-        ]
-      })
-    }
-
-    const favoriteOptions = toOptions(favorites, "Favorites")
-    const recentOptions = toOptions(
-      recents.filter(
-        (item) => !favorites.some((fav) => fav.providerID === item.providerID && fav.modelID === item.modelID),
-      ),
-      "Recent",
-    )
+    const visibleProviderOrder = new Map([
+      ["paidynamics", 0],
+      ["anthropic", 1],
+      ["openai", 2],
+    ])
 
     const providerOptions = pipe(
       sync.data.provider_next.all,
+      filter((provider) => visibleProviderOrder.has(provider.id)),
       sortBy(
-        (provider) => provider.id !== "physicscode",
+        (provider) => visibleProviderOrder.get(provider.id) ?? 99,
         (provider) => provider.name,
       ),
       flatMap((provider) =>
@@ -78,21 +48,13 @@ export function DialogModel(props: { providerID?: string }) {
             description: favorites.some((item) => item.providerID === provider.id && item.modelID === model)
               ? "(Favorite)"
               : undefined,
-            category: connected() ? provider.name : undefined,
+            category: provider.name,
             disabled: provider.id === "physicscode" && model.includes("-nano"),
             footer: info.cost?.input === 0 && provider.id === "physicscode" ? "Free" : undefined,
             async onSelect() {
               await onSelect(provider.id, model)
             },
           })),
-          filter((x) => {
-            if (!showSections) return true
-            if (favorites.some((item) => item.providerID === x.value.providerID && item.modelID === x.value.modelID))
-              return false
-            if (recents.some((item) => item.providerID === x.value.providerID && item.modelID === x.value.modelID))
-              return false
-            return true
-          }),
           sortBy(
             (x) => x.footer !== "Free",
             (x) => x.title,
@@ -119,7 +81,7 @@ export function DialogModel(props: { providerID?: string }) {
       ]
     }
 
-    return [...favoriteOptions, ...recentOptions, ...providerOptions, ...popularProviders]
+    return [...providerOptions, ...popularProviders]
   })
 
   const provider = createMemo(() =>

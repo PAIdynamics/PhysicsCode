@@ -212,6 +212,128 @@ export const PaidynamicsProvider = {
   ),
 } satisfies Provider
 
+const curatedProvider = (
+  provider: Provider | undefined,
+  modelIDs: string[],
+  fallback: Omit<Provider, "models"> & { models?: Record<string, Model> },
+) => {
+  const source = provider ?? ({ ...fallback, models: fallback.models ?? {} } satisfies Provider)
+  return {
+    ...source,
+    ...fallback,
+    models: Object.fromEntries(
+      modelIDs.flatMap((id) => {
+        const model = source.models[id] ?? fallback.models?.[id]
+        return model ? [[id, model]] : []
+      }),
+    ),
+  } satisfies Provider
+}
+
+export const FRONTIER_PROVIDER_IDS = ["paidynamics", "openai", "anthropic"] as const
+export const OPENAI_FRONTIER_MODEL_IDS = [
+  "gpt-5.5",
+  "gpt-5.5-pro",
+  "gpt-5.4-pro",
+  "gpt-5.2-pro",
+  "gpt-5.1-codex-max",
+] as const
+export const ANTHROPIC_FRONTIER_MODEL_IDS = [
+  "claude-fable-5",
+  "claude-opus-4-8",
+  "claude-opus-4-7",
+  "claude-sonnet-5",
+  "claude-sonnet-4-6",
+] as const
+
+const textModel = (input: {
+  id: string
+  name: string
+  family: string
+  release_date: string
+  context: number
+  output: number
+  npm?: string
+  reasoning?: boolean
+}) =>
+  ({
+    id: input.id,
+    name: input.name,
+    family: input.family,
+    release_date: input.release_date,
+    attachment: true,
+    reasoning: input.reasoning ?? true,
+    temperature: true,
+    tool_call: true,
+    limit: {
+      context: input.context,
+      output: input.output,
+    },
+    modalities: {
+      input: ["text" as const, "image" as const],
+      output: ["text" as const],
+    },
+    provider: input.npm ? { npm: input.npm } : undefined,
+  }) satisfies Model
+
+function curatedOpenAI(provider: Provider | undefined) {
+  return curatedProvider(provider, [...OPENAI_FRONTIER_MODEL_IDS], {
+    id: "openai",
+    name: "OpenAI",
+    env: ["OPENAI_API_KEY"],
+    npm: "@ai-sdk/openai",
+    models: {
+      "gpt-5.5": textModel({
+        id: "gpt-5.5",
+        name: "GPT-5.5",
+        family: "gpt",
+        release_date: "2026-04-23",
+        context: 400000,
+        output: 128000,
+        npm: "@ai-sdk/openai",
+      }),
+      "gpt-5.5-pro": textModel({
+        id: "gpt-5.5-pro",
+        name: "GPT-5.5 Pro",
+        family: "gpt-pro",
+        release_date: "2026-04-23",
+        context: 400000,
+        output: 128000,
+        npm: "@ai-sdk/openai",
+      }),
+    },
+  })
+}
+
+function curatedAnthropic(provider: Provider | undefined) {
+  return curatedProvider(provider, [...ANTHROPIC_FRONTIER_MODEL_IDS], {
+    id: "anthropic",
+    name: "Anthropic",
+    env: ["ANTHROPIC_API_KEY"],
+    npm: "@ai-sdk/anthropic",
+    models: {
+      "claude-fable-5": textModel({
+        id: "claude-fable-5",
+        name: "Claude Fable 5",
+        family: "claude-fable",
+        release_date: "2026-06-01",
+        context: 1000000,
+        output: 128000,
+        npm: "@ai-sdk/anthropic",
+      }),
+      "claude-opus-4-8": textModel({
+        id: "claude-opus-4-8",
+        name: "Claude Opus 4.8",
+        family: "claude-opus",
+        release_date: "2026-05-28",
+        context: 1000000,
+        output: 128000,
+        npm: "@ai-sdk/anthropic",
+      }),
+    },
+  })
+}
+
 function url() {
   return Flag.PHYSICSCODE_MODELS_URL || "https://models.dev"
 }
@@ -256,9 +378,12 @@ export const Data = lazy(async () => {
 
 export async function get(): Promise<Record<string, Provider>> {
   const result = await Data()
+  const providers = result as Record<string, Provider>
   return {
-    ...(result as Record<string, Provider>),
+    ...providers,
     [PAIDYNAMICS_PROVIDER_ID]: PaidynamicsProvider,
+    openai: curatedOpenAI(providers.openai),
+    anthropic: curatedAnthropic(providers.anthropic),
   }
 }
 

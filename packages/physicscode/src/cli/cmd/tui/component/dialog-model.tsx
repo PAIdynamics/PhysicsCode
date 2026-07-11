@@ -31,7 +31,7 @@ export function DialogModel(props: { providerID?: string }) {
     function toOptions(items: typeof favorites, category: string) {
       if (!showSections) return []
       return items.flatMap((item) => {
-        const provider = sync.data.provider.find((x) => x.id === item.providerID)
+        const provider = sync.data.provider_next.all.find((x) => x.id === item.providerID)
         if (!provider) return []
         const model = provider.models[item.modelID]
         if (!model) return []
@@ -44,8 +44,8 @@ export function DialogModel(props: { providerID?: string }) {
             category,
             disabled: provider.id === "physicscode" && model.id.includes("-nano"),
             footer: model.cost?.input === 0 && provider.id === "physicscode" ? "Free" : undefined,
-            onSelect: () => {
-              onSelect(provider.id, model.id)
+            onSelect: async () => {
+              await onSelect(provider.id, model.id)
             },
           },
         ]
@@ -61,7 +61,7 @@ export function DialogModel(props: { providerID?: string }) {
     )
 
     const providerOptions = pipe(
-      sync.data.provider,
+      sync.data.provider_next.all,
       sortBy(
         (provider) => provider.id !== "physicscode",
         (provider) => provider.name,
@@ -81,8 +81,8 @@ export function DialogModel(props: { providerID?: string }) {
             category: connected() ? provider.name : undefined,
             disabled: provider.id === "physicscode" && model.includes("-nano"),
             footer: info.cost?.input === 0 && provider.id === "physicscode" ? "Free" : undefined,
-            onSelect() {
-              onSelect(provider.id, model)
+            async onSelect() {
+              await onSelect(provider.id, model)
             },
           })),
           filter((x) => {
@@ -123,7 +123,7 @@ export function DialogModel(props: { providerID?: string }) {
   })
 
   const provider = createMemo(() =>
-    props.providerID ? sync.data.provider.find((x) => x.id === props.providerID) : null,
+    props.providerID ? sync.data.provider_next.all.find((x) => x.id === props.providerID) : null,
   )
 
   const title = createMemo(() => {
@@ -132,7 +132,22 @@ export function DialogModel(props: { providerID?: string }) {
     return value.name
   })
 
-  function onSelect(providerID: string, modelID: string) {
+  async function onSelect(providerID: string, modelID: string) {
+    if (!sync.data.provider_next.connected.includes(providerID)) {
+      dialog.replace(() => (
+        <DialogProvider
+          providerID={providerID}
+          onConnected={() => {
+            finishSelect(providerID, modelID)
+          }}
+        />
+      ))
+      return
+    }
+    finishSelect(providerID, modelID)
+  }
+
+  function finishSelect(providerID: string, modelID: string) {
     local.model.set({ providerID, modelID }, { recent: true })
     const list = local.model.variant.list()
     const cur = local.model.variant.selected()

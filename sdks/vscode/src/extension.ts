@@ -15,6 +15,7 @@ const PAI_DEFAULT_API_MODEL_ID = "openai/gpt-oss-120b"
 const PAI_DEFAULT_BASE_URL = "https://www.paidynamics.ch/llm/v1"
 const PAI_DEFAULT_LOGIN_URL = "https://www.paidynamics.ch"
 const PAI_LOCAL_TOOLS_ENV = "PHYSICSCODE_PAI_ENABLE_LOCAL_TOOLS"
+const FRONTIER_PROVIDER_IDS = ["paidynamics", "openai", "anthropic"]
 const execFileAsync = promisify(execFile)
 const PAI_MODEL_ALIASES: Record<string, string> = {
   "deepseek-r1-distil-qwen-32b-pai": "deepseek-r1-distill-qwen-32b-pai",
@@ -76,6 +77,143 @@ const PAI_MODELS: Record<string, PaiModel> = {
     context: 32768,
     output: 8192,
     reasoningEffort: "low",
+  },
+}
+
+const FRONTIER_PROVIDERS = {
+  openai: {
+    name: "OpenAI",
+    npm: "@ai-sdk/openai",
+    env: ["OPENAI_API_KEY"],
+    models: {
+      "gpt-5.5": {
+        id: "gpt-5.5",
+        name: "GPT-5.5",
+        family: "gpt",
+        release_date: "2026-04-23",
+        attachment: true,
+        reasoning: true,
+        temperature: true,
+        tool_call: true,
+        limit: { context: 400000, output: 128000 },
+        modalities: { input: ["text", "image"], output: ["text"] },
+      },
+      "gpt-5.5-pro": {
+        id: "gpt-5.5-pro",
+        name: "GPT-5.5 Pro",
+        family: "gpt-pro",
+        release_date: "2026-04-23",
+        attachment: true,
+        reasoning: true,
+        temperature: true,
+        tool_call: true,
+        limit: { context: 400000, output: 128000 },
+        modalities: { input: ["text", "image"], output: ["text"] },
+      },
+      "gpt-5.4-pro": {
+        id: "gpt-5.4-pro",
+        name: "GPT-5.4 Pro",
+        family: "gpt-pro",
+        release_date: "2026-02-01",
+        attachment: true,
+        reasoning: true,
+        temperature: true,
+        tool_call: true,
+        limit: { context: 400000, output: 128000 },
+        modalities: { input: ["text", "image"], output: ["text"] },
+      },
+      "gpt-5.2-pro": {
+        id: "gpt-5.2-pro",
+        name: "GPT-5.2 Pro",
+        family: "gpt-pro",
+        release_date: "2025-12-11",
+        attachment: true,
+        reasoning: true,
+        temperature: true,
+        tool_call: true,
+        limit: { context: 400000, output: 128000 },
+        modalities: { input: ["text", "image"], output: ["text"] },
+      },
+      "gpt-5.1-codex-max": {
+        id: "gpt-5.1-codex-max",
+        name: "GPT-5.1 Codex Max",
+        family: "gpt-codex",
+        release_date: "2025-11-13",
+        attachment: true,
+        reasoning: true,
+        temperature: true,
+        tool_call: true,
+        limit: { context: 400000, output: 128000 },
+        modalities: { input: ["text", "image"], output: ["text"] },
+      },
+    },
+  },
+  anthropic: {
+    name: "Anthropic",
+    npm: "@ai-sdk/anthropic",
+    env: ["ANTHROPIC_API_KEY"],
+    models: {
+      "claude-fable-5": {
+        id: "claude-fable-5",
+        name: "Claude Fable 5",
+        family: "claude-fable",
+        release_date: "2026-06-01",
+        attachment: true,
+        reasoning: true,
+        temperature: true,
+        tool_call: true,
+        limit: { context: 1000000, output: 128000 },
+        modalities: { input: ["text", "image"], output: ["text"] },
+      },
+      "claude-opus-4-8": {
+        id: "claude-opus-4-8",
+        name: "Claude Opus 4.8",
+        family: "claude-opus",
+        release_date: "2026-05-28",
+        attachment: true,
+        reasoning: true,
+        temperature: true,
+        tool_call: true,
+        limit: { context: 1000000, output: 128000 },
+        modalities: { input: ["text", "image"], output: ["text"] },
+      },
+      "claude-opus-4-7": {
+        id: "claude-opus-4-7",
+        name: "Claude Opus 4.7",
+        family: "claude-opus",
+        release_date: "2026-04-16",
+        attachment: true,
+        reasoning: true,
+        temperature: true,
+        tool_call: true,
+        limit: { context: 1000000, output: 128000 },
+        modalities: { input: ["text", "image"], output: ["text"] },
+      },
+      "claude-sonnet-5": {
+        id: "claude-sonnet-5",
+        name: "Claude Sonnet 5",
+        family: "claude-sonnet",
+        release_date: "2026-06-01",
+        attachment: true,
+        reasoning: true,
+        temperature: true,
+        tool_call: true,
+        limit: { context: 1000000, output: 128000 },
+        modalities: { input: ["text", "image"], output: ["text"] },
+      },
+      "claude-sonnet-4-6": {
+        id: "claude-sonnet-4-6",
+        name: "Claude Sonnet 4.6",
+        family: "claude-sonnet",
+        release_date: "2026-02-17",
+        attachment: true,
+        reasoning: true,
+        temperature: true,
+        tool_call: true,
+        limit: { context: 1000000, output: 128000 },
+        modalities: { input: ["text", "image"], output: ["text"] },
+      },
+    },
   },
 }
 
@@ -342,7 +480,7 @@ export function activate(context: vscode.ExtensionContext) {
       ]),
     )
     const config = {
-      enabled_providers: [providerID],
+      enabled_providers: FRONTIER_PROVIDER_IDS,
       model: `${providerID}/${modelID}`,
       small_model: `${providerID}/gpt-oss-120b-pai`,
       default_agent: "build",
@@ -357,6 +495,7 @@ export function activate(context: vscode.ExtensionContext) {
           },
           models,
         },
+        ...FRONTIER_PROVIDERS,
       },
     }
 

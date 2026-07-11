@@ -25,7 +25,7 @@ const PROVIDER_PRIORITY: Record<string, number> = {
   google: 5,
 }
 
-export function createDialogProviderOptions() {
+export function createDialogProviderOptions(input: { providerID?: string; onConnected?: (providerID: string) => void } = {}) {
   const sync = useSync()
   const dialog = useDialog()
   const sdk = useSDK()
@@ -34,7 +34,7 @@ export function createDialogProviderOptions() {
   const onboarded = useConnected()
   const options = createMemo(() => {
     return pipe(
-      sync.data.provider_next.all,
+      sync.data.provider_next.all.filter((provider) => !input.providerID || provider.id === input.providerID),
       sortBy((x) => PROVIDER_PRIORITY[x.id] ?? 99),
       map((provider) => {
         const consoleManaged = isConsoleManagedProvider(sync.data.console_state.consoleManagedProviders, provider.id)
@@ -134,7 +134,12 @@ export function createDialogProviderOptions() {
                 metadata = value
               }
               return dialog.replace(() => (
-                <ApiMethod providerID={provider.id} title={method.label} metadata={metadata} />
+                  <ApiMethod
+                    providerID={provider.id}
+                    title={method.label}
+                    metadata={metadata}
+                    onConnected={input.onConnected}
+                  />
               ))
             }
           },
@@ -145,8 +150,8 @@ export function createDialogProviderOptions() {
   return options
 }
 
-export function DialogProvider() {
-  const options = createDialogProviderOptions()
+export function DialogProvider(props: { providerID?: string; onConnected?: (providerID: string) => void } = {}) {
+  const options = createDialogProviderOptions(props)
   return <DialogSelect title="Connect a provider" options={options()} />
 }
 
@@ -256,6 +261,7 @@ interface ApiMethodProps {
   providerID: string
   title: string
   metadata?: Record<string, string>
+  onConnected?: (providerID: string) => void
 }
 function ApiMethod(props: ApiMethodProps) {
   const dialog = useDialog()
@@ -305,6 +311,10 @@ function ApiMethod(props: ApiMethodProps) {
         })
         await sdk.client.instance.dispose()
         await sync.bootstrap()
+        if (props.onConnected) {
+          props.onConnected(props.providerID)
+          return
+        }
         dialog.replace(() => <DialogModel providerID={props.providerID} />)
       }}
     />

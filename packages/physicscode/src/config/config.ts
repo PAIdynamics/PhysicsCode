@@ -593,7 +593,7 @@ export const layer = Layer.effect(
           log.debug("loaded custom config from PHYSICSCODE_CONFIG_CONTENT")
         }
 
-        result.enabled_providers ??= ["paidynamics"]
+        result.enabled_providers ??= ["paidynamics", "openai", "anthropic"]
         result.model ??= "paidynamics/gpt-oss-120b-pai"
         result.small_model ??= result.model
         result.default_agent ??= "science"

@@ -1277,7 +1277,8 @@ const layer: Layer.Layer<
         // now read config providers - includes any modifications from plugin config() hook
         const configProviders = Object.entries(cfg.provider ?? {})
         const disabled = new Set(cfg.disabled_providers ?? [])
-        const enabled = cfg.enabled_providers ? new Set(cfg.enabled_providers) : null
+        const normalizedEnabled = ModelsDev.normalizeFrontierEnabledProviders(cfg.enabled_providers)
+        const enabled = normalizedEnabled ? new Set(normalizedEnabled) : null
 
         function isProviderAllowed(providerID: ProviderID): boolean {
           if (enabled && !enabled.has(providerID)) return false

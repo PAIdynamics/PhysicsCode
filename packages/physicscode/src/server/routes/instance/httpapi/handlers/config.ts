@@ -1,6 +1,6 @@
 import { Config } from "@/config/config"
 import { Provider } from "@/provider/provider"
-import { ModelsDev } from "@/provider/models"
+import { ModelsDev, normalizeFrontierEnabledProviders } from "@/provider/models"
 import * as InstanceState from "@/effect/instance-state"
 import { Effect } from "effect"
 import { HttpApiBuilder } from "effect/unstable/httpapi"
@@ -27,7 +27,8 @@ export const configHandlers = HttpApiBuilder.group(InstanceHttpApi, "config", (h
       const config = yield* configSvc.get()
       const all = yield* Effect.promise(() => ModelsDev.get())
       const disabled = new Set(config.disabled_providers ?? [])
-      const enabled = config.enabled_providers ? new Set(config.enabled_providers) : undefined
+      const normalizedEnabled = normalizeFrontierEnabledProviders(config.enabled_providers)
+      const enabled = normalizedEnabled ? new Set(normalizedEnabled) : undefined
       const filtered: Record<string, (typeof all)[string]> = {}
       for (const [key, value] of Object.entries(all)) {
         if ((enabled ? enabled.has(key) : true) && !disabled.has(key)) {

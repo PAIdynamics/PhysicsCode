@@ -231,6 +231,11 @@ const curatedProvider = (
 }
 
 export const FRONTIER_PROVIDER_IDS = ["paidynamics", "openai", "anthropic"] as const
+export const normalizeFrontierEnabledProviders = (enabled?: string[]) => {
+  if (!enabled) return undefined
+  if (enabled.length === 1 && enabled[0] === PAIDYNAMICS_PROVIDER_ID) return [...FRONTIER_PROVIDER_IDS]
+  return enabled
+}
 export const OPENAI_FRONTIER_MODEL_IDS = [
   "gpt-5.5",
   "gpt-5.5-pro",

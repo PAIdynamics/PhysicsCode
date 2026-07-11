@@ -1,6 +1,6 @@
 import { ProviderAuth } from "@/provider/auth"
 import { Config } from "@/config/config"
-import { ModelsDev } from "@/provider/models"
+import { ModelsDev, normalizeFrontierEnabledProviders } from "@/provider/models"
 import { Provider } from "@/provider/provider"
 import { ProviderID } from "@/provider/schema"
 import { mapValues } from "remeda"
@@ -19,7 +19,8 @@ export const providerHandlers = HttpApiBuilder.group(InstanceHttpApi, "provider"
       const config = yield* cfg.get()
       const all = yield* Effect.promise(() => ModelsDev.get())
       const disabled = new Set(config.disabled_providers ?? [])
-      const enabled = config.enabled_providers ? new Set(config.enabled_providers) : undefined
+      const normalizedEnabled = normalizeFrontierEnabledProviders(config.enabled_providers)
+      const enabled = normalizedEnabled ? new Set(normalizedEnabled) : undefined
       const filtered: Record<string, (typeof all)[string]> = {}
       for (const [key, value] of Object.entries(all)) {
         if ((enabled ? enabled.has(key) : true) && !disabled.has(key)) filtered[key] = value

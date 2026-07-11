@@ -1,8 +1,8 @@
 import type { Argv } from "yargs"
 import { Instance } from "../../project/instance"
-import { Provider } from "@/provider/provider"
 import { ProviderID } from "../../provider/schema"
 import { ModelsDev } from "@/provider/models"
+import { Config } from "@/config/config"
 import { cmd } from "./cmd"
 import { UI } from "../ui"
 import { EOL } from "os"
@@ -39,8 +39,18 @@ export const ModelsCommand = cmd({
       async fn() {
         await AppRuntime.runPromise(
           Effect.gen(function* () {
-            const svc = yield* Provider.Service
-            const providers = yield* svc.list()
+            const cfg = yield* Config.Service
+            const config = yield* cfg.get()
+            const all = yield* Effect.promise(() => ModelsDev.get())
+            const disabled = new Set(config.disabled_providers ?? [])
+            const enabled = config.enabled_providers ? new Set(config.enabled_providers) : undefined
+            const providers: typeof all = {}
+
+            for (const [providerID, provider] of Object.entries(all)) {
+              if ((enabled ? enabled.has(providerID) : true) && !disabled.has(providerID)) {
+                providers[providerID] = provider
+              }
+            }
 
             const print = (providerID: ProviderID, verbose?: boolean) => {
               const provider = providers[providerID]

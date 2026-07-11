@@ -33,6 +33,8 @@ import { ModelID, ProviderID } from "./schema"
 const log = Log.create({ service: "provider" })
 const PAIDYNAMICS_LOGIN_REQUIRED_MESSAGE =
   "Log in to PhysicsCode to use PAI-hosted models.\n\n"
+const OPENAI_LOGIN_REQUIRED_MESSAGE = "Add an OpenAI API key to use OpenAI frontier models.\n\n"
+const ANTHROPIC_LOGIN_REQUIRED_MESSAGE = "Add an Anthropic API key to use Anthropic frontier models.\n\n"
 
 function shouldUseCopilotResponsesApi(modelID: string): boolean {
   const match = /^gpt-(\d+)/.exec(modelID)
@@ -143,10 +145,29 @@ function useLanguageModel(sdk: any) {
 }
 
 function custom(dep: CustomDep): Record<string, CustomLoader> {
+  const hasProviderCredential = async (provider: Info) => {
+    const [env, cfg, auth] = await Promise.all([
+      Effect.runPromise(dep.env()),
+      Effect.runPromise(dep.config()),
+      Effect.runPromise(dep.auth(provider.id)),
+    ])
+    return Boolean(
+      provider.env.some((item) => env[item]) ||
+        auth ||
+        cfg.provider?.[provider.id]?.options?.apiKey,
+    )
+  }
+
   return {
-    anthropic: () =>
+    anthropic: (input: Info) =>
       Effect.succeed({
-        autoload: false,
+        autoload: true,
+        async getModel(sdk: any, modelID: string) {
+          if (!(await hasProviderCredential(input))) {
+            throw new LoadAPIKeyError({ message: ANTHROPIC_LOGIN_REQUIRED_MESSAGE })
+          }
+          return sdk.languageModel(modelID)
+        },
         options: {
           headers: {
             "anthropic-beta": "interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
@@ -207,10 +228,13 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         },
       }
     }),
-    openai: () =>
+    openai: (input: Info) =>
       Effect.succeed({
-        autoload: false,
+        autoload: true,
         async getModel(sdk: any, modelID: string, _options?: Record<string, any>) {
+          if (!(await hasProviderCredential(input))) {
+            throw new LoadAPIKeyError({ message: OPENAI_LOGIN_REQUIRED_MESSAGE })
+          }
           return sdk.responses(modelID)
         },
         options: {},
@@ -978,6 +1002,7 @@ export function defaultModelIDs<T extends { models: Record<string, { id: string 
 
 export interface Interface {
   readonly list: () => Effect.Effect<Record<ProviderID, Info>>
+  readonly credentialed: (providers: Record<string, { env?: string[] }>) => Effect.Effect<string[]>
   readonly getProvider: (providerID: ProviderID) => Effect.Effect<Info>
   readonly getModel: (providerID: ProviderID, modelID: ModelID) => Effect.Effect<Model>
   readonly getLanguage: (model: Model) => Effect.Effect<LanguageModelV3>
@@ -1498,6 +1523,17 @@ const layer: Layer.Layer<
     )
 
     const list = Effect.fn("Provider.list")(() => InstanceState.use(state, (s) => s.providers))
+    const credentialed = Effect.fn("Provider.credentialed")(function* (providers: Record<string, { env?: string[] }>) {
+      const cfg = yield* config.get()
+      const auths = yield* auth.all().pipe(Effect.orDie)
+      const envs = yield* env.all()
+      return credentialedProviderIDs({
+        providers,
+        config: cfg,
+        auths,
+        envs,
+      })
+    })
 
     async function resolveSDK(model: Model, s: State, envs: Record<string, string | undefined>) {
       try {
@@ -1842,7 +1878,7 @@ const layer: Layer.Layer<
       }
     })
 
-    return Service.of({ list, getProvider, getModel, getLanguage, closest, getSmallModel, defaultModel })
+    return Service.of({ list, credentialed, getProvider, getModel, getLanguage, closest, getSmallModel, defaultModel })
   }),
 )
 
@@ -1873,6 +1909,35 @@ export function parseModel(model: string) {
     providerID: ProviderID.make(providerID),
     modelID: ModelID.make(rest.join("/")),
   }
+}
+
+export function credentialedProviderIDs(input: {
+  providers: Record<string, { env?: string[] }>
+  config: Config.Info
+  auths: Record<string, Auth.Info>
+  envs: Record<string, string | undefined>
+  accountToken?: string
+}) {
+  const result: string[] = []
+  for (const [providerID, provider] of Object.entries(input.providers)) {
+    if (input.auths[providerID]) {
+      result.push(providerID)
+      continue
+    }
+    if (provider.env?.some((item) => input.envs[item])) {
+      result.push(providerID)
+      continue
+    }
+    if (input.config.provider?.[providerID]?.options?.apiKey) {
+      result.push(providerID)
+      continue
+    }
+    if (providerID === ModelsDev.PAIDYNAMICS_PROVIDER_ID && input.accountToken) {
+      result.push(providerID)
+      continue
+    }
+  }
+  return result
 }
 
 export const ModelNotFoundError = namedSchemaError("ProviderModelNotFoundError", {

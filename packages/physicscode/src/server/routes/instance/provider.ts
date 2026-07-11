@@ -50,10 +50,11 @@ export const ProviderRoutes = lazy(() =>
             mapValues(filtered, (x) => Provider.fromModelsDevProvider(x)),
             connected,
           )
+          const credentialed = yield* svc.credentialed(providers)
           return {
             all: Object.values(providers),
             default: Provider.defaultModelIDs(providers),
-            connected: Object.keys(connected),
+            connected: credentialed,
           }
         }),
     )

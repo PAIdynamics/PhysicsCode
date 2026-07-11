@@ -3,9 +3,12 @@ import { describeRoute, validator, resolver } from "hono-openapi"
 import z from "zod"
 import { Config } from "@/config/config"
 import { Provider } from "@/provider/provider"
+import { ModelsDev, normalizeFrontierEnabledProviders } from "@/provider/models"
 import { errors } from "../../error"
 import { lazy } from "@/util/lazy"
 import { jsonRequest } from "./trace"
+import { mapValues } from "remeda"
+import { Effect } from "effect"
 
 export const ConfigRoutes = lazy(() =>
   new Hono()
@@ -79,7 +82,18 @@ export const ConfigRoutes = lazy(() =>
       async (c) =>
         jsonRequest("ConfigRoutes.providers", c, function* () {
           const svc = yield* Provider.Service
-          const providers = yield* svc.list()
+          const cfg = yield* Config.Service
+          const config = yield* cfg.get()
+          const all = yield* Effect.promise(() => ModelsDev.get())
+          const disabled = new Set(config.disabled_providers ?? [])
+          const normalizedEnabled = normalizeFrontierEnabledProviders(config.enabled_providers)
+          const enabled = normalizedEnabled ? new Set(normalizedEnabled) : undefined
+          const filtered: Record<string, (typeof all)[string]> = {}
+          for (const [key, value] of Object.entries(all)) {
+            if ((enabled ? enabled.has(key) : true) && !disabled.has(key)) filtered[key] = value
+          }
+          const connected = yield* svc.list()
+          const providers = Object.assign(mapValues(filtered, (x) => Provider.fromModelsDevProvider(x)), connected)
           return {
             providers: Object.values(providers),
             default: Provider.defaultModelIDs(providers),

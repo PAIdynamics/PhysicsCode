@@ -237,11 +237,10 @@ export const normalizeFrontierEnabledProviders = (enabled?: string[]) => {
   return enabled
 }
 export const OPENAI_FRONTIER_MODEL_IDS = [
-  "gpt-5.5",
-  "gpt-5.5-pro",
-  "gpt-5.4-pro",
-  "gpt-5.2-pro",
-  "gpt-5.1-codex-max",
+  "gpt-5.6",
+  "gpt-5.6-sol",
+  "gpt-5.6-terra",
+  "gpt-5.6-luna",
 ] as const
 export const ANTHROPIC_FRONTIER_MODEL_IDS = [
   "claude-fable-5",
@@ -281,28 +280,88 @@ const textModel = (input: {
     provider: input.npm ? { npm: input.npm } : undefined,
   }) satisfies Model
 
+const OPENAI_FRONTIER_SUFFIX_ORDER = ["", "sol", "pro", "terra", "luna", "codex-max"] as const
+const OPENAI_FRONTIER_EXCLUDED_SUFFIXES = new Set(["mini", "nano", "instant", "chat", "chat-latest"])
+
+function openAIDynamicFrontierModelIDs(provider: Provider | undefined) {
+  const parsed = Object.keys(provider?.models ?? {}).flatMap((id) => {
+    const match = /^gpt-(\d+)(?:\.(\d+))?(?:-([a-z0-9-]+))?$/.exec(id)
+    if (!match) return []
+
+    const suffix = match[3] ?? ""
+    if (OPENAI_FRONTIER_EXCLUDED_SUFFIXES.has(suffix)) return []
+
+    return [
+      {
+        id,
+        major: Number(match[1]),
+        minor: Number(match[2] ?? 0),
+        suffix,
+      },
+    ]
+  })
+
+  const latest = parsed.reduce<(typeof parsed)[number] | undefined>((current, next) => {
+    if (!current) return next
+    if (next.major !== current.major) return next.major > current.major ? next : current
+    if (next.minor !== current.minor) return next.minor > current.minor ? next : current
+    return current
+  }, undefined)
+
+  if (!latest) return [...OPENAI_FRONTIER_MODEL_IDS]
+
+  return parsed
+    .filter((item) => item.major === latest.major && item.minor === latest.minor)
+    .sort((a, b) => {
+      const suffixA = OPENAI_FRONTIER_SUFFIX_ORDER.indexOf(a.suffix as (typeof OPENAI_FRONTIER_SUFFIX_ORDER)[number])
+      const suffixB = OPENAI_FRONTIER_SUFFIX_ORDER.indexOf(b.suffix as (typeof OPENAI_FRONTIER_SUFFIX_ORDER)[number])
+      const rankA = suffixA === -1 ? OPENAI_FRONTIER_SUFFIX_ORDER.length : suffixA
+      const rankB = suffixB === -1 ? OPENAI_FRONTIER_SUFFIX_ORDER.length : suffixB
+      return rankA - rankB || a.id.localeCompare(b.id)
+    })
+    .map((item) => item.id)
+}
+
 function curatedOpenAI(provider: Provider | undefined) {
-  return curatedProvider(provider, [...OPENAI_FRONTIER_MODEL_IDS], {
+  return curatedProvider(provider, openAIDynamicFrontierModelIDs(provider), {
     id: "openai",
     name: "OpenAI",
     env: ["OPENAI_API_KEY"],
     npm: "@ai-sdk/openai",
     models: {
-      "gpt-5.5": textModel({
-        id: "gpt-5.5",
-        name: "GPT-5.5",
+      "gpt-5.6": textModel({
+        id: "gpt-5.6",
+        name: "GPT-5.6 Sol",
         family: "gpt",
-        release_date: "2026-04-23",
-        context: 400000,
+        release_date: "2026-07-09",
+        context: 1050000,
         output: 128000,
         npm: "@ai-sdk/openai",
       }),
-      "gpt-5.5-pro": textModel({
-        id: "gpt-5.5-pro",
-        name: "GPT-5.5 Pro",
-        family: "gpt-pro",
-        release_date: "2026-04-23",
-        context: 400000,
+      "gpt-5.6-sol": textModel({
+        id: "gpt-5.6-sol",
+        name: "GPT-5.6 Sol",
+        family: "gpt",
+        release_date: "2026-07-09",
+        context: 1050000,
+        output: 128000,
+        npm: "@ai-sdk/openai",
+      }),
+      "gpt-5.6-terra": textModel({
+        id: "gpt-5.6-terra",
+        name: "GPT-5.6 Terra",
+        family: "gpt",
+        release_date: "2026-07-09",
+        context: 1050000,
+        output: 128000,
+        npm: "@ai-sdk/openai",
+      }),
+      "gpt-5.6-luna": textModel({
+        id: "gpt-5.6-luna",
+        name: "GPT-5.6 Luna",
+        family: "gpt",
+        release_date: "2026-07-09",
+        context: 1050000,
         output: 128000,
         npm: "@ai-sdk/openai",
       }),

@@ -1,12 +1,10 @@
 import { Config } from "@/config/config"
 import { Provider } from "@/provider/provider"
-import { ModelsDev, normalizeFrontierEnabledProviders } from "@/provider/models"
 import * as InstanceState from "@/effect/instance-state"
 import { Effect } from "effect"
 import { HttpApiBuilder } from "effect/unstable/httpapi"
 import { InstanceHttpApi } from "../api"
 import { markInstanceForDisposal } from "../lifecycle"
-import { mapValues } from "remeda"
 
 export const configHandlers = HttpApiBuilder.group(InstanceHttpApi, "config", (handlers) =>
   Effect.gen(function* () {
@@ -24,22 +22,7 @@ export const configHandlers = HttpApiBuilder.group(InstanceHttpApi, "config", (h
     })
 
     const providers = Effect.fn("ConfigHttpApi.providers")(function* () {
-      const config = yield* configSvc.get()
-      const all = yield* Effect.promise(() => ModelsDev.get())
-      const disabled = new Set(config.disabled_providers ?? [])
-      const normalizedEnabled = normalizeFrontierEnabledProviders(config.enabled_providers)
-      const enabled = normalizedEnabled ? new Set(normalizedEnabled) : undefined
-      const filtered: Record<string, (typeof all)[string]> = {}
-      for (const [key, value] of Object.entries(all)) {
-        if ((enabled ? enabled.has(key) : true) && !disabled.has(key)) {
-          filtered[key] = value
-        }
-      }
-      const connected = yield* providerSvc.list()
-      const providers = Object.assign(
-        mapValues(filtered, (item) => Provider.fromModelsDevProvider(item)),
-        connected,
-      )
+      const providers = yield* providerSvc.list()
       return {
         providers: Object.values(providers),
         default: Provider.defaultModelIDs(providers),

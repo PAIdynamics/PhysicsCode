@@ -1,9 +1,6 @@
 import { ProviderAuth } from "@/provider/auth"
-import { Config } from "@/config/config"
-import { ModelsDev, normalizeFrontierEnabledProviders } from "@/provider/models"
 import { Provider } from "@/provider/provider"
 import { ProviderID } from "@/provider/schema"
-import { mapValues } from "remeda"
 import { Effect, Schema } from "effect"
 import { HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
 import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi"
@@ -11,25 +8,11 @@ import { InstanceHttpApi } from "../api"
 
 export const providerHandlers = HttpApiBuilder.group(InstanceHttpApi, "provider", (handlers) =>
   Effect.gen(function* () {
-    const cfg = yield* Config.Service
     const provider = yield* Provider.Service
     const svc = yield* ProviderAuth.Service
 
     const list = Effect.fn("ProviderHttpApi.list")(function* () {
-      const config = yield* cfg.get()
-      const all = yield* Effect.promise(() => ModelsDev.get())
-      const disabled = new Set(config.disabled_providers ?? [])
-      const normalizedEnabled = normalizeFrontierEnabledProviders(config.enabled_providers)
-      const enabled = normalizedEnabled ? new Set(normalizedEnabled) : undefined
-      const filtered: Record<string, (typeof all)[string]> = {}
-      for (const [key, value] of Object.entries(all)) {
-        if ((enabled ? enabled.has(key) : true) && !disabled.has(key)) filtered[key] = value
-      }
-      const connected = yield* provider.list()
-      const providers = Object.assign(
-        mapValues(filtered, (item) => Provider.fromModelsDevProvider(item)),
-        connected,
-      )
+      const providers = yield* provider.list()
       const credentialed = yield* provider.credentialed(providers)
       return {
         all: Object.values(providers),

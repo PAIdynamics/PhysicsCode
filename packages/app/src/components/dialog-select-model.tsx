@@ -3,7 +3,7 @@ import { Component, ComponentProps, createMemo, JSX, Show, ValidComponent } from
 import { createStore } from "solid-js/store"
 import { useLocal } from "@/context/local"
 import { useDialog } from "@physicscode-ai/ui/context/dialog"
-import { popularProviders } from "@/hooks/use-providers"
+import { popularProviders, useProviders } from "@/hooks/use-providers"
 import { Button } from "@physicscode-ai/ui/button"
 import { IconButton } from "@physicscode-ai/ui/icon-button"
 import { Tag } from "@physicscode-ai/ui/tag"
@@ -12,6 +12,7 @@ import { List } from "@physicscode-ai/ui/list"
 import { Tooltip } from "@physicscode-ai/ui/tooltip"
 import { ModelTooltip } from "./model-tooltip"
 import { useLanguage } from "@/context/language"
+import { DialogConnectProvider } from "./dialog-connect-provider"
 
 const isFree = (provider: string, cost: { input: number } | undefined) =>
   provider === "physicscode" && (!cost || cost.input === 0)
@@ -27,6 +28,9 @@ const ModelList: Component<{
 }> = (props) => {
   const model = props.model ?? useLocal().model
   const language = useLanguage()
+  const dialog = useDialog()
+  const providers = useProviders()
+  const connected = createMemo(() => new Set(providers.connected().map((p) => p.id)))
 
   const models = createMemo(() =>
     model
@@ -64,10 +68,14 @@ const ModelList: Component<{
         </Tooltip>
       )}
       onSelect={(x) => {
+        if (!x) return
         model.set(x ? { modelID: x.id, providerID: x.provider.id } : undefined, {
           recent: true,
         })
         props.onSelect()
+        if (!connected().has(x.provider.id)) {
+          dialog.show(() => <DialogConnectProvider provider={x.provider.id} />)
+        }
       }}
     >
       {(i) => (

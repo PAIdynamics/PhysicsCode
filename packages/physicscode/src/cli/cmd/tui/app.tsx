@@ -265,7 +265,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
     // - Esc dismisses selection
     // - Most other key input dismisses selection and is passed through
     if (evt.ctrl && evt.name === "c") {
-      if (!Selection.copy(renderer, toast)) {
+      if (!Selection.copy(renderer)) {
         renderer.clearSelection()
         return
       }
@@ -294,9 +294,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
   renderer.console.onCopySelection = async (text: string) => {
     if (!text || text.length === 0) return
 
-    await Clipboard.copy(text)
-      .then(() => toast.show({ message: "Copied to clipboard", variant: "info" }))
-      .catch(toast.error)
+    await Clipboard.copy(text).catch(() => {})
 
     renderer.clearSelection()
   }
@@ -882,11 +880,11 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
         if (!Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT) return
         if (evt.button !== MouseButton.RIGHT) return
 
-        if (!Selection.copy(renderer, toast)) return
+        if (!Selection.copy(renderer)) return
         evt.preventDefault()
         evt.stopPropagation()
       }}
-      onMouseUp={Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT ? undefined : () => Selection.copy(renderer, toast)}
+      onMouseUp={Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT ? undefined : () => Selection.copy(renderer)}
     >
       <Show when={Flag.PHYSICSCODE_SHOW_TTFD}>
         <TimeToFirstDraw />

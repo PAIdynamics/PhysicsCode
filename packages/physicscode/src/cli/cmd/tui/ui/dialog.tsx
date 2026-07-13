@@ -3,7 +3,6 @@ import { batch, createContext, Show, useContext, type JSX, type ParentProps } fr
 import { useTheme } from "@tui/context/theme"
 import { MouseButton, Renderable, RGBA } from "@opentui/core"
 import { createStore } from "solid-js/store"
-import { useToast } from "./toast"
 import { Flag } from "@physicscode-ai/core/flag/flag"
 import * as Selection from "@tui/util/selection"
 
@@ -154,7 +153,6 @@ const ctx = createContext<DialogContext>()
 export function DialogProvider(props: ParentProps) {
   const value = init()
   const renderer = useRenderer()
-  const toast = useToast()
   return (
     <ctx.Provider value={value}>
       {props.children}
@@ -165,12 +163,12 @@ export function DialogProvider(props: ParentProps) {
           if (!Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT) return
           if (evt.button !== MouseButton.RIGHT) return
 
-          if (!Selection.copy(renderer, toast)) return
+          if (!Selection.copy(renderer)) return
           evt.preventDefault()
           evt.stopPropagation()
         }}
         onMouseUp={
-          !Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT ? () => Selection.copy(renderer, toast) : undefined
+          !Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT ? () => Selection.copy(renderer) : undefined
         }
       >
         <Show when={value.stack.length}>

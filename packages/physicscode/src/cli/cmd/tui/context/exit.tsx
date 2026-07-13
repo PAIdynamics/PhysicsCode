@@ -22,7 +22,7 @@ export const { use: useExit, provider: ExitProvider } = createSimpleContext({
         if (process.stdin.isTTY) process.stdin.setRawMode?.(false)
       } catch {}
       try {
-        process.stdout.write("\x1b[0m\x1b[?25h")
+        process.stdout.write("\x1b[0m\x1b[?25h\x1b[2K\r")
       } catch {}
       win32FlushInputBuffer()
     }
@@ -56,7 +56,7 @@ export const { use: useExit, provider: ExitProvider } = createSimpleContext({
               }
             }
             const text = store.get()
-            if (text) process.stdout.write(text + "\n")
+            process.stdout.write(text ? `${text}\n` : "\n")
             await input.onExit?.()
           } finally {
             restoreTerminal()

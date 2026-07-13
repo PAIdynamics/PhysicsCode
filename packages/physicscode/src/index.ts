@@ -120,7 +120,7 @@ const cli = yargs(args)
       const tty = process.stderr.isTTY
       process.stderr.write("Performing one time database migration, may take a few minutes..." + EOL)
       const width = 36
-      const orange = "\x1b[38;5;214m"
+      const accent = "\x1b[38;2;126;203;255m"
       const muted = "\x1b[0;2m"
       const reset = "\x1b[0m"
       let last = -1
@@ -135,7 +135,7 @@ const cli = yargs(args)
               const fill = Math.round((percent / 100) * width)
               const bar = `${"■".repeat(fill)}${"･".repeat(width - fill)}`
               process.stderr.write(
-                `\r${orange}${bar} ${percent.toString().padStart(3)}%${reset} ${muted}${event.label.padEnd(12)} ${event.current}/${event.total}${reset}`,
+                `\r${accent}${bar} ${percent.toString().padStart(3)}%${reset} ${muted}${event.label.padEnd(12)} ${event.current}/${event.total}${reset}`,
               )
               if (event.current === event.total) process.stderr.write("\n")
             } else {

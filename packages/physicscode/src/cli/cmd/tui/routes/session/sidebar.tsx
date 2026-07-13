@@ -15,7 +15,7 @@ import { AppRuntime } from "@/effect/app-runtime"
 import { Effect, Option } from "effect"
 import { Link } from "../../ui/link"
 import { Locale } from "@/util/locale"
-import type { RGBA } from "@opentui/core"
+import { TextAttributes, type RGBA } from "@opentui/core"
 
 const PAIDYNAMICS_LOGIN_URL = "https://www.paidynamics.ch/physicscode/login"
 const SIDEBAR_WIDTH = 36
@@ -103,8 +103,8 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
       >
         <Show when={!props.expanded}>
           <box alignItems="center" gap={1}>
-            <IconButton label="⚙⚙" color={theme.text} onClick={props.onToggle} />
-            <IconButton label="++" color={theme.textMuted} onClick={() => route.navigate({ type: "home" })} />
+            <IconButton label="⚙" color={theme.text} onClick={props.onToggle} />
+            <IconButton label="+" color={theme.textMuted} onClick={() => route.navigate({ type: "home" })} />
           </box>
         </Show>
         <Show when={props.expanded}>
@@ -120,7 +120,7 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
         >
           <box flexShrink={0} gap={0} paddingRight={1}>
             <box flexDirection="row" justifyContent="space-between">
-              <IconButton label="⚙⚙" color={theme.text} onClick={props.onToggle} />
+              <IconButton label="⚙" color={theme.text} onClick={props.onToggle} />
             </box>
             <Show when={session()}>
               {(current) => (
@@ -249,7 +249,9 @@ function SidebarAction(props: { label: string; onClick: () => void }) {
 function IconButton(props: { label: string; color: RGBA; onClick: () => void }) {
   return (
     <box width={4} alignItems="center" onMouseDown={props.onClick}>
-      <text fg={props.color}>{props.label}</text>
+      <text fg={props.color} attributes={TextAttributes.BOLD}>
+        {props.label}
+      </text>
     </box>
   )
 }

@@ -1,5 +1,4 @@
 import {
-  batch,
   createContext,
   createEffect,
   createMemo,
@@ -161,8 +160,7 @@ export function Session() {
   })
 
   const dimensions = useTerminalDimensions()
-  const [sidebar, setSidebar] = kv.signal<"auto" | "hide">("sidebar", "auto")
-  const [sidebarOpen, setSidebarOpen] = createSignal(false)
+  const [sidebarMode, setSidebarMode] = kv.signal<"collapsed" | "expanded">("sidebar_mode", "collapsed")
   const [conceal, setConceal] = createSignal(true)
   const [showThinking, setShowThinking] = kv.signal("thinking_visibility", true)
   const [timestamps, setTimestamps] = kv.signal<"hide" | "show">("timestamps", "hide")
@@ -174,14 +172,11 @@ export function Session() {
   const [showGenericToolOutput, setShowGenericToolOutput] = kv.signal("generic_tool_output_visibility", false)
 
   const wide = createMemo(() => dimensions().width > 120)
-  const sidebarVisible = createMemo(() => {
-    if (session()?.parentID) return false
-    if (sidebarOpen()) return true
-    if (sidebar() === "auto" && wide()) return true
-    return false
-  })
+  const sidebarVisible = createMemo(() => !session()?.parentID)
+  const sidebarExpanded = createMemo(() => sidebarMode() === "expanded")
+  const sidebarWidth = createMemo(() => (sidebarVisible() ? (sidebarExpanded() ? 42 : 5) : 0))
   const showTimestamps = createMemo(() => timestamps() === "show")
-  const contentWidth = createMemo(() => dimensions().width - (sidebarVisible() ? 42 : 0) - 4)
+  const contentWidth = createMemo(() => dimensions().width - sidebarWidth() - 4)
   const providers = createMemo(() => Model.index(sync.data.provider))
 
   const scrollAcceleration = createMemo(() => getScrollAcceleration(tuiConfig))
@@ -612,16 +607,12 @@ export function Session() {
       },
     },
     {
-      title: sidebarVisible() ? "Hide sidebar" : "Show sidebar",
+      title: sidebarExpanded() ? "Collapse sidebar" : "Expand sidebar",
       value: "session.sidebar.toggle",
       keybind: "sidebar_toggle",
       category: "Session",
       onSelect: (dialog) => {
-        batch(() => {
-          const isVisible = sidebarVisible()
-          setSidebar(() => (isVisible ? "hide" : "auto"))
-          setSidebarOpen(!isVisible)
-        })
+        setSidebarMode(() => (sidebarExpanded() ? "collapsed" : "expanded"))
         dialog.clear()
       },
     },
@@ -1217,10 +1208,14 @@ export function Session() {
         </box>
         <Show when={sidebarVisible()}>
           <Switch>
-            <Match when={wide()}>
-              <Sidebar sessionID={route.sessionID} />
+            <Match when={wide() || !sidebarExpanded()}>
+              <Sidebar
+                sessionID={route.sessionID}
+                expanded={sidebarExpanded()}
+                onToggle={() => setSidebarMode(() => (sidebarExpanded() ? "collapsed" : "expanded"))}
+              />
             </Match>
-            <Match when={!wide()}>
+            <Match when={!wide() && sidebarExpanded()}>
               <box
                 position="absolute"
                 top={0}
@@ -1230,7 +1225,11 @@ export function Session() {
                 alignItems="flex-end"
                 backgroundColor={RGBA.fromInts(0, 0, 0, 70)}
               >
-                <Sidebar sessionID={route.sessionID} />
+                <Sidebar
+                  sessionID={route.sessionID}
+                  expanded={sidebarExpanded()}
+                  onToggle={() => setSidebarMode(() => (sidebarExpanded() ? "collapsed" : "expanded"))}
+                />
               </box>
             </Match>
           </Switch>

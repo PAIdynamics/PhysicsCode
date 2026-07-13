@@ -57,11 +57,6 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
       .slice(0, 5),
   )
   const connectedProviders = createMemo(() => new Set(sync.data.provider_next.connected))
-  const sessionUsage = createMemo(() => {
-    const sessionID = props.sessionID
-    if (!sessionID) return emptyUsage()
-    return summarizeMessages(sync.data.message[sessionID] ?? [])
-  })
   const accountUsage = createMemo(() => {
     const messages = Object.values(sync.data.message).flat()
     return summarizeMessages(messages)
@@ -173,7 +168,7 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
                     <Show when={current().share?.url}>
                       <text fg={theme.textMuted}>{current().share!.url}</text>
                     </Show>
-                    <UsageLines usage={sessionUsage()} />
+                    <TuiPluginRuntime.Slot name="sidebar_context" session_id={props.sessionID ?? ""} />
                   </box>
                 </TuiPluginRuntime.Slot>
               )}
@@ -268,17 +263,7 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
   )
 }
 
-type UsageSummary = {
-  cost: number
-  tokens: number
-}
-
-function emptyUsage(): UsageSummary {
-  return {
-    cost: 0,
-    tokens: 0,
-  }
-}
+type UsageSummary = { cost: number; tokens: number }
 
 function summarizeMessages(messages: Message[]): UsageSummary {
   const assistant = messages.filter((item): item is AssistantMessage => item.role === "assistant")
@@ -318,17 +303,6 @@ function formatTokens(value: number): string {
     minimumFractionDigits: value > 0 && value < 1_000_000 ? 3 : 1,
     maximumFractionDigits: value > 0 && value < 1_000_000 ? 3 : 2,
   })} M tokens`
-}
-
-function UsageLines(props: { usage: UsageSummary }) {
-  const { theme } = useTheme()
-  return (
-    <box gap={0} paddingTop={1}>
-      <text fg={theme.textMuted}>
-        Spent: {formatMoney(props.usage.cost)} ({formatTokens(props.usage.tokens)})
-      </text>
-    </box>
-  )
 }
 
 function SidebarAction(props: { label: string; onClick: () => void }) {

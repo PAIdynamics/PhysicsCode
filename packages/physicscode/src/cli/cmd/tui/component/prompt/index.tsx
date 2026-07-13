@@ -231,12 +231,17 @@ export function Prompt(props: PromptProps) {
 
     const model = sync.data.provider.find((item) => item.id === last.providerID)?.models[last.modelID]
     const limit = model?.limit.context || 0
-    const pct = limit > 0 ? Math.min(100, Math.round((tokens / limit) * 100)) : undefined
+    if (limit <= 0) return
+    const pct = Math.min(100, Math.round((tokens / limit) * 100))
     return {
-      context: pct === undefined ? undefined : `${pct}%`,
-      contextDetail: limit > 0 ? `${Locale.number(tokens)} / ${Locale.number(limit)}` : Locale.number(tokens),
+      percent: pct,
     }
   })
+  const contextUsageColor = (percent: number) => {
+    if (percent < 50) return theme.secondary
+    if (percent <= 70) return theme.warning
+    return theme.error
+  }
 
   const [store, setStore] = createStore<{
     prompt: PromptInfo
@@ -1486,16 +1491,9 @@ export function Prompt(props: PromptProps) {
               </box>
               <Show when={store.mode === "normal" && usage()}>
                 {(item) => (
-                  <box flexDirection="row" gap={1} flexShrink={0}>
-                    <text fg={theme.secondary} wrapMode="none">
-                      ⌛ {item().context ?? "—"}
-                    </text>
-                    <Show when={dimensions().width > 90}>
-                      <text fg={theme.textMuted} wrapMode="none">
-                        {item().contextDetail}
-                      </text>
-                    </Show>
-                  </box>
+                  <text fg={contextUsageColor(item().percent)} wrapMode="none">
+                    {item().percent}%
+                  </text>
                 )}
               </Show>
             </box>

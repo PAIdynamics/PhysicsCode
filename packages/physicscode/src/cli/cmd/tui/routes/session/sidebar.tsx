@@ -10,6 +10,7 @@ import { useDialog } from "../../ui/dialog"
 import { DialogSessionRename } from "../../component/dialog-session-rename"
 import { DialogProvider } from "../../component/dialog-provider"
 import { useRoute } from "../../context/route"
+import { SplitBorder } from "../../component/border"
 import { Account } from "@/account/account"
 import { AppRuntime } from "@/effect/app-runtime"
 import { Effect, Option } from "effect"
@@ -120,6 +121,9 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
         paddingLeft={1}
         paddingRight={1}
         position={props.overlay ? "absolute" : "relative"}
+        {...SplitBorder}
+        border={["left"]}
+        borderColor={theme.secondary}
       >
         <Show when={!props.expanded}>
           <box alignItems="center" gap={1}>
@@ -267,20 +271,18 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
 type UsageSummary = {
   cost: number
   tokens: number
-  context: number
 }
 
 function emptyUsage(): UsageSummary {
   return {
     cost: 0,
     tokens: 0,
-    context: 0,
   }
 }
 
 function summarizeMessages(messages: Message[]): UsageSummary {
   const assistant = messages.filter((item): item is AssistantMessage => item.role === "assistant")
-  const totals = assistant.reduce(
+  return assistant.reduce(
     (sum, item) => {
       const tokens = messageTokens(item)
       sum.cost += item.cost || 0
@@ -289,11 +291,6 @@ function summarizeMessages(messages: Message[]): UsageSummary {
     },
     { cost: 0, tokens: 0 },
   )
-  const latest = assistant.findLast((item) => messageTokens(item) > 0)
-  return {
-    ...totals,
-    context: latest ? messageTokens(latest) : 0,
-  }
 }
 
 function messageTokens(message: AssistantMessage): number {
@@ -330,7 +327,6 @@ function UsageLines(props: { usage: UsageSummary }) {
       <text fg={theme.textMuted}>
         Spent: {formatMoney(props.usage.cost)} ({formatTokens(props.usage.tokens)})
       </text>
-      <text fg={theme.textMuted}>Context: {formatTokens(props.usage.context)}</text>
     </box>
   )
 }

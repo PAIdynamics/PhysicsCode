@@ -71,11 +71,6 @@ export type PromptRef = {
   submit(): void
 }
 
-const money = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-})
-
 function randomIndex(count: number) {
   if (count <= 0) return 0
   return Math.floor(Math.random() * count)
@@ -235,11 +230,11 @@ export function Prompt(props: PromptProps) {
     if (tokens <= 0) return
 
     const model = sync.data.provider.find((item) => item.id === last.providerID)?.models[last.modelID]
-    const pct = model?.limit.context ? `${Math.round((tokens / model.limit.context) * 100)}%` : undefined
-    const cost = msg.reduce((sum, item) => sum + (item.role === "assistant" ? item.cost : 0), 0)
+    const limit = model?.limit.context || 0
+    const pct = limit > 0 ? Math.min(100, Math.round((tokens / limit) * 100)) : undefined
     return {
-      context: pct ? `${Locale.number(tokens)} (${pct})` : Locale.number(tokens),
-      cost: cost > 0 ? money.format(cost) : undefined,
+      context: pct === undefined ? undefined : `${pct}%`,
+      contextDetail: limit > 0 ? `${Locale.number(tokens)} / ${Locale.number(limit)}` : Locale.number(tokens),
     }
   })
 
@@ -1459,45 +1454,50 @@ export function Prompt(props: PromptProps) {
             </box>
           </Show>
           <Show when={status().type !== "retry"}>
-            <box gap={2} flexDirection="row">
-              <Show when={editorFileLabelDisplay()}>
-                {(file) => (
-                  <text
-                    fg={theme.secondary}
-                    onMouseOver={() => setEditorContextHover(true)}
-                    onMouseOut={() => setEditorContextHover(false)}
-                    onMouseUp={dismissEditorContext}
-                  >
-                    {editorContextHover() ? `x ${file()}` : file()}
-                  </text>
+            <box flexDirection="row" justifyContent="space-between" gap={2}>
+              <box gap={2} flexDirection="row">
+                <Show when={editorFileLabelDisplay()}>
+                  {(file) => (
+                    <text
+                      fg={theme.secondary}
+                      onMouseOver={() => setEditorContextHover(true)}
+                      onMouseOut={() => setEditorContextHover(false)}
+                      onMouseUp={dismissEditorContext}
+                    >
+                      {editorContextHover() ? `x ${file()}` : file()}
+                    </text>
+                  )}
+                </Show>
+                <Switch>
+                  <Match when={store.mode === "normal"}>
+                    <text fg={theme.text}>
+                      {keybind.print("agent_cycle")} <span style={{ fg: theme.textMuted }}>agents</span>
+                    </text>
+                    <text fg={theme.text}>
+                      {keybind.print("command_list")} <span style={{ fg: theme.textMuted }}>commands</span>
+                    </text>
+                  </Match>
+                  <Match when={store.mode === "shell"}>
+                    <text fg={theme.text}>
+                      esc <span style={{ fg: theme.textMuted }}>exit shell mode</span>
+                    </text>
+                  </Match>
+                </Switch>
+              </box>
+              <Show when={store.mode === "normal" && usage()}>
+                {(item) => (
+                  <box flexDirection="row" gap={1} flexShrink={0}>
+                    <text fg={theme.secondary} wrapMode="none">
+                      ⌛ {item().context ?? "—"}
+                    </text>
+                    <Show when={dimensions().width > 90}>
+                      <text fg={theme.textMuted} wrapMode="none">
+                        {item().contextDetail}
+                      </text>
+                    </Show>
+                  </box>
                 )}
               </Show>
-              <Switch>
-                <Match when={store.mode === "normal"}>
-                  <Switch>
-                    <Match when={usage()}>
-                      {(item) => (
-                        <text fg={theme.textMuted} wrapMode="none">
-                          {[item().context, item().cost].filter(Boolean).join(" · ")}
-                        </text>
-                      )}
-                    </Match>
-                    <Match when={true}>
-                      <text fg={theme.text}>
-                        {keybind.print("agent_cycle")} <span style={{ fg: theme.textMuted }}>agents</span>
-                      </text>
-                    </Match>
-                  </Switch>
-                  <text fg={theme.text}>
-                    {keybind.print("command_list")} <span style={{ fg: theme.textMuted }}>commands</span>
-                  </text>
-                </Match>
-                <Match when={store.mode === "shell"}>
-                  <text fg={theme.text}>
-                    esc <span style={{ fg: theme.textMuted }}>exit shell mode</span>
-                  </text>
-                </Match>
-              </Switch>
             </box>
           </Show>
         </box>

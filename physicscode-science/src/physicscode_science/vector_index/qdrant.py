@@ -87,8 +87,15 @@ class QdrantVectorIndex:
             raise RuntimeError(f"Qdrant collection {self.collection!r} does not expose vector size")
         return dimensions
 
-    def upsert_store(self, store: ScienceStore, batch_size: int = 128) -> dict[str, object]:
-        candidates = store.search_candidates(SearchQuery(query="", top_k=1_000_000))
+    def upsert_store(
+        self,
+        store: ScienceStore,
+        batch_size: int = 128,
+        repositories: tuple[str, ...] = (),
+    ) -> dict[str, object]:
+        candidates = store.search_candidates(
+            SearchQuery(query="", top_k=1_000_000, repositories=repositories)
+        )
         provider = self.embedding_provider or configured_embedding_provider(
             dimensions=self.dimensions,
             allow_fallback=False,
@@ -96,6 +103,8 @@ class QdrantVectorIndex:
         model = provider.model()
         self.dimensions = model.dimensions
         self.ensure_collection()
+        for repository in repositories:
+            self.delete_repository(repository)
         written = 0
         batch_size = _effective_batch_size(batch_size, self.vector_mode)
         for offset in range(0, len(candidates), batch_size):
@@ -118,7 +127,24 @@ class QdrantVectorIndex:
             "named_vectors": self.named_vectors if self.vector_mode == "multi" else (),
             "embedding_model": model.__dict__,
             "object_count": written,
+            "repositories": repositories,
         }
+
+    def delete_repository(self, repository: str) -> None:
+        self._request(
+            "POST",
+            f"/collections/{self.collection}/points/delete",
+            {
+                "filter": {
+                    "must": [
+                        {
+                            "key": "repository",
+                            "match": {"value": repository},
+                        }
+                    ]
+                }
+            },
+        )
 
     def search(self, query: str, limit: int = 50) -> dict[str, float]:
         self.dimensions = self.collection_dimensions()

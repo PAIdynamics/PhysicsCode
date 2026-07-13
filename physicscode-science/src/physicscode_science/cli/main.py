@@ -13,6 +13,7 @@ from physicscode_science.agentic.workflow import run_agentic_benchmark
 from physicscode_science.enrichment.rebuild import metadata_report, rebuild_metadata
 from physicscode_science.enrichment.taxonomy import load_taxonomy
 from physicscode_science.ingestion.pipeline import ingest_repositories, ingest_repository
+from physicscode_science.ingestion.papers import ingest_papers
 from physicscode_science.evaluation.benchmarks import evaluate_search, load_benchmark_queries
 from physicscode_science.licensing.policy import load_license_policy
 from physicscode_science.mcp.server import serve_stdio
@@ -55,6 +56,18 @@ def main() -> None:
         action="store_true",
         help="Print and commit one repository report at a time.",
     )
+    ingest_papers_command = subcommands.add_parser(
+        "ingest-papers",
+        help="Index reference scientific papers as retrievable document chunks",
+    )
+    ingest_papers_command.add_argument("--papers-dir", default="/home/mohsen/ref-papers")
+    ingest_papers_command.add_argument("--taxonomy", default="config/taxonomy.yaml")
+    ingest_papers_command.add_argument("--db", default=".science/physicscode-science.sqlite")
+    ingest_papers_command.add_argument("--report", default=".science/reports")
+    ingest_papers_command.add_argument("--content-store", default=".science/content")
+    ingest_papers_command.add_argument("--max-papers", type=int)
+    ingest_papers_command.add_argument("--chunk-words", type=int, default=900)
+    ingest_papers_command.add_argument("--chunk-overlap-words", type=int, default=120)
     sync = subcommands.add_parser(
         "sync-repositories",
         help="Report, fetch, or clone configured reference repositories.",
@@ -112,6 +125,12 @@ def main() -> None:
     vector_index.add_argument("--embedding-api-key")
     vector_index.add_argument("--embedding-max-chars", type=int)
     vector_index.add_argument("--embedding-max-tokens", type=int)
+    vector_index.add_argument(
+        "--repository",
+        action="append",
+        default=[],
+        help="Limit vector upsert to one repository name. Repeat for multiple repositories.",
+    )
     status = subcommands.add_parser("status", help="Report science DB and vector-index readiness")
     status.add_argument("--db", default=".science/physicscode-science.sqlite")
     serve = subcommands.add_parser("serve", help="Run the science retrieval HTTP API")
@@ -167,6 +186,23 @@ def main() -> None:
             store.close()
         if not args.stream_reports:
             print(json.dumps(reports, indent=2, sort_keys=True))
+    if args.command == "ingest-papers":
+        store = ScienceStore(args.db)
+        try:
+            report = ingest_papers(
+                args.papers_dir,
+                store,
+                args.report,
+                content_store=ContentStore(args.content_store),
+                taxonomy=load_taxonomy(args.taxonomy),
+                max_papers=args.max_papers,
+                chunk_words=args.chunk_words,
+                chunk_overlap_words=args.chunk_overlap_words,
+            )
+            store.commit()
+        finally:
+            store.close()
+        print(json.dumps(report, indent=2, sort_keys=True))
     if args.command == "sync-repositories":
         repositories = _selected_repositories(args.registry, args.repository)
         reports = sync_repositories(
@@ -232,7 +268,7 @@ def main() -> None:
                         dimensions=args.dimensions,
                         api_key=args.qdrant_api_key,
                         vector_mode=args.qdrant_vector_mode,
-                    ).upsert_store(store)
+                    ).upsert_store(store, repositories=tuple(args.repository))
                 except URLError as error:
                     raise SystemExit(
                         "Qdrant is not reachable. Start it first, for example:\n"

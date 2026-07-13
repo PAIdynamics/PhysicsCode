@@ -16,6 +16,7 @@ import { Effect, Option } from "effect"
 import { Link } from "../../ui/link"
 import { Locale } from "@/util/locale"
 import { TextAttributes, type RGBA } from "@opentui/core"
+import type { AssistantMessage, Message } from "@physicscode-ai/sdk/v2"
 
 const PAIDYNAMICS_LOGIN_URL = "https://www.paidynamics.ch/physicscode/login"
 const SIDEBAR_WIDTH = 36
@@ -55,6 +56,15 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
       .slice(0, 5),
   )
   const connectedProviders = createMemo(() => new Set(sync.data.provider_next.connected))
+  const sessionUsage = createMemo(() => {
+    const sessionID = props.sessionID
+    if (!sessionID) return emptyUsage()
+    return summarizeMessages(sync.data.message[sessionID] ?? [])
+  })
+  const accountUsage = createMemo(() => {
+    const messages = Object.values(sync.data.message).flat()
+    return summarizeMessages(messages)
+  })
   const [account, { refetch: refetchAccount }] = createResource(async () => {
     return AppRuntime.runPromise(
       Effect.gen(function* () {
@@ -149,6 +159,7 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
                     <Show when={current().share?.url}>
                       <text fg={theme.textMuted}>{current().share!.url}</text>
                     </Show>
+                    <UsageLines usage={sessionUsage()} />
                   </box>
                 </TuiPluginRuntime.Slot>
               )}
@@ -208,6 +219,10 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
                 {(active) => (
                   <box gap={0}>
                     <text fg={theme.textMuted}>{active().email}</text>
+                    <text fg={theme.textMuted}>
+                      Spent {formatMoney(accountUsage().cost)} ({formatTokens(accountUsage().tokens)})
+                    </text>
+                    <text fg={theme.textMuted}>Left Credit: --</text>
                     <text fg={theme.secondary} onMouseUp={() => void logout()}>
                       Log out
                     </text>
@@ -234,6 +249,76 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
         </box>
         </Show>
       </box>
+  )
+}
+
+type UsageSummary = {
+  cost: number
+  tokens: number
+  context: number
+}
+
+function emptyUsage(): UsageSummary {
+  return {
+    cost: 0,
+    tokens: 0,
+    context: 0,
+  }
+}
+
+function summarizeMessages(messages: Message[]): UsageSummary {
+  const assistant = messages.filter((item): item is AssistantMessage => item.role === "assistant")
+  const totals = assistant.reduce(
+    (sum, item) => {
+      const tokens = messageTokens(item)
+      sum.cost += item.cost || 0
+      sum.tokens += tokens
+      return sum
+    },
+    { cost: 0, tokens: 0 },
+  )
+  const latest = assistant.findLast((item) => messageTokens(item) > 0)
+  return {
+    ...totals,
+    context: latest ? messageTokens(latest) : 0,
+  }
+}
+
+function messageTokens(message: AssistantMessage): number {
+  return (
+    (message.tokens.input || 0) +
+    (message.tokens.output || 0) +
+    (message.tokens.reasoning || 0) +
+    (message.tokens.cache.read || 0) +
+    (message.tokens.cache.write || 0)
+  )
+}
+
+function formatMoney(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "$0.00"
+  return `$${value.toLocaleString("en-US", {
+    minimumFractionDigits: value < 1 ? 4 : 2,
+    maximumFractionDigits: value < 1 ? 4 : 2,
+  })}`
+}
+
+function formatTokens(value: number): string {
+  const millions = value / 1_000_000
+  return `${millions.toLocaleString("en-US", {
+    minimumFractionDigits: value > 0 && value < 1_000_000 ? 3 : 1,
+    maximumFractionDigits: value > 0 && value < 1_000_000 ? 3 : 2,
+  })} M tokens`
+}
+
+function UsageLines(props: { usage: UsageSummary }) {
+  const { theme } = useTheme()
+  return (
+    <box gap={0} paddingTop={1}>
+      <text fg={theme.textMuted}>
+        Spent: {formatMoney(props.usage.cost)} ({formatTokens(props.usage.tokens)})
+      </text>
+      <text fg={theme.textMuted}>Context: {formatTokens(props.usage.context)}</text>
+    </box>
   )
 }
 

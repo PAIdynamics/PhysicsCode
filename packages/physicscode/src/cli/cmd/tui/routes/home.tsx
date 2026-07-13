@@ -1,5 +1,5 @@
 import { Prompt, type PromptRef } from "@tui/component/prompt"
-import { createEffect, createSignal } from "solid-js"
+import { createEffect, createMemo, createSignal } from "solid-js"
 import { Logo } from "../component/logo"
 import { useProject } from "../context/project"
 import { useSync } from "../context/sync"
@@ -9,6 +9,8 @@ import { useRouteData } from "@tui/context/route"
 import { usePromptRef } from "../context/prompt"
 import { useLocal } from "../context/local"
 import { TuiPluginRuntime } from "@/cli/cmd/tui/plugin/runtime"
+import { useKV } from "../context/kv"
+import { Sidebar } from "./session/sidebar"
 
 let once = false
 const placeholder = {
@@ -24,6 +26,9 @@ export function Home() {
   const [ref, setRef] = createSignal<PromptRef | undefined>()
   const args = useArgs()
   const local = useLocal()
+  const kv = useKV()
+  const [sidebarMode, setSidebarMode] = kv.signal<"collapsed" | "expanded">("sidebar_mode", "collapsed")
+  const sidebarExpanded = createMemo(() => sidebarMode() === "expanded")
   let sent = false
 
   const bind = (r: PromptRef | undefined) => {
@@ -54,33 +59,39 @@ export function Home() {
 
   return (
     <>
-      <box flexGrow={1} alignItems="center" paddingLeft={2} paddingRight={2}>
-        <box flexGrow={1} minHeight={0} />
-        <box height={4} minHeight={0} flexShrink={1} />
-        <box flexShrink={0}>
-          <TuiPluginRuntime.Slot name="home_logo" mode="replace">
-            <Logo />
-          </TuiPluginRuntime.Slot>
-        </box>
-        <box height={1} minHeight={0} flexShrink={1} />
-        <box width="100%" maxWidth={75} zIndex={1000} paddingTop={1} flexShrink={0}>
-          <TuiPluginRuntime.Slot
-            name="home_prompt"
-            mode="replace"
-            workspace_id={project.workspace.current()}
-            ref={bind}
-          >
-            <Prompt
+      <box flexGrow={1} flexDirection="row">
+        <box flexGrow={1} alignItems="center" paddingLeft={2} paddingRight={2}>
+          <box flexGrow={1} minHeight={0} />
+          <box height={4} minHeight={0} flexShrink={1} />
+          <box flexShrink={0}>
+            <TuiPluginRuntime.Slot name="home_logo" mode="replace">
+              <Logo />
+            </TuiPluginRuntime.Slot>
+          </box>
+          <box height={1} minHeight={0} flexShrink={1} />
+          <box width="100%" maxWidth={75} zIndex={1000} paddingTop={1} flexShrink={0}>
+            <TuiPluginRuntime.Slot
+              name="home_prompt"
+              mode="replace"
+              workspace_id={project.workspace.current()}
               ref={bind}
-              workspaceID={project.workspace.current()}
-              right={<TuiPluginRuntime.Slot name="home_prompt_right" workspace_id={project.workspace.current()} />}
-              placeholders={placeholder}
-            />
-          </TuiPluginRuntime.Slot>
+            >
+              <Prompt
+                ref={bind}
+                workspaceID={project.workspace.current()}
+                right={<TuiPluginRuntime.Slot name="home_prompt_right" workspace_id={project.workspace.current()} />}
+                placeholders={placeholder}
+              />
+            </TuiPluginRuntime.Slot>
+          </box>
+          <TuiPluginRuntime.Slot name="home_bottom" />
+          <box flexGrow={1} minHeight={0} />
+          <Toast />
         </box>
-        <TuiPluginRuntime.Slot name="home_bottom" />
-        <box flexGrow={1} minHeight={0} />
-        <Toast />
+        <Sidebar
+          expanded={sidebarExpanded()}
+          onToggle={() => setSidebarMode(() => (sidebarExpanded() ? "collapsed" : "expanded"))}
+        />
       </box>
       <box width="100%" flexShrink={0}>
         <TuiPluginRuntime.Slot name="home_footer" mode="single_winner" />

@@ -98,7 +98,8 @@ export function logo(pad?: string) {
     result.push(draw(other, right.fg, right.shadow, right.bg))
     result.push(EOL)
   })
-  return result.join("").trimEnd()
+  const output = result.join("")
+  return output.endsWith(EOL) ? output.slice(0, -EOL.length) : output
 }
 
 export async function input(prompt: string): Promise<string> {

@@ -174,7 +174,7 @@ export function Session() {
   const wide = createMemo(() => dimensions().width > 120)
   const sidebarVisible = createMemo(() => !session()?.parentID)
   const sidebarExpanded = createMemo(() => sidebarMode() === "expanded")
-  const sidebarWidth = createMemo(() => (sidebarVisible() ? (sidebarExpanded() ? 36 : 4) : 0))
+  const sidebarWidth = createMemo(() => (sidebarVisible() ? (sidebarExpanded() ? 36 : 6) : 0))
   const showTimestamps = createMemo(() => timestamps() === "show")
   const contentWidth = createMemo(() => dimensions().width - sidebarWidth() - 4)
   const providers = createMemo(() => Model.index(sync.data.provider))

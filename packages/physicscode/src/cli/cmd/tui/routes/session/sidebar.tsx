@@ -3,7 +3,7 @@ import { useSync } from "@tui/context/sync"
 import { createMemo, createResource, For, Show } from "solid-js"
 import { useTheme } from "../../context/theme"
 import { useTuiConfig } from "../../context/tui-config"
-import { InstallationChannel, InstallationVersion } from "@physicscode-ai/core/installation/version"
+import { InstallationVersion } from "@physicscode-ai/core/installation/version"
 import { TuiPluginRuntime } from "@/cli/cmd/tui/plugin/runtime"
 import { getScrollAcceleration } from "../../util/scroll"
 import { useDialog } from "../../ui/dialog"
@@ -19,21 +19,21 @@ import type { RGBA } from "@opentui/core"
 
 const PAIDYNAMICS_LOGIN_URL = "https://www.paidynamics.ch/physicscode/login"
 const SIDEBAR_WIDTH = 36
-const SIDEBAR_COLLAPSED_WIDTH = 4
+const SIDEBAR_COLLAPSED_WIDTH = 6
 const PROVIDERS = [
   { id: "paidynamics", name: "PAI Dynamics" },
   { id: "openai", name: "OpenAI" },
   { id: "anthropic", name: "Anthropic" },
 ] as const
 
-export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle: () => void; overlay?: boolean }) {
+export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle: () => void; overlay?: boolean }) {
   const project = useProject()
   const sync = useSync()
   const route = useRoute()
   const dialog = useDialog()
   const { theme } = useTheme()
   const tuiConfig = useTuiConfig()
-  const session = createMemo(() => sync.session.get(props.sessionID))
+  const session = createMemo(() => (props.sessionID ? sync.session.get(props.sessionID) : undefined))
   const historyClickAt = new Map<string, number>()
   const workspaceStatus = () => {
     const workspaceID = session()?.workspaceID
@@ -76,7 +76,9 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
     void refetchAccount()
   }
   const rename = () => {
-    dialog.replace(() => <DialogSessionRename session={props.sessionID} />)
+    const sessionID = props.sessionID
+    if (!sessionID) return
+    dialog.replace(() => <DialogSessionRename session={sessionID} />)
   }
   const connectProvider = (providerID: string) => {
     dialog.replace(() => <DialogProvider providerID={providerID} />)
@@ -89,7 +91,6 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
   }
 
   return (
-    <Show when={session()}>
       <box
         backgroundColor={theme.backgroundPanel}
         width={props.expanded ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED_WIDTH}
@@ -102,8 +103,8 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
       >
         <Show when={!props.expanded}>
           <box alignItems="center" gap={1}>
-            <IconButton label="⚙" color={theme.text} onClick={props.onToggle} />
-            <IconButton label="+" color={theme.textMuted} onClick={() => route.navigate({ type: "home" })} />
+            <IconButton label="⚙⚙" color={theme.text} onClick={props.onToggle} />
+            <IconButton label="++" color={theme.textMuted} onClick={() => route.navigate({ type: "home" })} />
           </box>
         </Show>
         <Show when={props.expanded}>
@@ -119,39 +120,39 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
         >
           <box flexShrink={0} gap={0} paddingRight={1}>
             <box flexDirection="row" justifyContent="space-between">
-              <IconButton label="⚙" color={theme.text} onClick={props.onToggle} />
-              <IconButton label="+" color={theme.textMuted} onClick={() => route.navigate({ type: "home" })} />
+              <IconButton label="⚙⚙" color={theme.text} onClick={props.onToggle} />
             </box>
-            <TuiPluginRuntime.Slot
-              name="sidebar_title"
-              mode="single_winner"
-              session_id={props.sessionID}
-              title={session()!.title}
-              share_url={session()!.share?.url}
-            >
-              <box paddingRight={1}>
-                <box flexDirection="row" gap={1}>
-                  <text fg={theme.text}>
-                    <b>{session()!.title}</b>
-                  </text>
-                  <text fg={theme.text} onMouseUp={rename}>
-                    ✎
-                  </text>
-                </box>
-                <Show when={InstallationChannel !== "latest"}>
-                  <text fg={theme.textMuted}>{props.sessionID}</text>
-                </Show>
-                <Show when={session()!.workspaceID}>
-                  <text fg={theme.textMuted}>
-                    <span style={{ fg: workspaceStatus() === "connected" ? theme.success : theme.error }}>●</span>{" "}
-                    {workspaceLabel()}
-                  </text>
-                </Show>
-                <Show when={session()!.share?.url}>
-                  <text fg={theme.textMuted}>{session()!.share!.url}</text>
-                </Show>
-              </box>
-            </TuiPluginRuntime.Slot>
+            <Show when={session()}>
+              {(current) => (
+                <TuiPluginRuntime.Slot
+                  name="sidebar_title"
+                  mode="single_winner"
+                  session_id={props.sessionID ?? ""}
+                  title={current().title}
+                  share_url={current().share?.url}
+                >
+                  <box paddingRight={1}>
+                    <box flexDirection="row" gap={1}>
+                      <text fg={theme.text}>
+                        <b>{current().title}</b>
+                      </text>
+                      <text fg={theme.text} onMouseUp={rename}>
+                        ✎
+                      </text>
+                    </box>
+                    <Show when={current().workspaceID}>
+                      <text fg={theme.textMuted}>
+                        <span style={{ fg: workspaceStatus() === "connected" ? theme.success : theme.error }}>●</span>{" "}
+                        {workspaceLabel()}
+                      </text>
+                    </Show>
+                    <Show when={current().share?.url}>
+                      <text fg={theme.textMuted}>{current().share!.url}</text>
+                    </Show>
+                  </box>
+                </TuiPluginRuntime.Slot>
+              )}
+            </Show>
             <box flexDirection="row" gap={2}>
               <SidebarAction label="+ New" onClick={() => route.navigate({ type: "home" })} />
             </box>
@@ -214,12 +215,14 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
                 )}
               </Show>
             </box>
-            <TuiPluginRuntime.Slot name="sidebar_content" session_id={props.sessionID} />
+            <Show when={props.sessionID}>
+              {(sessionID) => <TuiPluginRuntime.Slot name="sidebar_content" session_id={sessionID()} />}
+            </Show>
           </box>
         </scrollbox>
 
         <box flexShrink={0} gap={0} paddingTop={0}>
-          <TuiPluginRuntime.Slot name="sidebar_footer" mode="single_winner" session_id={props.sessionID}>
+          <TuiPluginRuntime.Slot name="sidebar_footer" mode="single_winner" session_id={props.sessionID ?? ""}>
             <text fg={theme.textMuted}>
               <span style={{ fg: theme.success }}>•</span>{" "}
               <span style={{ fg: theme.text }}>
@@ -231,7 +234,6 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
         </box>
         </Show>
       </box>
-    </Show>
   )
 }
 
@@ -246,7 +248,7 @@ function SidebarAction(props: { label: string; onClick: () => void }) {
 
 function IconButton(props: { label: string; color: RGBA; onClick: () => void }) {
   return (
-    <box width={2} alignItems="center" onMouseDown={props.onClick}>
+    <box width={4} alignItems="center" onMouseDown={props.onClick}>
       <text fg={props.color}>{props.label}</text>
     </box>
   )

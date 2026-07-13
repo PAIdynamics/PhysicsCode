@@ -46,7 +46,7 @@ export function createDialogProviderOptions(input: { providerID?: string; onConn
           description: {
             physicscode: "(Recommended)",
             anthropic: "(API key)",
-            openai: "(ChatGPT Plus/Pro or API key)",
+            openai: "(API key required)",
             "physicscode-go": "Low cost subscription for everyone",
           }[provider.id],
           footer: consoleManaged ? sync.data.console_state.activeOrgName : undefined,

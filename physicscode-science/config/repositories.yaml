@@ -727,3 +727,25 @@ repositories:
       - markdown
     priority: high
     enabled: true
+
+  - name: bout-dev
+    url: https://github.com/boutproject/BOUT-dev.git
+    local_path: /home/mohsen/ref-codes/BOUT-dev-5.2.0
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - plasma-physics
+      - fluid-simulation
+      - magnetohydrodynamics
+      - high-performance-computing
+    languages:
+      - c
+      - cpp
+      - fortran
+      - python
+      - cmake
+      - shell
+      - markdown
+    priority: high
+    enabled: true

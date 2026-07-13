@@ -1,22 +1,22 @@
 {
   "$schema": "https://physicscode.ai/theme.json",
   "defs": {
-    "darkStep1": "#0a0a0a",
-    "darkStep2": "#141414",
-    "darkStep3": "#1e1e1e",
+    "darkStep1": "#000000",
+    "darkStep2": "#050a12",
+    "darkStep3": "#0a1220",
     "darkStep4": "#282828",
     "darkStep5": "#323232",
     "darkStep6": "#3c3c3c",
     "darkStep7": "#484848",
     "darkStep8": "#606060",
-    "darkStep9": "#fab283",
-    "darkStep10": "#ffc09f",
+    "darkStep9": "#7ecbff",
+    "darkStep10": "#a8ddff",
     "darkStep11": "#808080",
     "darkStep12": "#eeeeee",
-    "darkSecondary": "#5c9cf5",
-    "darkAccent": "#9d7cd8",
+    "darkSecondary": "#7ecbff",
+    "darkAccent": "#a8ddff",
     "darkRed": "#e06c75",
-    "darkOrange": "#f5a742",
+    "darkOrange": "#f5f7ff",
     "darkGreen": "#7fd88f",
     "darkCyan": "#56b6c2",
     "darkYellow": "#e5c07b",
@@ -35,14 +35,14 @@
     "lightSecondary": "#7b5bb6",
     "lightAccent": "#d68c27",
     "lightRed": "#d1383d",
-    "lightOrange": "#d68c27",
+    "lightOrange": "#3b7dd8",
     "lightGreen": "#3d9a57",
     "lightCyan": "#318795",
     "lightYellow": "#b0851f"
   },
   "theme": {
     "primary": {
-      "dark": "darkStep9",
+      "dark": "darkSecondary",
       "light": "lightStep9"
     },
     "secondary": {
@@ -178,7 +178,7 @@
       "light": "lightYellow"
     },
     "markdownStrong": {
-      "dark": "darkOrange",
+      "dark": "darkStep12",
       "light": "lightOrange"
     },
     "markdownHorizontalRule": {
@@ -226,7 +226,7 @@
       "light": "lightGreen"
     },
     "syntaxNumber": {
-      "dark": "darkOrange",
+      "dark": "darkCyan",
       "light": "lightOrange"
     },
     "syntaxType": {

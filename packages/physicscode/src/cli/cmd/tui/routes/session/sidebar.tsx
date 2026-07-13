@@ -15,8 +15,16 @@ import { AppRuntime } from "@/effect/app-runtime"
 import { Effect, Option } from "effect"
 import { Link } from "../../ui/link"
 import { Locale } from "@/util/locale"
+import type { RGBA } from "@opentui/core"
 
 const PAIDYNAMICS_LOGIN_URL = "https://www.paidynamics.ch/physicscode/login"
+const SIDEBAR_WIDTH = 36
+const SIDEBAR_COLLAPSED_WIDTH = 4
+const PROVIDERS = [
+  { id: "paidynamics", name: "PAI Dynamics" },
+  { id: "openai", name: "OpenAI" },
+  { id: "anthropic", name: "Anthropic" },
+] as const
 
 export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle: () => void; overlay?: boolean }) {
   const project = useProject()
@@ -46,6 +54,7 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
       .toSorted((a, b) => b.time.updated - a.time.updated)
       .slice(0, 5),
   )
+  const connectedProviders = createMemo(() => new Set(sync.data.provider_next.connected))
   const [account, { refetch: refetchAccount }] = createResource(async () => {
     return AppRuntime.runPromise(
       Effect.gen(function* () {
@@ -69,6 +78,9 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
   const rename = () => {
     dialog.replace(() => <DialogSessionRename session={props.sessionID} />)
   }
+  const connectProvider = (providerID: string) => {
+    dialog.replace(() => <DialogProvider providerID={providerID} />)
+  }
   const openRecent = (sessionID: string) => {
     const now = Date.now()
     const previous = historyClickAt.get(sessionID) ?? 0
@@ -80,22 +92,18 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
     <Show when={session()}>
       <box
         backgroundColor={theme.backgroundPanel}
-        width={props.expanded ? 42 : 5}
+        width={props.expanded ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED_WIDTH}
         height="100%"
-        paddingTop={1}
-        paddingBottom={1}
-        paddingLeft={props.expanded ? 2 : 1}
-        paddingRight={props.expanded ? 2 : 1}
+        paddingTop={0}
+        paddingBottom={0}
+        paddingLeft={1}
+        paddingRight={1}
         position={props.overlay ? "absolute" : "relative"}
       >
         <Show when={!props.expanded}>
           <box alignItems="center" gap={1}>
-            <text fg={theme.primary} onMouseUp={props.onToggle}>
-              ⚙
-            </text>
-            <text fg={theme.textMuted} onMouseUp={() => route.navigate({ type: "home" })}>
-              +
-            </text>
+            <IconButton label="⚙" color={theme.text} onClick={props.onToggle} />
+            <IconButton label="+" color={theme.textMuted} onClick={() => route.navigate({ type: "home" })} />
           </box>
         </Show>
         <Show when={props.expanded}>
@@ -109,14 +117,10 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
             },
           }}
         >
-          <box flexShrink={0} gap={1} paddingRight={1}>
+          <box flexShrink={0} gap={0} paddingRight={1}>
             <box flexDirection="row" justifyContent="space-between">
-              <text fg={theme.primary} onMouseUp={props.onToggle}>
-                ⚙
-              </text>
-              <text fg={theme.textMuted} onMouseUp={() => route.navigate({ type: "home" })}>
-                +
-              </text>
+              <IconButton label="⚙" color={theme.text} onClick={props.onToggle} />
+              <IconButton label="+" color={theme.textMuted} onClick={() => route.navigate({ type: "home" })} />
             </box>
             <TuiPluginRuntime.Slot
               name="sidebar_title"
@@ -130,7 +134,7 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
                   <text fg={theme.text}>
                     <b>{session()!.title}</b>
                   </text>
-                  <text fg={theme.primary} onMouseUp={rename}>
+                  <text fg={theme.text} onMouseUp={rename}>
                     ✎
                   </text>
                 </box>
@@ -148,11 +152,10 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
                 </Show>
               </box>
             </TuiPluginRuntime.Slot>
-            <box gap={1} paddingTop={1} paddingBottom={1}>
-              <SidebarAction label="+ New conversation" onClick={() => route.navigate({ type: "home" })} />
-              <SidebarAction label="Connect providers" onClick={() => dialog.replace(() => <DialogProvider />)} />
+            <box flexDirection="row" gap={2}>
+              <SidebarAction label="+ New" onClick={() => route.navigate({ type: "home" })} />
             </box>
-            <box gap={1} paddingTop={1} paddingBottom={1}>
+            <box gap={0} paddingTop={1}>
               <text fg={theme.text}>
                 <b>History</b>
               </text>
@@ -162,35 +165,49 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
                     <text fg={item.id === props.sessionID ? theme.primary : theme.textMuted} flexShrink={0}>
                       {item.id === props.sessionID ? "●" : "•"}
                     </text>
-                    <box>
-                      <text fg={item.id === props.sessionID ? theme.text : theme.textMuted}>
-                        {Locale.truncate(item.title, 31)}
-                      </text>
-                      <text fg={theme.textMuted}>{Locale.time(item.time.updated)}</text>
-                    </box>
+                    <text fg={item.id === props.sessionID ? theme.text : theme.textMuted}>
+                      {Locale.truncate(item.title, 27)}
+                    </text>
                   </box>
                 )}
               </For>
             </box>
-            <box gap={1} paddingTop={1} paddingBottom={1}>
+            <box gap={0} paddingTop={1}>
+              <text fg={theme.text}>
+                <b>Providers</b>
+              </text>
+              <For each={PROVIDERS}>
+                {(provider) => {
+                  const connected = () => connectedProviders().has(provider.id)
+                  return (
+                    <box flexDirection="row" gap={1} onMouseDown={() => connectProvider(provider.id)}>
+                      <text fg={connected() ? theme.success : theme.textMuted} flexShrink={0}>
+                        {connected() ? "●" : "○"}
+                      </text>
+                      <text fg={theme.textMuted}>{provider.name}</text>
+                    </box>
+                  )
+                }}
+              </For>
+            </box>
+            <box gap={0} paddingTop={1} paddingBottom={1}>
               <text fg={theme.text}>
                 <b>Account</b>
               </text>
               <Show
                 when={account()}
                 fallback={
-                  <box gap={1}>
-                    <Link href={PAIDYNAMICS_LOGIN_URL} fg={theme.primary}>
+                  <box gap={0}>
+                    <Link href={PAIDYNAMICS_LOGIN_URL} fg={theme.secondary}>
                       Sign in
                     </Link>
-                    <text fg={theme.textMuted}>Create or manage your PhysicsCode account.</text>
                   </box>
                 }
               >
                 {(active) => (
-                  <box gap={1}>
+                  <box gap={0}>
                     <text fg={theme.textMuted}>{active().email}</text>
-                    <text fg={theme.primary} onMouseUp={() => void logout()}>
+                    <text fg={theme.secondary} onMouseUp={() => void logout()}>
                       Log out
                     </text>
                   </box>
@@ -201,7 +218,7 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
           </box>
         </scrollbox>
 
-        <box flexShrink={0} gap={1} paddingTop={1}>
+        <box flexShrink={0} gap={0} paddingTop={0}>
           <TuiPluginRuntime.Slot name="sidebar_footer" mode="single_winner" session_id={props.sessionID}>
             <text fg={theme.textMuted}>
               <span style={{ fg: theme.success }}>•</span>{" "}
@@ -221,8 +238,16 @@ export function Sidebar(props: { sessionID: string; expanded: boolean; onToggle:
 function SidebarAction(props: { label: string; onClick: () => void }) {
   const { theme } = useTheme()
   return (
-    <text fg={theme.primary} onMouseUp={props.onClick}>
+    <text fg={theme.secondary} onMouseDown={props.onClick}>
       {props.label}
     </text>
+  )
+}
+
+function IconButton(props: { label: string; color: RGBA; onClick: () => void }) {
+  return (
+    <box width={2} alignItems="center" onMouseDown={props.onClick}>
+      <text fg={props.color}>{props.label}</text>
+    </box>
   )
 }

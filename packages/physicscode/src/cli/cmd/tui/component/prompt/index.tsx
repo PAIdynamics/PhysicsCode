@@ -219,22 +219,37 @@ export function Prompt(props: PromptProps) {
     return messages.findLast((m): m is UserMessage => m.role === "user")
   })
 
+  const tokenTotal = (message: AssistantMessage) =>
+    message.tokens.input +
+    message.tokens.output +
+    message.tokens.reasoning +
+    message.tokens.cache.read +
+    message.tokens.cache.write
+
+  const contextPercent = (tokens: number, limit: number) => {
+    if (tokens <= 0 || limit <= 0) return 0
+    return Math.min(100, Math.max(1, Math.ceil((tokens / limit) * 100)))
+  }
+
   const usage = createMemo(() => {
-    if (!props.sessionID) return
+    if (!props.sessionID) {
+      return {
+        percent: 0,
+      }
+    }
     const msg = sync.data.message[props.sessionID] ?? []
     const last = msg.findLast((item): item is AssistantMessage => item.role === "assistant" && item.tokens.output > 0)
-    if (!last) return
+    if (!last) {
+      return {
+        percent: 0,
+      }
+    }
 
-    const tokens =
-      last.tokens.input + last.tokens.output + last.tokens.reasoning + last.tokens.cache.read + last.tokens.cache.write
-    if (tokens <= 0) return
-
+    const tokens = tokenTotal(last)
     const model = sync.data.provider.find((item) => item.id === last.providerID)?.models[last.modelID]
     const limit = model?.limit.context || 0
-    if (limit <= 0) return
-    const pct = Math.min(100, Math.round((tokens / limit) * 100))
     return {
-      percent: pct,
+      percent: contextPercent(tokens, limit),
     }
   })
   const contextUsageColor = (percent: number) => {
@@ -1489,12 +1504,10 @@ export function Prompt(props: PromptProps) {
                   </Match>
                 </Switch>
               </box>
-              <Show when={store.mode === "normal" && usage()}>
-                {(item) => (
-                  <text fg={contextUsageColor(item().percent)} wrapMode="none">
-                    {item().percent}%
-                  </text>
-                )}
+              <Show when={store.mode === "normal"}>
+                <text fg={contextUsageColor(usage().percent)} wrapMode="none">
+                  {usage().percent}%
+                </text>
               </Show>
             </box>
           </Show>

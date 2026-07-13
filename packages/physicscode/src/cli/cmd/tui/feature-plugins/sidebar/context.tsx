@@ -7,6 +7,17 @@ const id = "internal:sidebar-context"
 function View(props: { api: TuiPluginApi; session_id: string }) {
   const theme = () => props.api.theme.current
   const msg = createMemo(() => props.api.state.session.messages(props.session_id))
+  const tokenTotal = (message: AssistantMessage) =>
+    message.tokens.input +
+    message.tokens.output +
+    message.tokens.reasoning +
+    message.tokens.cache.read +
+    message.tokens.cache.write
+
+  const contextPercent = (tokens: number, limit: number) => {
+    if (tokens <= 0 || limit <= 0) return 0
+    return Math.min(100, Math.max(1, Math.ceil((tokens / limit) * 100)))
+  }
 
   const state = createMemo(() => {
     const last = msg().findLast((item): item is AssistantMessage => item.role === "assistant" && item.tokens.output > 0)
@@ -17,12 +28,11 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
       }
     }
 
-    const tokens =
-      last.tokens.input + last.tokens.output + last.tokens.reasoning + last.tokens.cache.read + last.tokens.cache.write
+    const tokens = tokenTotal(last)
     const model = props.api.state.provider.find((item) => item.id === last.providerID)?.models[last.modelID]
     return {
       tokens,
-      percent: model?.limit.context ? Math.round((tokens / model.limit.context) * 100) : null,
+      percent: model?.limit.context ? contextPercent(tokens, model.limit.context) : null,
     }
   })
 

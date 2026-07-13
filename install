@@ -4,7 +4,7 @@ APP=physicscode
 
 MUTED='\033[0;2m'
 RED='\033[0;31m'
-ORANGE='\033[38;5;214m'
+ACCENT='\033[38;2;126;203;255m'
 NC='\033[0m' # No Color
 
 usage() {
@@ -59,7 +59,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         *)
-            echo -e "${ORANGE}Warning: Unknown option '$1'${NC}" >&2
+            echo -e "${ACCENT}Warning: Unknown option '$1'${NC}" >&2
             shift
             ;;
     esac
@@ -261,7 +261,7 @@ print_progress() {
     local empty=$(printf "%*s" "$off" "")
     empty=${empty// /･}
 
-    printf "\r${ORANGE}%s%s %3d%%${NC}" "$filled" "$empty" "$percent" >&4
+    printf "\r${ACCENT}%s%s %3d%%${NC}" "$filled" "$empty" "$percent" >&4
 }
 
 download_with_progress() {

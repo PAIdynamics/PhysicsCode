@@ -31,6 +31,40 @@ export class Org extends Schema.Class<Org>("Org")({
   name: Schema.String,
 }) {}
 
+export class BillingStatus extends Schema.Class<BillingStatus>("BillingStatus")({
+  credit: Schema.Struct({
+    balance_usd: Schema.Number,
+    currency: Schema.String,
+    status: Schema.String,
+    updated_at: Schema.Number,
+  }),
+  usage: Schema.Struct({
+    requests: Schema.Number,
+    input_tokens: Schema.Number,
+    output_tokens: Schema.Number,
+    total_tokens: Schema.Number,
+    cost_usd: Schema.Number,
+  }),
+  transactions: Schema.Array(
+    Schema.Struct({
+      id: Schema.String,
+      type: Schema.String,
+      amount_usd: Schema.Number,
+      currency: Schema.String,
+      status: Schema.String,
+      provider: Schema.NullOr(Schema.String),
+      provider_ref: Schema.NullOr(Schema.String),
+      description: Schema.NullOr(Schema.String),
+      created_at: Schema.Number,
+    }),
+  ),
+  checkout: Schema.Struct({
+    enabled: Schema.Boolean,
+    provider: Schema.NullOr(Schema.String),
+    message: Schema.String,
+  }),
+}) {}
+
 export class AccountRepoError extends Schema.TaggedErrorClass<AccountRepoError>()("AccountRepoError", {
   message: Schema.String,
   cause: Schema.optional(Schema.Defect),

@@ -74,6 +74,16 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
       }),
     ).catch(() => undefined)
   })
+  const [billing] = createResource(account, async (active) => {
+    if (!active) return undefined
+    return AppRuntime.runPromise(
+      Effect.gen(function* () {
+        const service = yield* Account.Service
+        const result = yield* service.billing(active.id)
+        return Option.getOrUndefined(result)
+      }),
+    ).catch(() => undefined)
+  })
   const logout = async () => {
     const active = account()
     if (!active) return
@@ -220,9 +230,11 @@ export function Sidebar(props: { sessionID?: string; expanded: boolean; onToggle
                   <box gap={0}>
                     <text fg={theme.textMuted}>{active().email}</text>
                     <text fg={theme.textMuted}>
-                      Spent {formatMoney(accountUsage().cost)} ({formatTokens(accountUsage().tokens)})
+                      Spent {formatMoney(billing()?.usage.cost_usd ?? accountUsage().cost)} ({formatTokens(billing()?.usage.total_tokens ?? accountUsage().tokens)})
                     </text>
-                    <text fg={theme.textMuted}>Left Credit: --</text>
+                    <text fg={theme.textMuted}>
+                      Left Credit: {formatMoney(billing()?.credit.balance_usd)}
+                    </text>
                     <text fg={theme.secondary} onMouseUp={() => void logout()}>
                       Log out
                     </text>
@@ -294,11 +306,12 @@ function messageTokens(message: AssistantMessage): number {
   )
 }
 
-function formatMoney(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "$0.00"
-  return `$${value.toLocaleString("en-US", {
-    minimumFractionDigits: value < 1 ? 4 : 2,
-    maximumFractionDigits: value < 1 ? 4 : 2,
+function formatMoney(value?: number): string {
+  const amount = Number(value || 0)
+  if (!Number.isFinite(amount) || amount <= 0) return "$0.00"
+  return `$${amount.toLocaleString("en-US", {
+    minimumFractionDigits: amount < 1 ? 4 : 2,
+    maximumFractionDigits: amount < 1 ? 4 : 2,
   })}`
 }
 

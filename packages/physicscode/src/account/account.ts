@@ -20,6 +20,7 @@ import {
   AccountServiceError,
   AccountTransportError,
   Login,
+  BillingStatus,
   Org,
   OrgID,
   PollDenied,
@@ -44,6 +45,7 @@ export {
   UserCode,
   Info,
   Org,
+  BillingStatus,
   OrgID,
   Login,
   PollSuccess,
@@ -174,6 +176,7 @@ export interface Interface {
     accountID: AccountID,
     orgID: OrgID,
   ) => Effect.Effect<Option.Option<Record<string, unknown>>, AccountError>
+  readonly billing: (accountID: AccountID) => Effect.Effect<Option.Option<BillingStatus>, AccountError>
   readonly token: (accountID: AccountID) => Effect.Effect<Option.Option<AccessToken>, AccountError>
   readonly login: (url: string) => Effect.Effect<Login, AccountError>
   readonly poll: (input: Login) => Effect.Effect<PollResult, AccountError>
@@ -367,6 +370,29 @@ export const layer: Layer.Layer<Service, never, AccountRepo.Service | HttpClient
       return Option.some(parsed.config)
     })
 
+    const billing = Effect.fn("Account.billing")(function* (accountID: AccountID) {
+      const resolved = yield* resolveAccess(accountID)
+      if (Option.isNone(resolved)) return Option.none()
+
+      const { account, accessToken } = resolved.value
+
+      const response = yield* executeRead(
+        HttpClientRequest.get(`${account.url}/api/billing`).pipe(
+          HttpClientRequest.acceptJson,
+          HttpClientRequest.bearerToken(accessToken),
+        ),
+      )
+
+      if (response.status === 404) return Option.none()
+
+      const ok = yield* HttpClientResponse.filterStatusOk(response).pipe(mapAccountServiceError())
+
+      const parsed = yield* HttpClientResponse.schemaBodyJson(BillingStatus)(ok).pipe(
+        mapAccountServiceError("Failed to decode response"),
+      )
+      return Option.some(parsed)
+    })
+
     const login = Effect.fn("Account.login")(function* (server: string) {
       const normalizedServer = normalizeServerUrl(server)
       const response = yield* executeEffectOk(
@@ -444,6 +470,7 @@ export const layer: Layer.Layer<Service, never, AccountRepo.Service | HttpClient
       use: repo.use,
       orgs,
       config,
+      billing,
       token,
       login,
       poll,

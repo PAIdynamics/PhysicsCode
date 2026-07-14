@@ -1464,6 +1464,7 @@ const PART_MAPPING = {
 
 function PaidynamicsLoginPrompt() {
   const { theme } = useTheme()
+  const sync = useSync()
   const [status, setStatus] = createSignal<"idle" | "pending" | "success" | "error">("idle")
   const [message, setMessage] = createSignal("Click Start login to connect this terminal.")
   const [url, setUrl] = createSignal<string>()
@@ -1506,6 +1507,8 @@ function PaidynamicsLoginPrompt() {
           continue
         }
         if (result._tag === "PollSuccess") {
+          setMessage(`Logged in as ${result.email}. Refreshing account state...`)
+          await sync.bootstrap()
           setStatus("success")
           setMessage(`Logged in as ${result.email}. Retry your prompt.`)
           return

@@ -262,6 +262,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
         onError: (error) => toast.show({ variant: "error", message: `Copy failed: ${String(error)}` }),
       })
       if (copied) {
+        toast.show({ variant: "info", message: "Copied to clipboard" })
         evt.preventDefault()
         evt.stopPropagation()
         return
@@ -638,6 +639,24 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
       category: "System",
     },
     {
+      title: "Copy selection to clipboard",
+      value: "selection.copy",
+      keybind: "selection_copy",
+      category: "System",
+      onSelect: (dialog) => {
+        dialog.clear()
+        const copied = Selection.copy(renderer, {
+          clear: false,
+          onError: (error) => toast.show({ variant: "error", message: `Copy failed: ${String(error)}` }),
+        })
+        toast.show(
+          copied
+            ? { variant: "info", message: "Copied to clipboard" }
+            : { variant: "warning", message: "No text selected" },
+        )
+      },
+    },
+    {
       title: "Help",
       value: "help.show",
       slash: {
@@ -889,21 +908,30 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
       height={dimensions().height}
       backgroundColor={theme.background}
       onMouseDown={(evt) => {
-        if (!Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT) return
         if (evt.button !== MouseButton.RIGHT) return
 
-        if (!Selection.copy(renderer)) return
+        // Consume the event unconditionally: opentui treats any mousedown as the
+        // start of a new selection drag, which would otherwise clear the existing
+        // highlight even when we're not handling this click ourselves.
         evt.preventDefault()
         evt.stopPropagation()
+
+        const copied = Selection.copy(renderer, {
+          clear: false,
+          onError: (error) => toast.show({ variant: "error", message: `Copy failed: ${String(error)}` }),
+        })
+        if (copied) toast.show({ variant: "info", message: "Copied to clipboard" })
       }}
       onMouseUp={
         Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT
           ? undefined
-          : () =>
-              Selection.copy(renderer, {
+          : () => {
+              const copied = Selection.copy(renderer, {
                 clear: false,
                 onError: (error) => toast.show({ variant: "error", message: `Copy failed: ${String(error)}` }),
               })
+              if (copied) toast.show({ variant: "info", message: "Copied to clipboard" })
+            }
       }
     >
       <Show when={Flag.PHYSICSCODE_SHOW_TTFD}>

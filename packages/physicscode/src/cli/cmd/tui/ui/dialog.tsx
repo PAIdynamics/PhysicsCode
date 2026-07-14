@@ -5,6 +5,7 @@ import { MouseButton, Renderable, RGBA } from "@opentui/core"
 import { createStore } from "solid-js/store"
 import { Flag } from "@physicscode-ai/core/flag/flag"
 import * as Selection from "@tui/util/selection"
+import { useToast } from "./toast"
 
 export function Dialog(
   props: ParentProps<{
@@ -153,6 +154,7 @@ const ctx = createContext<DialogContext>()
 export function DialogProvider(props: ParentProps) {
   const value = init()
   const renderer = useRenderer()
+  const toast = useToast()
   return (
     <ctx.Provider value={value}>
       {props.children}
@@ -160,15 +162,30 @@ export function DialogProvider(props: ParentProps) {
         position="absolute"
         zIndex={3000}
         onMouseDown={(evt) => {
-          if (!Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT) return
           if (evt.button !== MouseButton.RIGHT) return
 
-          if (!Selection.copy(renderer)) return
+          // Consume the event unconditionally: opentui treats any mousedown as the
+          // start of a new selection drag, which would otherwise clear the existing
+          // highlight even when we're not handling this click ourselves.
           evt.preventDefault()
           evt.stopPropagation()
+
+          const copied = Selection.copy(renderer, {
+            clear: false,
+            onError: (error) => toast.show({ variant: "error", message: `Copy failed: ${String(error)}` }),
+          })
+          if (copied) toast.show({ variant: "info", message: "Copied to clipboard" })
         }}
         onMouseUp={
-          !Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT ? () => Selection.copy(renderer) : undefined
+          Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT
+            ? undefined
+            : () => {
+                const copied = Selection.copy(renderer, {
+                  clear: false,
+                  onError: (error) => toast.show({ variant: "error", message: `Copy failed: ${String(error)}` }),
+                })
+                if (copied) toast.show({ variant: "info", message: "Copied to clipboard" })
+              }
         }
       >
         <Show when={value.stack.length}>

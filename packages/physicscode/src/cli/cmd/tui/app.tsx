@@ -256,6 +256,18 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
     })
 
   useKeyboard((evt) => {
+    if (keybind.match("selection_copy", evt)) {
+      const copied = Selection.copy(renderer, {
+        clear: false,
+        onError: (error) => toast.show({ variant: "error", message: `Copy failed: ${String(error)}` }),
+      })
+      if (copied) {
+        evt.preventDefault()
+        evt.stopPropagation()
+        return
+      }
+    }
+
     if (!Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT) return
     const sel = renderer.getSelection()
     if (!sel) return
@@ -884,7 +896,15 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
         evt.preventDefault()
         evt.stopPropagation()
       }}
-      onMouseUp={Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT ? undefined : () => Selection.copy(renderer)}
+      onMouseUp={
+        Flag.PHYSICSCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT
+          ? undefined
+          : () =>
+              Selection.copy(renderer, {
+                clear: false,
+                onError: (error) => toast.show({ variant: "error", message: `Copy failed: ${String(error)}` }),
+              })
+      }
     >
       <Show when={Flag.PHYSICSCODE_SHOW_TTFD}>
         <TimeToFirstDraw />

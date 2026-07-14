@@ -5,13 +5,13 @@ type Renderer = {
   clearSelection: () => void
 }
 
-export function copy(renderer: Renderer): boolean {
+export function copy(renderer: Renderer, options: { clear?: boolean; onError?: (error: unknown) => void } = {}): boolean {
   const text = renderer.getSelection()?.getSelectedText()
   if (!text) return false
 
-  Clipboard.copy(text).catch(() => {})
+  Clipboard.copy(text).catch((error) => options.onError?.(error))
 
-  renderer.clearSelection()
+  if (options.clear ?? true) renderer.clearSelection()
   return true
 }
 

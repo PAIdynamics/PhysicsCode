@@ -454,3 +454,68 @@ it.live("poll returns poll error for other OAuth errors", () =>
     }
   }),
 )
+
+it.live("loginWithApiKey validates the key and persists an api_key account", () =>
+  Effect.gen(function* () {
+    const seen: Array<string> = []
+    const client = HttpClient.make((req) =>
+      Effect.gen(function* () {
+        seen.push(`${req.method} ${req.url} ${req.headers.authorization}`)
+
+        if (req.url === "https://one.example.com/api/user") {
+          return json(req, { id: "user-1", email: "user@example.com" })
+        }
+        if (req.url === "https://one.example.com/api/orgs") {
+          return json(req, [org("org-1", "One")])
+        }
+        return json(req, {}, 404)
+      }),
+    )
+
+    const result = yield* Account.Service.use((s) => s.loginWithApiKey("https://one.example.com", "pc_key_abc")).pipe(
+      Effect.provide(live(client)),
+    )
+
+    expect(result.email).toBe("user@example.com")
+    expect(result.active_org_id).toBe(OrgID.make("org-1"))
+    expect(seen).toEqual([
+      "GET https://one.example.com/api/user Bearer pc_key_abc",
+      "GET https://one.example.com/api/orgs Bearer pc_key_abc",
+    ])
+
+    const row = yield* AccountRepo.Service.use((r) => r.getRow(AccountID.make("user-1")))
+    const value = Option.getOrThrow(row)
+    expect(value.kind).toBe("api_key")
+    expect(value.access_token).toBe(AccessToken.make("pc_key_abc"))
+    expect(value.token_expiry).toBeNull()
+  }),
+)
+
+it.live("token for an api_key account returns the stored key without refreshing", () =>
+  Effect.gen(function* () {
+    const id = AccountID.make("user-1")
+
+    yield* AccountRepo.Service.use((r) =>
+      r.persistApiKeyAccount({
+        id,
+        email: "user@example.com",
+        url: "https://one.example.com",
+        apiKey: AccessToken.make("pc_key_xyz"),
+        orgID: Option.none(),
+      }),
+    )
+
+    let refreshCalls = 0
+    const client = HttpClient.make((req) =>
+      Effect.gen(function* () {
+        if (req.url === "https://one.example.com/auth/device/token") refreshCalls += 1
+        return json(req, {}, 404)
+      }),
+    )
+
+    const token = yield* Account.Service.use((s) => s.token(id)).pipe(Effect.provide(live(client)))
+
+    expect(String(Option.getOrThrow(token))).toBe("pc_key_xyz")
+    expect(refreshCalls).toBe(0)
+  }),
+)

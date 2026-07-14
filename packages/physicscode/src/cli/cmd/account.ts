@@ -36,6 +36,14 @@ const isActiveOrgChoice = (
   choice: { accountID: AccountID; orgID: OrgID },
 ) => Option.isSome(active) && active.value.id === choice.accountID && active.value.active_org_id === choice.orgID
 
+const loginWithApiKeyEffect = Effect.fn("loginWithApiKey")(function* (url: string, apiKey: string) {
+  const service = yield* Account.Service
+
+  yield* Prompt.intro("Log in")
+  const account = yield* service.loginWithApiKey(url, apiKey)
+  yield* Prompt.outro("Logged in as " + account.email)
+})
+
 const loginEffect = Effect.fn("login")(function* (url: string) {
   const service = yield* Account.Service
 
@@ -194,14 +202,20 @@ export const LoginCommand = cmd({
   command: "login <url>",
   describe: false,
   builder: (yargs) =>
-    yargs.positional("url", {
-      describe: "server URL",
-      type: "string",
-      demandOption: true,
-    }),
+    yargs
+      .positional("url", {
+        describe: "server URL",
+        type: "string",
+        demandOption: true,
+      })
+      .option("api-key", {
+        describe: "Log in with a personal API key instead of opening a browser",
+        type: "string",
+      }),
   async handler(args) {
     UI.empty()
-    await AppRuntime.runPromise(loginEffect(args.url))
+    const apiKey = args.apiKey ?? process.env["PHYSICSCODE_API_KEY"]
+    await AppRuntime.runPromise(apiKey ? loginWithApiKeyEffect(args.url, apiKey) : loginEffect(args.url))
   },
 })
 

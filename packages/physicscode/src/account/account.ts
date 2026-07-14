@@ -179,6 +179,7 @@ export interface Interface {
   readonly billing: (accountID: AccountID) => Effect.Effect<Option.Option<BillingStatus>, AccountError>
   readonly token: (accountID: AccountID) => Effect.Effect<Option.Option<AccessToken>, AccountError>
   readonly login: (url: string) => Effect.Effect<Login, AccountError>
+  readonly loginWithApiKey: (url: string, apiKey: string) => Effect.Effect<Info, AccountError>
   readonly poll: (input: Login) => Effect.Effect<PollResult, AccountError>
 }
 
@@ -263,6 +264,8 @@ export const layer: Layer.Layer<Service, never, AccountRepo.Service | HttpClient
     })
 
     const resolveToken = Effect.fnUntraced(function* (row: AccountRow) {
+      if (row.kind === "api_key") return row.access_token
+
       const now = yield* Clock.currentTimeMillis
       if (isTokenFresh(row.token_expiry, now)) {
         return row.access_token
@@ -415,6 +418,33 @@ export const layer: Layer.Layer<Service, never, AccountRepo.Service | HttpClient
       })
     })
 
+    const loginWithApiKey = Effect.fn("Account.loginWithApiKey")(function* (server: string, rawApiKey: string) {
+      const normalizedServer = normalizeServerUrl(server)
+      const apiKey = rawApiKey as AccessToken
+
+      const [account, remoteOrgs] = yield* Effect.all(
+        [fetchUser(normalizedServer, apiKey), fetchOrgs(normalizedServer, apiKey)],
+        { concurrency: 2 },
+      )
+
+      const firstOrgID = remoteOrgs.length > 0 ? Option.some(remoteOrgs[0].id) : Option.none<OrgID>()
+
+      yield* repo.persistApiKeyAccount({
+        id: account.id,
+        email: account.email,
+        url: normalizedServer,
+        apiKey,
+        orgID: firstOrgID,
+      })
+
+      return new Info({
+        id: account.id,
+        email: account.email,
+        url: normalizedServer,
+        active_org_id: Option.getOrNull(firstOrgID),
+      })
+    })
+
     const poll = Effect.fn("Account.poll")(function* (input: Login) {
       const response = yield* executeEffect(
         HttpClientRequest.post(`${input.server}/auth/device/token`).pipe(
@@ -473,6 +503,7 @@ export const layer: Layer.Layer<Service, never, AccountRepo.Service | HttpClient
       billing,
       token,
       login,
+      loginWithApiKey,
       poll,
     })
   }),

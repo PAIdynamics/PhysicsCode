@@ -10,6 +10,7 @@ export const AccountTable = sqliteTable("account", {
   access_token: text().$type<AccessToken>().notNull(),
   refresh_token: text().$type<RefreshToken>().notNull(),
   token_expiry: integer(),
+  kind: text().$type<"oauth" | "api_key">().notNull().default("oauth"),
   ...Timestamps,
 })
 

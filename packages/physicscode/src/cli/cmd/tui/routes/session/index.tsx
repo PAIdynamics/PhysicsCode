@@ -54,6 +54,7 @@ import { useCommandDialog } from "@tui/component/dialog-command"
 import type { DialogContext } from "@tui/ui/dialog"
 import { useKeybind } from "@tui/context/keybind"
 import { useDialog } from "../../ui/dialog"
+import { DialogPrompt } from "../../ui/dialog-prompt"
 import { TodoItem } from "../../component/todo-item"
 import { DialogMessage } from "./dialog-message"
 import type { PromptInfo } from "../../component/prompt/history"
@@ -1465,6 +1466,7 @@ const PART_MAPPING = {
 function PaidynamicsLoginPrompt() {
   const { theme } = useTheme()
   const sync = useSync()
+  const dialog = useDialog()
   const [status, setStatus] = createSignal<"idle" | "pending" | "success" | "error">("idle")
   const [message, setMessage] = createSignal("Click Start login to connect this terminal.")
   const [url, setUrl] = createSignal<string>()
@@ -1535,6 +1537,38 @@ function PaidynamicsLoginPrompt() {
     }
   }
 
+  const submitApiKey = async () => {
+    if (status() === "pending") return
+    const value = await DialogPrompt.show(dialog, "Enter API key", {
+      placeholder: "pc_key_...",
+      description: () => (
+        <text fg={theme.textMuted}>Generate a key from your PAI Dynamics account page, then paste it here.</text>
+      ),
+    })
+    if (!value) return
+
+    setStatus("pending")
+    setMessage("Verifying API key...")
+    setUrl(undefined)
+    setUserCode(undefined)
+
+    try {
+      const account = await AppRuntime.runPromise(
+        Effect.gen(function* () {
+          const service = yield* Account.Service
+          return yield* service.loginWithApiKey(PAIDYNAMICS_LOGIN_SERVER, value.trim())
+        }),
+      )
+      setMessage(`Logged in as ${account.email}. Refreshing account state...`)
+      await sync.bootstrap()
+      setStatus("success")
+      setMessage(`Logged in as ${account.email}. Retry your prompt.`)
+    } catch (e) {
+      setStatus("error")
+      setMessage(errorMessage(e))
+    }
+  }
+
   return (
     <box flexDirection="column" marginTop={1} gap={1}>
       <text fg={theme.text}>{message()}</text>
@@ -1556,6 +1590,14 @@ function PaidynamicsLoginPrompt() {
           }}
         >
           Start login
+        </text>
+        <text
+          fg={status() === "pending" ? theme.textMuted : theme.primary}
+          onMouseUp={() => {
+            void submitApiKey()
+          }}
+        >
+          Paste API key
         </text>
         <text fg={theme.textMuted}>{PAIDYNAMICS_LOGIN_COMMAND}</text>
       </box>

@@ -350,3 +350,81 @@ it.live("getRow returns none for nonexistent account", () =>
     expect(Option.isNone(row)).toBe(true)
   }),
 )
+
+it.live("persistAccount defaults kind to oauth", () =>
+  Effect.gen(function* () {
+    const id = AccountID.make("user-1")
+
+    yield* AccountRepo.Service.use((r) =>
+      r.persistAccount({
+        id,
+        email: "test@example.com",
+        url: "https://control.example.com",
+        accessToken: AccessToken.make("at_1"),
+        refreshToken: RefreshToken.make("rt_1"),
+        expiry: Date.now() + 3600_000,
+        orgID: Option.none(),
+      }),
+    )
+
+    const row = yield* AccountRepo.Service.use((r) => r.getRow(id))
+    expect(Option.getOrThrow(row).kind).toBe("oauth")
+  }),
+)
+
+it.live("persistApiKeyAccount inserts an account with no expiry", () =>
+  Effect.gen(function* () {
+    const id = AccountID.make("user-1")
+
+    yield* AccountRepo.Service.use((r) =>
+      r.persistApiKeyAccount({
+        id,
+        email: "test@example.com",
+        url: "https://control.example.com",
+        apiKey: AccessToken.make("pc_key_abc"),
+        orgID: Option.some(OrgID.make("org-1")),
+      }),
+    )
+
+    const row = yield* AccountRepo.Service.use((r) => r.getRow(id))
+    const value = Option.getOrThrow(row)
+    expect(value.kind).toBe("api_key")
+    expect(value.access_token).toBe(AccessToken.make("pc_key_abc"))
+    expect(value.token_expiry).toBeNull()
+
+    const active = yield* AccountRepo.Service.use((r) => r.active())
+    expect(Option.getOrThrow(active).active_org_id).toBe(OrgID.make("org-1"))
+  }),
+)
+
+it.live("persistApiKeyAccount upserts on conflict", () =>
+  Effect.gen(function* () {
+    const id = AccountID.make("user-1")
+
+    yield* AccountRepo.Service.use((r) =>
+      r.persistApiKeyAccount({
+        id,
+        email: "test@example.com",
+        url: "https://control.example.com",
+        apiKey: AccessToken.make("pc_key_v1"),
+        orgID: Option.none(),
+      }),
+    )
+
+    yield* AccountRepo.Service.use((r) =>
+      r.persistApiKeyAccount({
+        id,
+        email: "test@example.com",
+        url: "https://control.example.com",
+        apiKey: AccessToken.make("pc_key_v2"),
+        orgID: Option.none(),
+      }),
+    )
+
+    const accounts = yield* AccountRepo.Service.use((r) => r.list())
+    expect(accounts.length).toBe(1)
+
+    const row = yield* AccountRepo.Service.use((r) => r.getRow(id))
+    expect(Option.getOrThrow(row).access_token).toBe(AccessToken.make("pc_key_v2"))
+  }),
+)

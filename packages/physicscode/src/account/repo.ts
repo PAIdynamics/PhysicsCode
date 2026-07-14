@@ -34,6 +34,13 @@ export interface Interface {
     expiry: number
     orgID: Option.Option<OrgID>
   }) => Effect.Effect<void, AccountRepoError>
+  readonly persistApiKeyAccount: (input: {
+    id: AccountID
+    email: string
+    url: string
+    apiKey: AccessToken
+    orgID: Option.Option<OrgID>
+  }) => Effect.Effect<void, AccountRepoError>
 }
 
 export class Service extends Context.Service<Service, Interface>()("@physicscode/AccountRepo") {}
@@ -151,6 +158,37 @@ export const layer: Layer.Layer<Service> = Layer.effect(
       }).pipe(Effect.asVoid),
     )
 
+    const persistApiKeyAccount = Effect.fn("AccountRepo.persistApiKeyAccount")((input) =>
+      tx((db) => {
+        const url = normalizeServerUrl(input.url)
+        const refreshToken = input.apiKey as unknown as RefreshToken
+
+        db.insert(AccountTable)
+          .values({
+            id: input.id,
+            email: input.email,
+            url,
+            access_token: input.apiKey,
+            refresh_token: refreshToken,
+            token_expiry: null,
+            kind: "api_key",
+          })
+          .onConflictDoUpdate({
+            target: AccountTable.id,
+            set: {
+              email: input.email,
+              url,
+              access_token: input.apiKey,
+              refresh_token: refreshToken,
+              token_expiry: null,
+              kind: "api_key",
+            },
+          })
+          .run()
+        void state(db, input.id, input.orgID)
+      }).pipe(Effect.asVoid),
+    )
+
     return Service.of({
       active,
       list,
@@ -159,6 +197,7 @@ export const layer: Layer.Layer<Service> = Layer.effect(
       getRow,
       persistToken,
       persistAccount,
+      persistApiKeyAccount,
     })
   }),
 )

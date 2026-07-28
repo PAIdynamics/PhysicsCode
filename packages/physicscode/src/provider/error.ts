@@ -63,7 +63,7 @@ function message(providerID: ProviderID, e: APICallError) {
       return "Cannot reach the PhysicsCode hosted model: Cloudflare Tunnel is not connected to the DGX origin."
     }
     if (isPaidynamics && /Unable to connect/i.test(msg)) {
-      return "Cannot connect to the PhysicsCode hosted model. Check that https://www.paidynamics.ch/llm/v1 is reachable and that the Cloudflare Tunnel is running."
+      return "Cannot connect to the PhysicsCode hosted model. Check that https://physicscode.ai/llm/v1 is reachable and that the Cloudflare Tunnel is running."
     }
     if (isPaidynamics && msg === "<none>" && /^\s*<!doctype|^\s*<html/i.test(responseBody)) {
       return "Cannot connect to the PhysicsCode hosted model. The public endpoint returned an HTML gateway error instead of an OpenAI-compatible response."

@@ -100,8 +100,8 @@ addDefaultParsers(parsers.parsers)
 const GO_UPSELL_LAST_SEEN_AT = "go_upsell_last_seen_at"
 const GO_UPSELL_DONT_SHOW = "go_upsell_dont_show"
 const GO_UPSELL_WINDOW = 86_400_000 // 24 hrs
-const PAIDYNAMICS_LOGIN_SERVER = "https://www.paidynamics.ch"
-const PAIDYNAMICS_LOGIN_COMMAND = "physicscode account login https://www.paidynamics.ch"
+const PAIDYNAMICS_LOGIN_SERVER = "https://physicscode.ai"
+const PAIDYNAMICS_LOGIN_COMMAND = "physicscode account login https://physicscode.ai"
 
 const context = createContext<{
   width: number

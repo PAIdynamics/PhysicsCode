@@ -104,7 +104,9 @@ export type Provider = Schema.Schema.Type<typeof Provider>
 export const PAIDYNAMICS_PROVIDER_ID = "paidynamics"
 export const PAIDYNAMICS_MODEL_ID = "gpt-oss-120b-pai"
 export const PAIDYNAMICS_UPSTREAM_MODEL_ID = "openai/gpt-oss-120b"
-export const PAIDYNAMICS_BASE_URL = "https://physicscode.ai/llm/v1"
+// Must be the www host: physicscode.ai's apex 301-redirects to www, and
+// POST bodies (chat completions) don't survive that redirect.
+export const PAIDYNAMICS_BASE_URL = "https://www.physicscode.ai/llm/v1"
 
 const PaidynamicsModelDefinitions = {
   [PAIDYNAMICS_MODEL_ID]: {

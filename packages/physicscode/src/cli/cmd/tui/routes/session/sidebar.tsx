@@ -19,7 +19,7 @@ import { Locale } from "@/util/locale"
 import { TextAttributes, type RGBA } from "@opentui/core"
 import type { AssistantMessage, Message } from "@physicscode-ai/sdk/v2"
 
-const PAIDYNAMICS_LOGIN_URL = "https://physicscode.ai/login"
+const PAIDYNAMICS_LOGIN_URL = "https://www.physicscode.ai/login"
 const SIDEBAR_WIDTH = 36
 const SIDEBAR_COLLAPSED_WIDTH = 6
 const PROVIDERS = [

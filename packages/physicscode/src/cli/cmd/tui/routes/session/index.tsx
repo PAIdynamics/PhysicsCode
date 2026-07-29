@@ -100,8 +100,10 @@ addDefaultParsers(parsers.parsers)
 const GO_UPSELL_LAST_SEEN_AT = "go_upsell_last_seen_at"
 const GO_UPSELL_DONT_SHOW = "go_upsell_dont_show"
 const GO_UPSELL_WINDOW = 86_400_000 // 24 hrs
-const PAIDYNAMICS_LOGIN_SERVER = "https://physicscode.ai"
-const PAIDYNAMICS_LOGIN_COMMAND = "physicscode account login https://physicscode.ai"
+// Must be the www host: physicscode.ai's apex 301-redirects to www, and
+// POST bodies (device-flow token exchange) don't survive that redirect.
+const PAIDYNAMICS_LOGIN_SERVER = "https://www.physicscode.ai"
+const PAIDYNAMICS_LOGIN_COMMAND = "physicscode account login https://www.physicscode.ai"
 
 const context = createContext<{
   width: number

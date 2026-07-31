@@ -119,16 +119,6 @@ const PaidynamicsModelDefinitions = {
     context: 131072,
     output: 8192,
   },
-  "deepseek-r1-distill-qwen-32b-pai": {
-    upstream: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
-    name: "deepseek-r1-distill-qwen-32b-pai",
-    family: "deepseek-r1",
-    release_date: "2025-01-20",
-    reasoning: true,
-    tool_call: false,
-    context: 32768,
-    output: 8192,
-  },
   "glm-4.5-air-pai": {
     upstream: "zai-org/GLM-4.5-Air-FP8",
     name: "glm-4.5-air-pai",
@@ -139,41 +129,14 @@ const PaidynamicsModelDefinitions = {
     context: 4096,
     output: 2048,
   },
-  "gpt-oss-20b-pai": {
-    upstream: "openai/gpt-oss-20b",
-    name: "gpt-oss-20b-pai",
-    family: "gpt-oss",
-    release_date: "2026-07-03",
-    reasoning: true,
-    tool_call: true,
-    context: 131072,
-    output: 8192,
-  },
-  "qwen3-8b-pai": {
-    upstream: "Qwen/Qwen3-8B",
-    name: "qwen3-8b-pai",
-    family: "qwen3",
-    release_date: "2025-05-14",
-    reasoning: true,
-    tool_call: true,
-    context: 32768,
-    output: 8192,
-  },
 } as const
 
-export const PAIDYNAMICS_MODEL_ID_ALIASES: Record<string, string> = {
-  "deepseek-r1-distil-qwen-32b-pai": "deepseek-r1-distill-qwen-32b-pai",
-  "paidynamics/deepseek-r1-distil-qwen-32b-pai": "deepseek-r1-distill-qwen-32b-pai",
-}
+export const PAIDYNAMICS_MODEL_ID_ALIASES: Record<string, string> = {}
 
 export const PAIDYNAMICS_MODEL_ALIASES: Record<string, string> = Object.fromEntries(
   Object.entries(PaidynamicsModelDefinitions)
     .map(([id, model]) => [id, model.upstream])
-    .concat([
-      ["deepseek-r1-distil-qwen-32b-pai", "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"],
-      ["paidynamics/deepseek-r1-distil-qwen-32b-pai", "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"],
-      ["zai-org/GLM-4.5-Air", "zai-org/GLM-4.5-Air-FP8"],
-    ]),
+    .concat([["zai-org/GLM-4.5-Air", "zai-org/GLM-4.5-Air-FP8"]]),
 )
 
 const paidynamicsModel = (model: (typeof PaidynamicsModelDefinitions)[keyof typeof PaidynamicsModelDefinitions]) => ({

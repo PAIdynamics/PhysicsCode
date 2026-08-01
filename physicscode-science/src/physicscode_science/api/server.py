@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import json
+import os
+import secrets
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
 
+from physicscode_science.mcp.server import handle_request
 from physicscode_science.models import SearchQuery
 from physicscode_science.production import production_status
 from physicscode_science.retrieval.search import search
@@ -29,6 +33,23 @@ def _handler(db_path: str) -> type[BaseHTTPRequestHandler]:
             _send_json(self, 404, {"error": "not found"})
 
         def do_POST(self) -> None:  # noqa: N802
+            if self.path == "/mcp":
+                if not _authorized(self):
+                    _send_json(self, 401, {"error": "unauthorized"}, {"WWW-Authenticate": "Bearer"})
+                    return
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                    message = json.loads(self.rfile.read(length))
+                    response = handle_request(db_path, message)
+                    if response is None:
+                        self.send_response(202)
+                        self.send_header("Content-Length", "0")
+                        self.end_headers()
+                        return
+                    _send_json(self, 200, response)
+                except Exception as error:  # noqa: BLE001
+                    _send_json(self, 400, {"error": str(error)})
+                return
             if self.path != "/v1/search":
                 _send_json(self, 404, {"error": "not found"})
                 return
@@ -80,10 +101,32 @@ def _query(payload: dict[str, Any]) -> SearchQuery:
     )
 
 
-def _send_json(handler: BaseHTTPRequestHandler, status: int, payload: dict[str, Any]) -> None:
+def _authorized(handler: BaseHTTPRequestHandler) -> bool:
+    expected = os.environ.get("PHYSICSCODE_SCIENCE_API_KEY", "").strip()
+    key_file = os.environ.get("PHYSICSCODE_SCIENCE_API_KEY_FILE", "").strip()
+    if not expected and key_file:
+        try:
+            expected = Path(key_file).read_text(encoding="utf-8").strip()
+        except OSError:
+            return False
+    if not expected:
+        return True
+    provided = handler.headers.get("Authorization", "")
+    prefix = "Bearer "
+    return provided.startswith(prefix) and secrets.compare_digest(provided[len(prefix) :], expected)
+
+
+def _send_json(
+    handler: BaseHTTPRequestHandler,
+    status: int,
+    payload: dict[str, Any],
+    headers: dict[str, str] | None = None,
+) -> None:
     body = json.dumps(payload, sort_keys=True).encode("utf-8")
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json")
     handler.send_header("Content-Length", str(len(body)))
+    for key, value in (headers or {}).items():
+        handler.send_header(key, value)
     handler.end_headers()
     handler.wfile.write(body)

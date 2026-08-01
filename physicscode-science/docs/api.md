@@ -12,7 +12,11 @@ Phase 2 exposes a small HTTP API for retrieval experiments.
 
 ## MCP
 
-Phase 3 also exposes the same retrieval layer as an MCP stdio server:
+The `serve` process exposes the same retrieval layer as stateless Streamable
+HTTP MCP at `POST /mcp`. Set `PHYSICSCODE_SCIENCE_API_KEY` or
+`PHYSICSCODE_SCIENCE_API_KEY_FILE` to require a Bearer token at the origin.
+
+The local stdio transport is also available:
 
 ```sh
 PYTHONPATH=src python3 -m physicscode_science.cli.main mcp \

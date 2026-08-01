@@ -1,10 +1,15 @@
 import json
 import subprocess
 import tempfile
+import threading
 import unittest
+import urllib.error
+import urllib.request
+from http.server import ThreadingHTTPServer
 from pathlib import Path
+from unittest.mock import patch
 
-from physicscode_science.api.server import search_payload
+from physicscode_science.api.server import _handler, search_payload
 from physicscode_science.ingestion.pipeline import ingest_repository
 from physicscode_science.models import RepositoryConfig
 from physicscode_science.storage.sqlite import ScienceStore
@@ -33,6 +38,36 @@ class ApiTest(unittest.TestCase):
 
             self.assertEqual(json.loads(json.dumps(payload))["results"][0]["symbol"], "poisson_solver")
 
+    def test_streamable_http_mcp_initializes_and_accepts_notifications(self):
+        with tempfile.TemporaryDirectory() as directory, _running_server(
+            str(Path(directory) / "science.sqlite")
+        ) as url:
+            response = _post_json(
+                f"{url}/mcp",
+                {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
+            )
+            self.assertEqual(response.status, 200)
+            server_name = json.load(response)["result"]["serverInfo"]["name"]
+            self.assertEqual(server_name, "physicscode-science")
+
+            notification = _post_json(
+                f"{url}/mcp",
+                {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}},
+            )
+            self.assertEqual(notification.status, 202)
+
+    def test_streamable_http_mcp_requires_configured_origin_key(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            "os.environ", {"PHYSICSCODE_SCIENCE_API_KEY": "origin-secret"}, clear=False
+        ), _running_server(str(Path(directory) / "science.sqlite")) as url:
+            payload = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
+            with self.assertRaises(urllib.error.HTTPError) as caught:
+                _post_json(f"{url}/mcp", payload)
+            self.assertEqual(caught.exception.code, 401)
+
+            response = _post_json(f"{url}/mcp", payload, token="origin-secret")
+            self.assertEqual(response.status, 200)
+
 
 def _init_git_repo(repo: Path) -> None:
     subprocess.run(["git", "-C", str(repo), "init", "-b", "main"], check=True, stdout=subprocess.PIPE)
@@ -40,6 +75,34 @@ def _init_git_repo(repo: Path) -> None:
     subprocess.run(["git", "-C", str(repo), "config", "user.name", "Test User"], check=True)
     subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
     subprocess.run(["git", "-C", str(repo), "commit", "-m", "initial"], check=True, stdout=subprocess.PIPE)
+
+
+class _running_server:
+    def __init__(self, db_path: str):
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), _handler(db_path))
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+
+    def __enter__(self) -> str:
+        self.thread.start()
+        return f"http://127.0.0.1:{self.server.server_port}"
+
+    def __exit__(self, *_args: object) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join()
+
+
+def _post_json(url: str, payload: dict[str, object], token: str | None = None):
+    headers = {
+        "Accept": "application/json, text/event-stream",
+        "Content-Type": "application/json",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    request = urllib.request.Request(
+        url, json.dumps(payload).encode("utf-8"), headers, method="POST"
+    )
+    return urllib.request.urlopen(request)
 
 
 def _config(repo: Path) -> RepositoryConfig:

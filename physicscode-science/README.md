@@ -149,7 +149,13 @@ python -m physicscode_science.cli.main serve \
   --port 8765
 ```
 
-Run the MCP stdio server for PhysicsCode or other MCP clients:
+The same process exposes stateless Streamable HTTP MCP at `POST /mcp`. Protect
+that endpoint at an internet-facing origin with either
+`PHYSICSCODE_SCIENCE_API_KEY` or `PHYSICSCODE_SCIENCE_API_KEY_FILE`; clients
+send the value as a Bearer token.
+
+For local-only integrations, the separate MCP stdio transport remains
+available:
 
 ```sh
 PYTHONPATH=src python3 -m physicscode_science.cli.main mcp \

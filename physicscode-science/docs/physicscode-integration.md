@@ -11,15 +11,13 @@ The `/science` flow should remain evidence-first:
 7. Modify code only when authorized.
 8. Compile, test, and report provenance.
 
-The initial command and agent documents are placeholders until Phase 3 exposes
-the MCP-compatible service.
-
 ## Phase 3 Status
 
 Phase 3 exposes `physicscode-science` through:
 
+- authenticated Streamable HTTP MCP at `https://www.physicscode.ai/mcp`
 - MCP stdio server: `python3 -m physicscode_science.cli.main mcp`
-- local PhysicsCode MCP config under `.physicscode/physicscode.jsonc`
+- authenticated account config returned by `physicscode.ai`
 - project-local custom tools:
   - `.physicscode/tool/science-search.ts`
   - `.physicscode/tool/science-source.ts`
@@ -39,14 +37,14 @@ PYTHONPATH=src python3 -m physicscode_science.cli.main ingest \
   --content-store .science/content
 ```
 
-The MCP server is configured to read:
+The hosted MCP server reads:
 
 ```txt
 /home/mohsen/github/code/physicscode-science/.science/physicscode-science.sqlite
 ```
 
-If that database does not exist yet, the tools will connect but return no
-retrieval results.
+Logged-in PhysicsCode clients receive the remote MCP URL and their Bearer header
+through account config, so the same tools work on Linux, macOS, and Windows.
 
 Recommended `/science` order:
 

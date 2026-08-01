@@ -82,7 +82,12 @@ PHYSICSCODE_SCIENCE_EMBEDDING_PROVIDER=vllm
 PHYSICSCODE_SCIENCE_EMBEDDING_URL=http://127.0.0.1:8000
 PHYSICSCODE_SCIENCE_EMBEDDING_MODEL=paidynamics/bge-m3-pai
 PHYSICSCODE_SCIENCE_EMBEDDING_API_KEY=<server key>
+PHYSICSCODE_SCIENCE_API_KEY_FILE=/path/to/private/origin-key
 ```
+
+The `serve` process exposes `POST /mcp` alongside the retrieval API. The
+PhysicsCode website Worker authenticates users, replaces their credential with
+the private origin key, and proxies Streamable HTTP MCP requests to this route.
 
 ## Embeddings
 

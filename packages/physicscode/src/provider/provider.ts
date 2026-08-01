@@ -1214,6 +1214,14 @@ const layer: Layer.Layer<
     const account = yield* Account.Service
     const env = yield* Env.Service
     const plugin = yield* Plugin.Service
+    const accountToken = () =>
+      account.active().pipe(
+        Effect.flatMap((active) => {
+          if (Option.isNone(active)) return Effect.succeed(undefined)
+          return account.token(active.value.id).pipe(Effect.map(Option.getOrUndefined))
+        }),
+        Effect.catch(() => Effect.succeed(undefined)),
+      )
 
     const state = yield* InstanceState.make<State>(() =>
       Effect.gen(function* () {
@@ -1238,14 +1246,7 @@ const layer: Layer.Layer<
         } = {}
         const dep = {
           auth: (id: string) => auth.get(id).pipe(Effect.orDie),
-          accountToken: () =>
-            account.active().pipe(
-              Effect.flatMap((active) => {
-                if (Option.isNone(active)) return Effect.succeed(undefined)
-                return account.token(active.value.id).pipe(Effect.map(Option.getOrUndefined))
-              }),
-              Effect.catch(() => Effect.succeed(undefined)),
-            ),
+          accountToken,
           config: () => config.get(),
           env: () => env.all(),
           get: (key: string) => env.get(key),
@@ -1555,11 +1556,13 @@ const layer: Layer.Layer<
       const cfg = yield* config.get()
       const auths = yield* auth.all().pipe(Effect.orDie)
       const envs = yield* env.all()
+      const token = yield* accountToken()
       return credentialedProviderIDs({
         providers,
         config: cfg,
         auths,
         envs,
+        accountToken: token,
       })
     })
 
@@ -1616,15 +1619,7 @@ const layer: Layer.Layer<
           if (model.providerID !== ModelsDev.PAIDYNAMICS_PROVIDER_ID) return undefined
           const freshEnv = await Effect.runPromise(env.all())
           const freshConfig = await Effect.runPromise(config.get())
-          const active = await Effect.runPromise(
-            account.active().pipe(
-              Effect.flatMap((current) => {
-                if (Option.isNone(current)) return Effect.succeed(undefined)
-                return account.token(current.value.id).pipe(Effect.map(Option.getOrUndefined))
-              }),
-              Effect.catch(() => Effect.succeed(undefined)),
-            ),
-          )
+          const active = await Effect.runPromise(accountToken())
           const freshProviderConfig = freshConfig.provider?.[ModelsDev.PAIDYNAMICS_PROVIDER_ID]
           return (
             provider.env.map((item) => freshEnv[item]).find(Boolean) ??

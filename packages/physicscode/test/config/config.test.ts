@@ -41,6 +41,12 @@ const emptyAuth = Layer.mock(Auth.Service)({
 
 const testFlock = EffectFlock.defaultLayer
 
+test("normalizes legacy PAI Dynamics model IDs", () => {
+  expect(Config.normalizePaidynamicsModel("paidynamics/gpt-oss-120b-pai")).toBe("paidynamics/pai-120b")
+  expect(Config.normalizePaidynamicsModel("paidynamics/openai/gpt-oss-120b")).toBe("paidynamics/pai-120b")
+  expect(Config.normalizePaidynamicsModel("anthropic/claude-sonnet-4-6")).toBe("anthropic/claude-sonnet-4-6")
+})
+
 const layer = Config.layer.pipe(
   Layer.provide(testFlock),
   Layer.provide(AppFileSystem.defaultLayer),

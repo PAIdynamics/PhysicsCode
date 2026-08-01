@@ -76,6 +76,23 @@ test("PAI Dynamics exposes one backend-neutral hosted model", () => {
   expect(ModelsDev.PAIDYNAMICS_MODEL_ID_ALIASES["glm-4.5-air-pai"]).toBe("pai-120b")
 })
 
+test("PAI Dynamics is credentialed by a logged-in account", () => {
+  const providers = {
+    [ModelsDev.PAIDYNAMICS_PROVIDER_ID]: { env: ["PAIDYNAMICS_API_KEY"] },
+  }
+  const base = {
+    providers,
+    config: {},
+    auths: {},
+    envs: {},
+  }
+
+  expect(Provider.credentialedProviderIDs({ ...base, accountToken: "account-token" })).toEqual([
+    ModelsDev.PAIDYNAMICS_PROVIDER_ID,
+  ])
+  expect(Provider.credentialedProviderIDs(base)).toEqual([])
+})
+
 test("provider loaded from env variable", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {

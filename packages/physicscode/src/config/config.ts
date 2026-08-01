@@ -43,6 +43,10 @@ import { ConfigServer } from "./server"
 import { ConfigSkills } from "./skills"
 import { ConfigVariable } from "./variable"
 import { Npm } from "@physicscode-ai/core/npm"
+import {
+  PAIDYNAMICS_MODEL_ID_ALIASES,
+  PAIDYNAMICS_PROVIDER_ID,
+} from "@/provider/models"
 
 const log = Log.create({ service: "config" })
 
@@ -70,6 +74,15 @@ function normalizeLoadedConfig(data: unknown, source: string) {
   delete copy.tui
   log.warn("tui keys in physicscode config are deprecated; move them to tui.json", { path: source })
   return copy
+}
+
+export function normalizePaidynamicsModel(model: string | undefined) {
+  if (!model) return model
+  const [providerID, ...rest] = model.split("/")
+  if (providerID !== PAIDYNAMICS_PROVIDER_ID) return model
+  const modelID = rest.join("/")
+  const canonical = PAIDYNAMICS_MODEL_ID_ALIASES[modelID]
+  return canonical ? `${providerID}/${canonical}` : model
 }
 
 async function resolveLoadedPlugins<T extends { plugin?: ConfigPlugin.Spec[] }>(config: T, filepath: string) {
@@ -701,6 +714,9 @@ export const layer = Layer.effect(
         if (Flag.PHYSICSCODE_DISABLE_PRUNE) {
           result.compaction = { ...result.compaction, prune: false }
         }
+
+        result.model = normalizePaidynamicsModel(result.model)
+        result.small_model = normalizePaidynamicsModel(result.small_model)
 
         return {
           config: result,

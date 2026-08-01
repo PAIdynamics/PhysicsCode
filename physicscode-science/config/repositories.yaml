@@ -728,6 +728,28 @@ repositories:
     priority: high
     enabled: true
 
+  - name: opalx
+    url: https://github.com/OPALX-project/OPALX.git
+    local_path: /home/mohsen/ref-codes/OPALX
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - particle-methods
+      - particle-in-cell
+      - plasma-physics
+      - high-performance-computing
+      - accelerator-programming
+    languages:
+      - c
+      - cpp
+      - cuda
+      - cmake
+      - shell
+      - markdown
+    priority: high
+    enabled: true
+
   - name: bout-dev
     url: https://github.com/boutproject/BOUT-dev.git
     local_path: /home/mohsen/ref-codes/BOUT-dev-5.2.0

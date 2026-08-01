@@ -15,6 +15,7 @@ services:
 
   qdrant:
     image: qdrant/qdrant:v1.12.4
+    restart: unless-stopped
     ulimits:
       nofile:
         soft: 1048576
@@ -22,3 +23,5 @@ services:
     ports:
       - "6333:6333"
       - "6334:6334"
+    volumes:
+      - ./.science/qdrant-storage:/qdrant/storage

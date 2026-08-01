@@ -1,7 +1,7 @@
 {
   "collections": [
     {
-      "name": "physicscode_science_multiview_bge_m3",
+      "name": "physicscode_science_multiview_bge_m3_v2",
       "vector_size": 1024,
       "distance": "Cosine",
       "mode": "named-vectors",

@@ -82,6 +82,33 @@ it.live("persistAccount normalizes trailing slashes in stored server URLs", () =
   }),
 )
 
+it.live("reads legacy PhysicsCode account URLs through the canonical www host", () =>
+  Effect.gen(function* () {
+    const id = AccountID.make("legacy-user")
+    const db = Database.Client()
+    db.run(/*sql*/ `
+      INSERT INTO account (
+        id, email, url, access_token, refresh_token, token_expiry, kind, time_created, time_updated
+      )
+      VALUES (
+        'legacy-user', 'legacy@example.com', 'https://physicscode.ai', 'at_old', 'rt_old', 0, 'oauth', 0, 0
+      )
+    `)
+    db.run(/*sql*/ `
+      INSERT INTO account_state (id, active_account_id, active_org_id)
+      VALUES (1, 'legacy-user', NULL)
+    `)
+
+    const row = yield* AccountRepo.Service.use((r) => r.getRow(id))
+    const active = yield* AccountRepo.Service.use((r) => r.active())
+    const list = yield* AccountRepo.Service.use((r) => r.list())
+
+    expect(Option.getOrThrow(row).url).toBe("https://www.physicscode.ai")
+    expect(Option.getOrThrow(active).url).toBe("https://www.physicscode.ai")
+    expect(list[0]?.url).toBe("https://www.physicscode.ai")
+  }),
+)
+
 it.live("persistAccount sets the active account and org", () =>
   Effect.gen(function* () {
     const id1 = AccountID.make("user-1")

@@ -49,6 +49,10 @@ export const layer: Layer.Layer<Service> = Layer.effect(
   Service,
   Effect.gen(function* () {
     const decode = Schema.decodeUnknownSync(Info)
+    const normalizeRow = (row: AccountRow): AccountRow => {
+      const url = normalizeServerUrl(row.url)
+      return url === row.url ? row : { ...row, url }
+    }
 
     const query = <A>(f: DbTransactionCallback<A>) =>
       Effect.try({
@@ -67,7 +71,7 @@ export const layer: Layer.Layer<Service> = Layer.effect(
       if (!state?.active_account_id) return
       const account = db.select().from(AccountTable).where(eq(AccountTable.id, state.active_account_id)).get()
       if (!account) return
-      return { ...account, active_org_id: state.active_org_id ?? null }
+      return { ...normalizeRow(account), active_org_id: state.active_org_id ?? null }
     }
 
     const state = (db: DbClient, accountID: AccountID, orgID: Option.Option<OrgID>) => {
@@ -92,7 +96,7 @@ export const layer: Layer.Layer<Service> = Layer.effect(
           .select()
           .from(AccountTable)
           .all()
-          .map((row: AccountRow) => decode({ ...row, active_org_id: null })),
+          .map((row: AccountRow) => decode({ ...normalizeRow(row), active_org_id: null })),
       ),
     )
 
@@ -111,9 +115,10 @@ export const layer: Layer.Layer<Service> = Layer.effect(
     )
 
     const getRow = Effect.fn("AccountRepo.getRow")((accountID: AccountID) =>
-      query((db) => db.select().from(AccountTable).where(eq(AccountTable.id, accountID)).get()).pipe(
-        Effect.map(Option.fromNullishOr),
-      ),
+      query((db) => {
+        const row = db.select().from(AccountTable).where(eq(AccountTable.id, accountID)).get()
+        return row ? normalizeRow(row) : undefined
+      }).pipe(Effect.map(Option.fromNullishOr)),
     )
 
     const persistToken = Effect.fn("AccountRepo.persistToken")((input) =>

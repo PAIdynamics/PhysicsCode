@@ -73,6 +73,39 @@ describe("tool.registry", () => {
     ),
   )
 
+  it.live("skips a custom tool whose module cannot be imported", () =>
+    provideTmpdirInstance((dir) =>
+      Effect.gen(function* () {
+        const tools = path.join(dir, ".physicscode", "tools")
+        yield* Effect.promise(() => fs.mkdir(tools, { recursive: true }))
+        yield* Effect.promise(() =>
+          Bun.write(
+            path.join(tools, "broken.ts"),
+            ["import 'missing-custom-tool-dependency'", "export default {}", ""].join("\n"),
+          ),
+        )
+        yield* Effect.promise(() =>
+          Bun.write(
+            path.join(tools, "hello.ts"),
+            [
+              "export default {",
+              "  description: 'hello tool',",
+              "  args: {},",
+              "  execute: async () => 'hello world',",
+              "}",
+              "",
+            ].join("\n"),
+          ),
+        )
+
+        const registry = yield* ToolRegistry.Service
+        const ids = yield* registry.ids()
+        expect(ids).toContain("hello")
+        expect(ids).not.toContain("broken")
+      }),
+    ),
+  )
+
   it.live("loads tools with external dependencies without crashing", () =>
     provideTmpdirInstance((dir) =>
       Effect.gen(function* () {

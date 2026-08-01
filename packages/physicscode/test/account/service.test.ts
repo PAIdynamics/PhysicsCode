@@ -98,6 +98,32 @@ it.live("login normalizes trailing slashes in the provided server URL", () =>
   }),
 )
 
+it.live("login canonicalizes the PhysicsCode apex host before posting", () =>
+  Effect.gen(function* () {
+    const seen: Array<string> = []
+    const client = HttpClient.make((req) =>
+      Effect.gen(function* () {
+        seen.push(`${req.method} ${req.url}`)
+        return json(req, {
+          device_code: "device-code",
+          user_code: "user-code",
+          verification_uri_complete: "/auth/verify?user_code=user-code",
+          expires_in: 600,
+          interval: 5,
+        })
+      }),
+    )
+
+    const result = yield* Account.Service.use((s) => s.login("https://physicscode.ai")).pipe(
+      Effect.provide(live(client)),
+    )
+
+    expect(seen).toEqual(["POST https://www.physicscode.ai/auth/device/code"])
+    expect(result.server).toBe("https://www.physicscode.ai")
+    expect(result.url).toBe("https://www.physicscode.ai/auth/verify?user_code=user-code")
+  }),
+)
+
 it.live("login maps transport failures to account transport errors", () =>
   Effect.gen(function* () {
     const client = HttpClient.make((req) =>

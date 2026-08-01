@@ -102,8 +102,8 @@ export const Provider = Schema.Struct({
 export type Provider = Schema.Schema.Type<typeof Provider>
 
 export const PAIDYNAMICS_PROVIDER_ID = "paidynamics"
-export const PAIDYNAMICS_MODEL_ID = "gpt-oss-120b-pai"
-export const PAIDYNAMICS_UPSTREAM_MODEL_ID = "openai/gpt-oss-120b"
+export const PAIDYNAMICS_MODEL_ID = "pai-120b"
+export const PAIDYNAMICS_UPSTREAM_MODEL_ID = PAIDYNAMICS_MODEL_ID
 // Must be the www host: physicscode.ai's apex 301-redirects to www, and
 // POST bodies (chat completions) don't survive that redirect.
 export const PAIDYNAMICS_BASE_URL = "https://www.physicscode.ai/llm/v1"
@@ -111,32 +111,25 @@ export const PAIDYNAMICS_BASE_URL = "https://www.physicscode.ai/llm/v1"
 const PaidynamicsModelDefinitions = {
   [PAIDYNAMICS_MODEL_ID]: {
     upstream: PAIDYNAMICS_UPSTREAM_MODEL_ID,
-    name: "gpt-oss-120b-pai",
-    family: "gpt-oss",
+    name: "pai-120b",
+    family: "pai",
     release_date: "2026-07-03",
     reasoning: true,
     tool_call: true,
     context: 131072,
     output: 8192,
   },
-  "glm-4.5-air-pai": {
-    upstream: "zai-org/GLM-4.5-Air-FP8",
-    name: "glm-4.5-air-pai",
-    family: "glm45",
-    release_date: "2025-07-20",
-    reasoning: true,
-    tool_call: true,
-    context: 4096,
-    output: 2048,
-  },
 } as const
 
-export const PAIDYNAMICS_MODEL_ID_ALIASES: Record<string, string> = {}
+export const PAIDYNAMICS_MODEL_ID_ALIASES: Record<string, string> = {
+  "gpt-oss-120b-pai": PAIDYNAMICS_MODEL_ID,
+  "openai/gpt-oss-120b": PAIDYNAMICS_MODEL_ID,
+  "glm-4.5-air-pai": PAIDYNAMICS_MODEL_ID,
+  "zai-org/GLM-4.5-Air-FP8": PAIDYNAMICS_MODEL_ID,
+}
 
 export const PAIDYNAMICS_MODEL_ALIASES: Record<string, string> = Object.fromEntries(
-  Object.entries(PaidynamicsModelDefinitions)
-    .map(([id, model]) => [id, model.upstream])
-    .concat([["zai-org/GLM-4.5-Air", "zai-org/GLM-4.5-Air-FP8"]]),
+  Object.entries(PaidynamicsModelDefinitions).map(([id, model]) => [id, model.upstream]),
 )
 
 const paidynamicsModel = (model: (typeof PaidynamicsModelDefinitions)[keyof typeof PaidynamicsModelDefinitions]) => ({

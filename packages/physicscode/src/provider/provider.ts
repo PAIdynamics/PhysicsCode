@@ -1155,11 +1155,6 @@ function configurePaidynamicsProvider(database: Record<string, Info>) {
     const model = provider.models[modelID]
     if (!model) continue
     model.api.id = upstreamID
-    if (modelID.includes("gpt-oss") || modelID.includes("deepseek-r1")) {
-      model.options = mergeDeep(model.options ?? {}, {
-        reasoningEffort: modelID.includes("20b") ? "low" : "medium",
-      })
-    }
     if (modelID === ModelsDev.PAIDYNAMICS_MODEL_ID) {
       model.variants = mapValues(
         mergeDeep(model.variants ?? {}, {

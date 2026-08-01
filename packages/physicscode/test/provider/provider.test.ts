@@ -69,6 +69,13 @@ function paid(providers: Awaited<ReturnType<typeof list>>) {
   return Object.values(item.models).filter((model) => model.cost.input > 0).length
 }
 
+test("PAI Dynamics exposes one backend-neutral hosted model", () => {
+  expect(Object.keys(ModelsDev.PaidynamicsProvider.models)).toEqual(["pai-120b"])
+  expect(ModelsDev.PaidynamicsProvider.models["pai-120b"]?.name).toBe("pai-120b")
+  expect(ModelsDev.PAIDYNAMICS_MODEL_ID_ALIASES["gpt-oss-120b-pai"]).toBe("pai-120b")
+  expect(ModelsDev.PAIDYNAMICS_MODEL_ID_ALIASES["glm-4.5-air-pai"]).toBe("pai-120b")
+})
+
 test("provider loaded from env variable", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {

@@ -69,6 +69,80 @@
       "relevant_repositories": ["jax"],
       "domains": ["automatic-differentiation", "array-computing"],
       "languages": ["python"]
+    },
+    {
+      "query_id": "cuda-samples-vector-add",
+      "query": "CUDA vector addition kernel host device memory example",
+      "relevant_repositories": ["cuda-samples"],
+      "relevant_object_ids": [
+        "sha256:c1946630b9b7fb0f1078dc479c9571c971961a7b48560f83c6409cf71e8396a5",
+        "sha256:efdccbc116f3ef2da21f737518c77e7ee279ed20c941694d744f117f91095b69"
+      ],
+      "domains": ["accelerator-programming", "gpu-computing"],
+      "languages": ["cuda", "python"]
+    },
+    {
+      "query_id": "cuda-samples-cooperative-groups-reduction",
+      "query": "CUDA cooperative groups reduction example",
+      "relevant_repositories": ["cuda-samples"],
+      "relevant_object_ids": [
+        "sha256:44c3a38fe95ba6cb3b66db79edfae4bb450f93056f45d705105b6a2e05ebd37a"
+      ],
+      "domains": ["accelerator-programming", "gpu-computing"],
+      "languages": ["cuda"]
+    },
+    {
+      "query_id": "cufftmp-distributed-fft-plan",
+      "query": "cuFFTMp multi-process distributed FFT plan",
+      "relevant_repositories": ["cuda-library-samples"],
+      "relevant_object_ids": [
+        "sha256:f3aac3db2a318b83d527a4afaac1b0b072c251ba795860fe3388dae0d139c29c"
+      ],
+      "domains": ["accelerator-programming", "high-performance-computing"],
+      "languages": ["python", "cuda"]
+    },
+    {
+      "query_id": "cublaslt-sgemm-matmul-sample",
+      "query": "cuBLASLt matrix multiplication epilogue configuration sample",
+      "relevant_repositories": ["cuda-library-samples"],
+      "relevant_object_ids": [
+        "sha256:4f3fd5d3bf300eb8d33c295f533083c82027d3cfa17e0c4090b3a4fd97b4cd77",
+        "sha256:b3012fdeb504d0fde6d13babb7dce75d078ad9de1c4c33383c0c200caebf9e4b"
+      ],
+      "domains": ["accelerator-programming", "numerical-linear-algebra"],
+      "languages": ["cuda", "cpp"]
+    },
+    {
+      "query_id": "slurm-backfill-scheduler",
+      "query": "Slurm job scheduler backfill algorithm priority",
+      "relevant_repositories": ["slurm"],
+      "relevant_object_ids": [
+        "sha256:e8bb6b52718fe58bee55c97847d1e5426fbbad93ab819916c26a8c32ec9c0c55",
+        "sha256:95957f74f9522b0658ee903c8dcec342bd452257400e2327048b989702d53555"
+      ],
+      "domains": ["job-scheduling", "resource-management"],
+      "languages": ["c"]
+    },
+    {
+      "query_id": "slurm-cgroup-task-affinity",
+      "query": "Slurm task CPU affinity plugin binding",
+      "relevant_repositories": ["slurm"],
+      "relevant_object_ids": [
+        "sha256:3da1b36e771097d4cb4b074d3ce328c360a17fea9052bc2e99d41c22baf14f94",
+        "sha256:65f5b47d2d5c874bfce4ce64cf9744ae52fcac2f3a8949a60a65555a99099aaf"
+      ],
+      "domains": ["job-scheduling", "resource-management"],
+      "languages": ["c"]
+    },
+    {
+      "query_id": "skills-tao-port-huggingface-model",
+      "query": "NVIDIA TAO port a HuggingFace model to TAO toolkit skill",
+      "relevant_repositories": ["skills"],
+      "relevant_object_ids": [
+        "sha256:afde709022f36009c5b3aa392b6ef12d4db8856918dc4b226b2ddd0610b24848"
+      ],
+      "domains": ["agent-tooling", "developer-tooling"],
+      "languages": ["markdown"]
     }
   ]
 }

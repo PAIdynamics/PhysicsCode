@@ -19,9 +19,10 @@ from physicscode_science.vector_index.qdrant import QdrantVectorIndex
 def search(store: ScienceStore, query: SearchQuery) -> list[SearchResult]:
     candidates = store.search_candidates(query)
     by_id = {candidate.object_id: candidate for candidate in candidates}
+    dense_scores, dense_backend = _dense_scores(store, query, candidates)
     all_channels = {
         "sparse": bm25_scores(query.query, candidates),
-        "dense": _dense_scores(store, query, candidates),
+        "dense": dense_scores,
         "symbol": symbol_scores(query.query, candidates),
     }
     channels = {
@@ -31,8 +32,14 @@ def search(store: ScienceStore, query: SearchQuery) -> list[SearchResult]:
     }
     fused, source_channels = reciprocal_rank_fusion({key: value for key, value in channels.items() if value})
     ranked_candidates = _rank(query, by_id, fused, source_channels)
+    dense_requested = "dense" in set(query.retrieval_channels)
     return [
-        _result(item, source_channels[item.candidate.object_id], query.include_content)
+        _result(
+            item,
+            source_channels[item.candidate.object_id],
+            query.include_content,
+            dense_backend if dense_requested else None,
+        )
         for item in ranked_candidates
     ]
 
@@ -65,14 +72,19 @@ def _dense_scores(
     store: ScienceStore,
     query: SearchQuery,
     candidates: list[SearchCandidate],
-) -> dict[str, float]:
-    if os.environ.get("PHYSICSCODE_SCIENCE_VECTOR_BACKEND") == "qdrant":
+) -> tuple[dict[str, float], str]:
+    # The second element identifies what actually served this query's dense
+    # channel, so a Qdrant outage or misconfiguration doesn't silently
+    # downgrade search quality with no visible signal — see SearchResult
+    # explanation["dense_backend"] on the caller side.
+    qdrant_configured = os.environ.get("PHYSICSCODE_SCIENCE_VECTOR_BACKEND") == "qdrant"
+    if qdrant_configured:
         if os.environ.get("PHYSICSCODE_SCIENCE_EMBEDDING_PROVIDER") not in {
             "openai",
             "openai-compatible",
             "vllm",
         }:
-            return {}
+            return {}, "qdrant_misconfigured_no_embedding_provider"
         candidate_ids = {candidate.object_id for candidate in candidates}
         try:
             scores = QdrantVectorIndex(
@@ -80,25 +92,34 @@ def _dense_scores(
                 os.environ.get("PHYSICSCODE_SCIENCE_QDRANT_COLLECTION", "physicscode_science_summary"),
                 api_key=os.environ.get("PHYSICSCODE_SCIENCE_QDRANT_API_KEY"),
             ).search(query.query, limit=max(query.top_k * 20, 50))
-            return {
-                object_id: score
-                for object_id, score in scores.items()
-                if object_id in candidate_ids
-            }
+            return (
+                {
+                    object_id: score
+                    for object_id, score in scores.items()
+                    if object_id in candidate_ids
+                },
+                "qdrant",
+            )
         except (OSError, RuntimeError, ValueError, error.URLError):
             pass
     index_path = default_vector_index_path(store)
     if index_path.exists():
-        return local_vector_scores(query.query, candidates, index_path)
-    return hashed_vector_scores(query.query, candidates)
+        fallback = "local_json_fallback_qdrant_unavailable" if qdrant_configured else "local_json"
+        return local_vector_scores(query.query, candidates, index_path), fallback
+    fallback = "hash_fallback_qdrant_unavailable" if qdrant_configured else "hash"
+    return hashed_vector_scores(query.query, candidates), fallback
 
 
 def _result(
     ranked: RankedCandidate,
     channels: tuple[str, ...],
     include_content: bool,
+    dense_backend: str | None,
 ) -> SearchResult:
     candidate = ranked.candidate
+    explanation = dict(ranked.explanation)
+    if dense_backend is not None:
+        explanation["dense_backend"] = dense_backend
     return SearchResult(
         result_id=candidate.object_id,
         repository=candidate.repository,
@@ -114,7 +135,7 @@ def _result(
         score=round(ranked.score, 6),
         retrieval_channels=channels,
         reason=_reason(channels, ranked.explanation),
-        explanation=ranked.explanation,
+        explanation=explanation,
         summary=_summary(candidate),
         content=candidate.raw_content if include_content else None,
     )

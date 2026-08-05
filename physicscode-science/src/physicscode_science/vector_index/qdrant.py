@@ -73,6 +73,19 @@ class QdrantVectorIndex:
             }
         self._request("PUT", f"/collections/{self.collection}", {"vectors": vectors})
 
+    def collection_status(self) -> dict[str, object]:
+        response = self._request("GET", f"/collections/{self.collection}")
+        result = response.get("result", {})
+        vectors = _vectors_config(response)
+        return {
+            "reachable": True,
+            "url": self.base_url,
+            "collection": self.collection,
+            "status": result.get("status"),
+            "points_count": result.get("points_count"),
+            "vector_mode": "multi" if _is_named_vectors(vectors) else "single",
+        }
+
     def collection_dimensions(self) -> int:
         existing = self._request("GET", f"/collections/{self.collection}")
         vectors = _vectors_config(existing)

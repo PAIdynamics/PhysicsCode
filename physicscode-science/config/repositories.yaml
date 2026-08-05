@@ -771,3 +771,85 @@ repositories:
       - markdown
     priority: high
     enabled: true
+
+  - name: cuda-samples
+    url: git@github.com:NVIDIA/cuda-samples.git
+    local_path: /home/mohsen/ref-codes/cuda-samples
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - accelerator-programming
+      - gpu-computing
+      - high-performance-computing
+    languages:
+      - cuda
+      - cpp
+      - c
+      - python
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: cuda-library-samples
+    url: git@github.com:NVIDIA/CUDALibrarySamples.git
+    local_path: /home/mohsen/ref-codes/CUDALibrarySamples
+    default_branch: main
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - accelerator-programming
+      - numerical-linear-algebra
+      - high-performance-computing
+    languages:
+      - cuda
+      - cpp
+      - c
+      - python
+      - cmake
+    priority: high
+    enabled: true
+
+  - name: skills
+    url: git@github.com:NVIDIA/skills.git
+    local_path: /home/mohsen/ref-codes/skills
+    default_branch: main
+    revision_policy: fixed-local
+    license_policy: allowed
+    domains:
+      - agent-tooling
+      - developer-tooling
+      - scientific-software-infrastructure
+    languages:
+      - markdown
+      - python
+      - shell
+    priority: medium
+    enabled: true
+
+  - name: slurm
+    url: git@github.com:SchedMD/slurm.git
+    local_path: /home/mohsen/ref-codes/slurm
+    default_branch: master
+    revision_policy: fixed-local
+    license_policy: reference-only
+    domains:
+      - job-scheduling
+      - resource-management
+      - high-performance-computing
+    languages:
+      - c
+      - cpp
+      - python
+      - shell
+    include_paths:
+      - src/plugins
+      - src/slurmctld
+      - src/slurmd
+      - src/slurmdbd
+      - src/slurmrestd
+      - src/api
+      - src/common
+      - src/interfaces
+    priority: high
+    enabled: true

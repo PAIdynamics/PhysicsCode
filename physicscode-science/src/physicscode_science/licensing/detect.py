@@ -32,7 +32,31 @@ def detect_repository_license(repo_path: str | Path) -> LicenseFinding:
         candidate = path / name
         if candidate.exists() and candidate.is_file():
             return detect_license_text(read_text(candidate), "repository", str(candidate.relative_to(path)))
-    return LicenseFinding(spdx_id="NOASSERTION", source="repository")
+    return _detect_from_license_glob(path) or LicenseFinding(spdx_id="NOASSERTION", source="repository")
+
+
+def _detect_from_license_glob(path: Path) -> LicenseFinding | None:
+    # Some repos split licensing across multiple files instead of a single
+    # LICENSE (e.g. LICENSE-APACHE + LICENSE-CC-BY-4.0 for code vs. content).
+    # None of the exact LICENSE_FILES names matched above, so fall back to
+    # any top-level LICENSE* file. Prefer one that resolves to a permissive
+    # SPDX id, since that's what matters for reusing source code; otherwise
+    # take the first recognized license of any kind.
+    try:
+        candidates = sorted(p for p in path.glob("LICENSE*") if p.is_file())
+    except OSError:
+        return None
+    findings = [
+        detect_license_text(read_text(candidate), "repository", str(candidate.relative_to(path)))
+        for candidate in candidates
+    ]
+    for finding in findings:
+        if finding.spdx_id != "NOASSERTION" and not finding.reference_only:
+            return finding
+    for finding in findings:
+        if finding.spdx_id != "NOASSERTION":
+            return finding
+    return None
 
 
 def detect_file_license(path: str | Path, repository_license: LicenseFinding) -> LicenseFinding:

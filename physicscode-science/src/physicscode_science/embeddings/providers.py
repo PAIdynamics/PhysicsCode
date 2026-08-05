@@ -101,15 +101,28 @@ class OpenAICompatibleEmbeddingProvider(EmbeddingProvider):
             "model": self.model_name,
             "input": truncated,
         }
-        try:
-            response = self._request("/v1/embeddings", payload)
-        except RuntimeError as exc:
-            if "maximum context length" not in str(exc) and "input_tokens" not in str(exc):
-                raise
-            payload["input"] = [
-                truncate_for_embedding(text, max_tokens=max(1, self.max_input_tokens // 2))
-                for text in truncated
-            ]
+        response = None
+        # The word-count-based truncate_for_embedding budget is only an
+        # approximation of real BPE/SentencePiece token count (see its own
+        # docstring comment) — it's tuned for typical code/docs, but across a
+        # corpus this large and diverse (many languages, JSON-heavy metadata,
+        # symbol-dense identifiers) some individual texts still exceed the
+        # server's hard token limit even after that budget is halved once.
+        # Keep halving until it's tiny, then fall back to a fixed, very
+        # conservative character cap that's safe under any tokenizer — do not
+        # let one pathological object crash a run processing 1M+ others.
+        max_tokens = self.max_input_tokens
+        for _ in range(5):
+            try:
+                response = self._request("/v1/embeddings", payload)
+                break
+            except RuntimeError as exc:
+                if "maximum context length" not in str(exc) and "input_tokens" not in str(exc):
+                    raise
+                max_tokens = max(1, max_tokens // 2)
+                payload["input"] = [truncate_for_embedding(text, max_tokens=max_tokens) for text in truncated]
+        if response is None:
+            payload["input"] = [text[:200] for text in truncated]
             response = self._request("/v1/embeddings", payload)
         data = response.get("data", [])
         if not data or not isinstance(data, list):

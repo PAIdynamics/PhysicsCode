@@ -328,14 +328,20 @@ class ScienceStore:
                 (repository, commit),
             ).fetchall()
         ]
-        if object_ids:
-            placeholders = ",".join("?" for _ in object_ids)
+        # SQLite caps bound parameters per statement (historically 999), and
+        # this binds each id twice (source_id and target_id) — a repository
+        # the size of dealii or Trilinos has tens of thousands of objects,
+        # so a single unchunked statement here overflows that limit.
+        chunk_size = 400
+        for start in range(0, len(object_ids), chunk_size):
+            chunk = object_ids[start : start + chunk_size]
+            placeholders = ",".join("?" for _ in chunk)
             self.connection.execute(
                 f"""
                 delete from source_relationship
                 where source_id in ({placeholders}) or target_id in ({placeholders})
                 """,
-                (*object_ids, *object_ids),
+                (*chunk, *chunk),
             )
         self.connection.executemany(
             """

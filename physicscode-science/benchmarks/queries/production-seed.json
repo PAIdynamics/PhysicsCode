@@ -72,11 +72,11 @@
     },
     {
       "query_id": "cuda-samples-vector-add",
-      "query": "CUDA vector addition kernel host device memory example",
+      "query": "CUDA vector addition sample kernel",
       "relevant_repositories": ["cuda-samples"],
       "relevant_object_ids": [
-        "sha256:c1946630b9b7fb0f1078dc479c9571c971961a7b48560f83c6409cf71e8396a5",
-        "sha256:efdccbc116f3ef2da21f737518c77e7ee279ed20c941694d744f117f91095b69"
+        "sha256:06bd919e0727127afb95ca919d866a467146f287a64c71246a5556ef015415d1",
+        "sha256:783dd354f957297bf7994a6be23fe5cc02a48b2bf234fdb715d47b4175db5320"
       ],
       "domains": ["accelerator-programming", "gpu-computing"],
       "languages": ["cuda", "python"]
@@ -129,7 +129,10 @@
       "relevant_repositories": ["slurm"],
       "relevant_object_ids": [
         "sha256:3da1b36e771097d4cb4b074d3ce328c360a17fea9052bc2e99d41c22baf14f94",
-        "sha256:65f5b47d2d5c874bfce4ce64cf9744ae52fcac2f3a8949a60a65555a99099aaf"
+        "sha256:65f5b47d2d5c874bfce4ce64cf9744ae52fcac2f3a8949a60a65555a99099aaf",
+        "sha256:d37d0e71daa3732e150400e23ccf88791f8e9a4172a437275608405eda9511e4",
+        "sha256:786827f67e0e3775e71740b57c8130a1956e633b3d87486a99918aae46142532",
+        "sha256:c4cd43b1488e9a0ce05652609f279f92c773f3122f34e6924ef3a788ce69db4c"
       ],
       "domains": ["job-scheduling", "resource-management"],
       "languages": ["c"]
@@ -139,7 +142,10 @@
       "query": "NVIDIA TAO port a HuggingFace model to TAO toolkit skill",
       "relevant_repositories": ["skills"],
       "relevant_object_ids": [
-        "sha256:afde709022f36009c5b3aa392b6ef12d4db8856918dc4b226b2ddd0610b24848"
+        "sha256:afde709022f36009c5b3aa392b6ef12d4db8856918dc4b226b2ddd0610b24848",
+        "sha256:cbafd0dac07e2ac6044e2d54d93b3334fa3058064d62ec5051b2b7bd73f68c51",
+        "sha256:9cbb8378b092aa39a11395cdf075196e7852ef86aa4545dedce2ec9254968022",
+        "sha256:dc9c0532fe932116af3e7fbae035d3da7d482b57a2257f08c0100159186d5fc7"
       ],
       "domains": ["agent-tooling", "developer-tooling"],
       "languages": ["markdown"]

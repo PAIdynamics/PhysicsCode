@@ -9,6 +9,7 @@ from physicscode_science.retrieval.fusion import reciprocal_rank_fusion
 from physicscode_science.retrieval.symbol import symbol_scores
 from physicscode_science.retrieval.vector import hashed_vector_scores
 from physicscode_science.retrieval.views import generated_view_text
+from physicscode_science.reranking.cross_encoder import cross_encoder_available, rerank_candidates_cross_encoder
 from physicscode_science.reranking.deduplicate import deduplicate_ranked, diversity_select
 from physicscode_science.reranking.scoring import RankedCandidate, rerank_candidates
 from physicscode_science.storage.sqlite import ScienceStore
@@ -51,7 +52,18 @@ def _rank(
     source_channels: dict[str, tuple[str, ...]],
 ) -> list[RankedCandidate]:
     if query.rerank:
-        ranked = rerank_candidates(query.query, list(by_id.values()), fused, source_channels)
+        ranked = None
+        if cross_encoder_available():
+            ranked = rerank_candidates_cross_encoder(query.query, list(by_id.values()), fused)
+        if ranked is None:
+            ranked = rerank_candidates(query.query, list(by_id.values()), fused, source_channels)
+            if cross_encoder_available():
+                # The cross-encoder is configured but its call failed (e.g. the
+                # reranker service is down) — say so instead of silently
+                # reporting the heuristic reranker as if it were the intended
+                # default, mirroring how _dense_scores reports its fallbacks.
+                for item in ranked:
+                    item.explanation["reranker"] = "deterministic-reranker-v2-fallback-cross-encoder-unavailable"
     else:
         ranked = [
             RankedCandidate(

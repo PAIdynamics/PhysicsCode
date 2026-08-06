@@ -105,10 +105,19 @@ class QdrantVectorIndex:
         store: ScienceStore,
         batch_size: int = 128,
         repositories: tuple[str, ...] = (),
+        object_ids: tuple[str, ...] = (),
     ) -> dict[str, object]:
-        candidates = store.search_candidates(
-            SearchQuery(query="", top_k=1_000_000, repositories=repositories)
-        )
+        # object_ids embeds an exact, known delta (e.g. objects a parser fix
+        # newly recovered) without touching anything else already correctly
+        # embedded for that repository — no delete_repository, no re-scoring
+        # the rest of a potentially huge repository just to add a handful of
+        # new objects to it.
+        if object_ids:
+            candidates = store.objects_by_id(list(object_ids))
+        else:
+            candidates = store.search_candidates(
+                SearchQuery(query="", top_k=1_000_000, repositories=repositories)
+            )
         provider = self.embedding_provider or configured_embedding_provider(
             dimensions=self.dimensions,
             allow_fallback=False,
@@ -116,8 +125,9 @@ class QdrantVectorIndex:
         model = provider.model()
         self.dimensions = model.dimensions
         self.ensure_collection()
-        for repository in repositories:
-            self.delete_repository(repository)
+        if not object_ids:
+            for repository in repositories:
+                self.delete_repository(repository)
         written = 0
         batch_size = _effective_batch_size(batch_size, self.vector_mode)
         for offset in range(0, len(candidates), batch_size):

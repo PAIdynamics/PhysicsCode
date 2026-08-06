@@ -131,6 +131,14 @@ def main() -> None:
         default=[],
         help="Limit vector upsert to one repository name. Repeat for multiple repositories.",
     )
+    vector_index.add_argument(
+        "--object-ids-file",
+        help=(
+            "Embed exactly the object IDs listed in this file (one per line), instead of a "
+            "repository's full object set. For adding a known delta (e.g. objects a parser fix "
+            "newly recovered) without re-embedding everything else already correctly indexed."
+        ),
+    )
     status = subcommands.add_parser("status", help="Report science DB and vector-index readiness")
     status.add_argument("--db", default=".science/physicscode-science.sqlite")
     serve = subcommands.add_parser("serve", help="Run the science retrieval HTTP API")
@@ -261,6 +269,10 @@ def main() -> None:
         try:
             store.migrate()
             if args.backend == "qdrant":
+                object_ids: tuple[str, ...] = ()
+                if args.object_ids_file:
+                    with open(args.object_ids_file, encoding="utf-8") as handle:
+                        object_ids = tuple(line.strip() for line in handle if line.strip())
                 try:
                     report = QdrantVectorIndex(
                         args.qdrant_url,
@@ -268,7 +280,7 @@ def main() -> None:
                         dimensions=args.dimensions,
                         api_key=args.qdrant_api_key,
                         vector_mode=args.qdrant_vector_mode,
-                    ).upsert_store(store, repositories=tuple(args.repository))
+                    ).upsert_store(store, repositories=tuple(args.repository), object_ids=object_ids)
                 except URLError as error:
                     raise SystemExit(
                         "Qdrant is not reachable. Start it first, for example:\n"

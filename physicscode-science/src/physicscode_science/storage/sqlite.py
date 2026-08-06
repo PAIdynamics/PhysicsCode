@@ -375,6 +375,46 @@ class ScienceStore:
             metadata=json.loads(row["metadata_json"]),
         )
 
+    def objects_by_id(self, object_ids: list[str]) -> list[SearchCandidate]:
+        # Fetch a specific, known set of objects directly — used to embed
+        # exactly a delta (e.g. objects a parser fix newly recovered)
+        # instead of re-embedding a whole repository to reach a handful of
+        # new objects within it. Chunked for the same reason the relationship
+        # delete is: SQLite's per-statement bound-parameter limit.
+        candidates: list[SearchCandidate] = []
+        chunk_size = 400
+        for start in range(0, len(object_ids), chunk_size):
+            chunk = object_ids[start : start + chunk_size]
+            placeholders = ",".join("?" for _ in chunk)
+            rows = self.connection.execute(
+                f"""
+                select object_id, repository, repository_url, commit_sha, path, start_line, end_line,
+                       symbol, object_type, language, license, raw_content, metadata_json
+                from source_object
+                where object_id in ({placeholders})
+                """,
+                tuple(chunk),
+            ).fetchall()
+            candidates.extend(
+                SearchCandidate(
+                    object_id=row["object_id"],
+                    repository=row["repository"],
+                    repository_url=row["repository_url"],
+                    commit=row["commit_sha"],
+                    path=row["path"],
+                    start_line=int(row["start_line"]),
+                    end_line=int(row["end_line"]),
+                    symbol=row["symbol"],
+                    object_type=row["object_type"],
+                    language=row["language"],
+                    license=row["license"],
+                    raw_content=row["raw_content"],
+                    metadata=json.loads(row["metadata_json"]),
+                )
+                for row in rows
+            )
+        return candidates
+
     def parsed_objects(self) -> list[ParsedObject]:
         rows = self.connection.execute(
             "select metadata_json from source_object order by repository, path, start_line"

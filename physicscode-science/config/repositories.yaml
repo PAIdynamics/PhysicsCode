@@ -16,7 +16,7 @@ repositories:
       - python
       - cmake
     priority: high
-    enabled: true
+    enabled: false
 
   - name: amrex
     url: https://github.com/AMReX-Codes/amrex.git
@@ -74,7 +74,7 @@ repositories:
       - cpp
       - cmake
     priority: high
-    enabled: true
+    enabled: false
 
   - name: enzyme
     url: https://github.com/EnzymeAD/Enzyme.git
@@ -382,7 +382,7 @@ repositories:
       - python
       - cmake
     priority: high
-    enabled: true
+    enabled: false
 
   - name: pytorch
     url: https://github.com/pytorch/pytorch.git
@@ -430,7 +430,7 @@ repositories:
       - python
       - cmake
     priority: high
-    enabled: true
+    enabled: false
 
   - name: spack
     url: https://github.com/spack/spack.git
@@ -486,7 +486,7 @@ repositories:
       - python
       - cmake
     priority: high
-    enabled: true
+    enabled: false
 
   - name: trilinos
     url: https://github.com/trilinos/Trilinos.git
@@ -704,7 +704,7 @@ repositories:
       - shell
       - markdown
     priority: high
-    enabled: true
+    enabled: false
 
   - name: orb5x
     url: git@github.com:PAIdynamics/ORB5X.git

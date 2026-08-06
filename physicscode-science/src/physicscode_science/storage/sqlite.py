@@ -9,6 +9,18 @@ from pathlib import Path
 from physicscode_science.graph.relationships import Relationship
 from physicscode_science.models import ParsedObject, RepositoryRevision, SearchCandidate, SearchQuery, SourceFile
 
+# Callers that genuinely want the whole matching set (index building) already
+# pass a large sentinel top_k (e.g. 1_000_000) by convention — anything below
+# this is a live/bounded query and gets the per-repository cap below.
+UNBOUNDED_CANDIDATE_TOP_K = 100_000
+# At 1.3M+ objects across 40+ repositories, a live query with no repository
+# filter used to fetch every row's full raw_content in one call — that OOM
+# killed the science service. Cap rows per repository instead of a flat
+# LIMIT so every repository still gets fair representation in the candidate
+# pool (a flat LIMIT with no ORDER BY would deterministically favor whichever
+# repositories happen to sort first and never surface the rest).
+DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY = 800
+
 
 class ScienceStore:
     def __init__(self, path: str | Path) -> None:
@@ -247,15 +259,32 @@ class ScienceStore:
                 conditions.append(f"{column} in ({','.join('?' for _ in selected)})")
                 values.extend(selected)
         where = f"where {' and '.join(conditions)}" if conditions else ""
-        rows = self.connection.execute(
-            f"""
-            select object_id, repository, repository_url, commit_sha, path, start_line, end_line,
-                   symbol, object_type, language, license, raw_content, metadata_json
-            from source_object
-            {where}
-            """,
-            tuple(values),
-        ).fetchall()
+        if query.top_k >= UNBOUNDED_CANDIDATE_TOP_K:
+            rows = self.connection.execute(
+                f"""
+                select object_id, repository, repository_url, commit_sha, path, start_line, end_line,
+                       symbol, object_type, language, license, raw_content, metadata_json
+                from source_object
+                {where}
+                """,
+                tuple(values),
+            ).fetchall()
+        else:
+            rows = self.connection.execute(
+                f"""
+                select object_id, repository, repository_url, commit_sha, path, start_line, end_line,
+                       symbol, object_type, language, license, raw_content, metadata_json
+                from (
+                    select *, row_number() over (
+                        partition by repository order by object_id
+                    ) as rn
+                    from source_object
+                    {where}
+                )
+                where rn <= ?
+                """,
+                (*values, DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY),
+            ).fetchall()
         candidates = [
             SearchCandidate(
                 object_id=row["object_id"],

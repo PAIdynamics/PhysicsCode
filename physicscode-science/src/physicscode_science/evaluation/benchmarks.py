@@ -129,7 +129,11 @@ def _relevant_ids(store: ScienceStore, benchmark: BenchmarkQuery) -> set[str]:
             languages=benchmark.languages,
             object_types=benchmark.object_types,
             licenses=benchmark.licenses,
-            top_k=1000,
+            # This computes ground truth for recall, not a bounded live
+            # query — it needs every matching object, not the per-repository
+            # candidate-pool cap search_candidates applies for normal top_k
+            # values (see UNBOUNDED_CANDIDATE_TOP_K in storage/sqlite.py).
+            top_k=1_000_000,
         )
     )
     symbols = set(benchmark.relevant_symbols)

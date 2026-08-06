@@ -8,11 +8,11 @@ allowed:
   - NCSA
   - HDF5
   - CeCILL-B
-
-reference_only:
   - GPL-2.0
   - GPL-3.0
   - GPL-3.0-or-later
+
+reference_only:
   - AGPL-3.0
 
 unknown_policy: exclude

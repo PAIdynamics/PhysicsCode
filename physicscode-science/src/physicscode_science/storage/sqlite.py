@@ -332,6 +332,49 @@ class ScienceStore:
         ]
         return [candidate for candidate in candidates if _domain_matches(candidate, query.domains)]
 
+    def distinct_repositories(self) -> list[str]:
+        # repository_revision has exactly one row per repository — a cheap
+        # primary-key-scoped lookup, unlike a DISTINCT scan over 1M+ rows in
+        # source_object.
+        return [
+            str(row["name"])
+            for row in self.connection.execute("select name from repository_revision").fetchall()
+        ]
+
+    def repository_overview(self, repository: str) -> SearchCandidate | None:
+        # The earliest chunk of a repository's top-level README — its
+        # project-identity/"what is this" content, regardless of whether
+        # that chunk happens to be named "Overview" (see the markdown
+        # leading-section fix) or something else.
+        row = self.connection.execute(
+            """
+            select object_id, repository, repository_url, commit_sha, path, start_line, end_line,
+                   symbol, object_type, language, license, raw_content, metadata_json
+            from source_object
+            where repository = ? and path = 'README.md'
+            order by start_line
+            limit 1
+            """,
+            (repository,),
+        ).fetchone()
+        if row is None:
+            return None
+        return SearchCandidate(
+            object_id=row["object_id"],
+            repository=row["repository"],
+            repository_url=row["repository_url"],
+            commit=row["commit_sha"],
+            path=row["path"],
+            start_line=int(row["start_line"]),
+            end_line=int(row["end_line"]),
+            symbol=row["symbol"],
+            object_type=row["object_type"],
+            language=row["language"],
+            license=row["license"],
+            raw_content=row["raw_content"],
+            metadata=json.loads(row["metadata_json"]),
+        )
+
     def parsed_objects(self) -> list[ParsedObject]:
         rows = self.connection.execute(
             "select metadata_json from source_object order by repository, path, start_line"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from urllib import error
 
 from physicscode_science.models import SearchCandidate, SearchQuery, SearchResult
@@ -34,7 +35,7 @@ def search(store: ScienceStore, query: SearchQuery) -> list[SearchResult]:
     fused, source_channels = reciprocal_rank_fusion({key: value for key, value in channels.items() if value})
     ranked_candidates = _rank(query, by_id, fused, source_channels)
     dense_requested = "dense" in set(query.retrieval_channels)
-    return [
+    results = [
         _result(
             item,
             source_channels[item.candidate.object_id],
@@ -43,6 +44,58 @@ def search(store: ScienceStore, query: SearchQuery) -> list[SearchResult]:
         )
         for item in ranked_candidates
     ]
+    results.extend(_identity_grounding_results(store, query, {result.result_id for result in results}))
+    return results
+
+
+def _identity_grounding_results(
+    store: ScienceStore,
+    query: SearchQuery,
+    already_included: set[str],
+) -> list[SearchResult]:
+    # A compound question ("tell me about <specific topic> in <project>")
+    # can have its whole evidence budget consumed by topic-specific content
+    # that legitimately outranks generic project info — crowding out basic
+    # "what is <project>" grounding even when the project is named right in
+    # the query. Without that, the model has no retrieved fact to cite for
+    # something like an acronym expansion and guesses instead. Always pin
+    # the named project's own README overview alongside the ranked results.
+    query_lower = query.query.lower()
+    if not query_lower:
+        return []
+    bonus: list[SearchResult] = []
+    for repository in store.distinct_repositories():
+        if not re.search(rf"\b{re.escape(repository.lower())}\b", query_lower):
+            continue
+        candidate = store.repository_overview(repository)
+        if candidate is None or candidate.object_id in already_included:
+            continue
+        bonus.append(
+            SearchResult(
+                result_id=candidate.object_id,
+                repository=candidate.repository,
+                repository_url=candidate.repository_url,
+                commit=candidate.commit,
+                path=candidate.path,
+                start_line=candidate.start_line,
+                end_line=candidate.end_line,
+                symbol=candidate.symbol,
+                object_type=candidate.object_type,
+                language=candidate.language,
+                license=candidate.license,
+                score=0.0,
+                retrieval_channels=("identity-grounding",),
+                reason=(
+                    f"Pinned: project overview for '{repository}', named directly in the query — "
+                    "keeps identity facts (e.g. what an acronym stands for) grounded even when the "
+                    "rest of the query is about something more specific that outranks it."
+                ),
+                explanation={"reranker": "identity-grounding-pin"},
+                summary=_summary(candidate),
+                content=candidate.raw_content if query.include_content else None,
+            )
+        )
+    return bonus
 
 
 def _rank(

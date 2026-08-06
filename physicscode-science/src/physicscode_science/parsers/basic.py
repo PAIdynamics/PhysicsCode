@@ -94,6 +94,27 @@ def _matches_for_language(
             )
             if limit is not None and len(objects) >= limit:
                 break
+    if language in {"markdown", "restructuredtext"} and objects:
+        # Content before the first heading (title, badges, the one-paragraph
+        # "what this project is" blurb) had no heading match to attach to
+        # and was silently dropped entirely — never indexed as any object,
+        # in any file with at least one heading. That's often the highest-
+        # value descriptive text in a README (e.g. what an acronym expands
+        # to), so capture it as a leading section instead of losing it.
+        first_heading_line = int(objects[0]["line"])
+        leading = [line for line in lines[: first_heading_line - 1] if line.strip()]
+        if leading:
+            objects.insert(
+                0,
+                {
+                    "object_type": "documentation-section",
+                    "name": "Overview",
+                    "signature": leading[0].strip()[:200],
+                    "line": 1,
+                },
+            )
+            if limit is not None and len(objects) > limit:
+                objects = objects[:limit]
     return objects
 
 

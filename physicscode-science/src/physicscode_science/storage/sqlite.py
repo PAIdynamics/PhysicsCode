@@ -8,6 +8,7 @@ from pathlib import Path
 
 from physicscode_science.graph.relationships import Relationship
 from physicscode_science.models import ParsedObject, RepositoryRevision, SearchCandidate, SearchQuery, SourceFile
+from physicscode_science.retrieval.tokenize import tokenize
 
 # Callers that genuinely want the whole matching set (index building) already
 # pass a large sentinel top_k (e.g. 1_000_000) by convention — anything below
@@ -270,20 +271,46 @@ class ScienceStore:
                 tuple(values),
             ).fetchall()
         else:
+            # An arbitrary object_id-ordered sample silently drops whatever
+            # doesn't land in the first DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY
+            # rows by hash order, regardless of relevance — for any
+            # repository bigger than the cap (most of them now), that can
+            # exclude the actual best match from ever reaching scoring.
+            # Prefer objects whose path/symbol mention a query term instead,
+            # falling back to object_id only as a stable tie-break. Path/
+            # symbol matches (e.g. a "P3M" in the filename) are a strong,
+            # precise signal, weighted above a content-only match — but
+            # content matters too: a natural-language question ("what does
+            # IPPL stand for") often names something (the repo/project
+            # itself) that appears in a chunk's prose but not its path or
+            # symbol at all (e.g. a README's untitled leading section).
+            terms = sorted({term for term in tokenize(query.query) if len(term) >= 3}, key=len, reverse=True)[:8]
+            match_score_sql = "0"
+            match_values: list[str] = []
+            if terms:
+                match_score_sql = " + ".join(
+                    "(case when path like ? or symbol like ? then 2"
+                    " when substr(raw_content, 1, 3000) like ? then 1"
+                    " else 0 end)"
+                    for _ in terms
+                )
+                for term in terms:
+                    pattern = f"%{term}%"
+                    match_values.extend([pattern, pattern, pattern])
             rows = self.connection.execute(
                 f"""
                 select object_id, repository, repository_url, commit_sha, path, start_line, end_line,
                        symbol, object_type, language, license, raw_content, metadata_json
                 from (
                     select *, row_number() over (
-                        partition by repository order by object_id
+                        partition by repository order by ({match_score_sql}) desc, object_id
                     ) as rn
                     from source_object
                     {where}
                 )
                 where rn <= ?
                 """,
-                (*values, DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY),
+                (*match_values, *values, DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY),
             ).fetchall()
         candidates = [
             SearchCandidate(

@@ -3,7 +3,7 @@
   "version": "1.14.31",
   "name": "physicscode",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "typecheck": "tsgo --noEmit",

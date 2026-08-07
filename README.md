@@ -4,8 +4,9 @@
 
 # physicscode
 
-physicscode is a source-available agentic AI coding environment for
-physics-focused software, simulations, analysis, and research engineering.
+physicscode is an open source (MIT-licensed) agentic AI coding environment for
+physics-focused software, simulations, analysis, and research engineering,
+built by [PAI Dynamics](https://paidynamics.ch).
 
 ## Install
 
@@ -122,5 +123,8 @@ is `paidynamicsch.physicscode`. If publishing from a new machine, first run
 
 ## License
 
-Original physicscode materials are proprietary and governed by the root
-[`LICENSE`](./LICENSE).
+PhysicsCode is MIT licensed — see [`LICENSE`](./LICENSE).
+
+PhysicsCode started as a fork of OpenCode and has since diverged
+significantly for physics-focused workflows. Notices for OpenCode and other
+third-party materials are preserved in [`Licenses`](./Licenses).

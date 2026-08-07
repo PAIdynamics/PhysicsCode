@@ -111,7 +111,7 @@
     "type": "git",
     "url": "https://github.com/anomalyco/physicscode"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "prettier": {
     "semi": false,
     "printWidth": 120

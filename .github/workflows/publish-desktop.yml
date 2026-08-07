@@ -1,0 +1,131 @@
+name: publish-desktop
+
+# Minimal, unsigned desktop release pipeline for PAIdynamics/code.
+#
+# This is intentionally simpler than publish.yml (which is upstream opencode's
+# pipeline, gated to github.repository == 'anomalyco/physicscode' and wired to
+# their Blacksmith runners, Apple/Azure signing, and custom GitHub App -- none
+# of which exist here). This workflow builds unsigned Tauri installers on
+# standard GitHub-hosted runners and publishes them as a GitHub Release on
+# this repo. Upgrade path to real code signing: add APPLE_CERTIFICATE(_PASSWORD),
+# APPLE_API_KEY(_ISSUER), and Windows signing secrets, then mirror the signing
+# steps from publish.yml's build-tauri job.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. 1.15.0 (no leading v)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency: ${{ github.workflow }}-${{ inputs.version }}
+
+jobs:
+  build-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+
+      - uses: ./.github/actions/setup-bun
+
+      - name: Build CLI binaries for all platforms
+        run: ./packages/physicscode/script/build.ts
+        env:
+          PHYSICSCODE_VERSION: ${{ inputs.version }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: physicscode-cli
+          path: |
+            packages/physicscode/dist/physicscode-darwin*
+            packages/physicscode/dist/physicscode-linux*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: physicscode-cli-windows
+          path: packages/physicscode/dist/physicscode-windows*
+
+  build-tauri:
+    needs: build-cli
+    continue-on-error: false
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: macos-13
+            target: x86_64-apple-darwin
+          - host: macos-latest
+            target: aarch64-apple-darwin
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - host: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+    runs-on: ${{ matrix.settings.host }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+
+      - uses: ./.github/actions/setup-bun
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: install Linux dependencies
+        if: contains(matrix.settings.host, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.settings.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/desktop/src-tauri
+          shared-key: ${{ matrix.settings.target }}
+
+      - name: Prepare sidecar
+        working-directory: packages/desktop
+        run: bun ./scripts/prepare.ts
+        env:
+          PHYSICSCODE_VERSION: ${{ inputs.version }}
+          PHYSICSCODE_CLI_ARTIFACT: ${{ (runner.os == 'Windows' && 'physicscode-cli-windows') || 'physicscode-cli' }}
+          RUST_TARGET: ${{ matrix.settings.target }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+
+      - name: Build and upload artifacts
+        uses: tauri-apps/tauri-action@390cbe447412ced1303d35abe75287949e43437a
+        timeout-minutes: 60
+        with:
+          projectPath: packages/desktop
+          args: --target ${{ matrix.settings.target }} --config ./src-tauri/tauri.prod.conf.json --verbose
+          tagName: v${{ inputs.version }}
+          releaseName: "PhysicsCode v${{ inputs.version }}"
+          releaseDraft: true
+          releaseAssetNamePattern: physicscode-desktop-[platform]-[arch][ext]
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+  publish:
+    needs: build-tauri
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish release (flip off draft)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "v${{ inputs.version }}" --draft=false --repo "${{ github.repository }}"

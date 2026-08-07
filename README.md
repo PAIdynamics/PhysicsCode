@@ -22,24 +22,30 @@ Run the CLI/TUI locally:
 bun run dev
 ```
 
-Run the desktop app locally:
+Run the desktop app locally (Tauri, the primary desktop shell):
 
 ```bash
 bun run dev:desktop
 ```
 
+This requires the Rust toolchain and platform Tauri prerequisites — see
+[packages/desktop/README.md](packages/desktop/README.md) and the
+[Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/).
+
 Build the downloadable desktop app:
 
 ```bash
-cd packages/desktop-electron
-bun run package:mac
+cd packages/desktop
+bun run tauri build
 ```
 
-Packaged desktop artifacts are written to `packages/desktop-electron/dist/`.
-On macOS, open the unpacked app directly from
-`packages/desktop-electron/dist/mac-arm64/PhysicsCode Dev.app` or install from
-the generated `physicscode-electron-mac-arm64.dmg`. The `.zip` in the same
-directory is the update/download archive.
+Packaged desktop artifacts are written under
+`packages/desktop/src-tauri/target/release/bundle/` (per-platform
+subdirectories, e.g. `dmg/`, `deb/`, `rpm/`, `nsis/`).
+
+An Electron build of the same UI also exists in `packages/desktop-electron`
+(`bun run dev:desktop:electron`) but is being phased out in favor of Tauri —
+see that package's README for status.
 
 Build the CLI executable:
 

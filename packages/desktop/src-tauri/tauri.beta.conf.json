@@ -30,8 +30,8 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYwMDM5Nzg5OUMzOUExMDQKUldRRW9UbWNpWmNEOENYT01CV0lhOXR1UFhpaXJsK1Z3aU9lZnNtNzE0TDROWVMwVW9XQnFOelkK",
-      "endpoints": ["https://github.com/anomalyco/physicscode-beta/releases/latest/download/latest.json"]
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZBQkM2QkU2Q0NDODFBQUEKUldTcUdzak01bXU4K2t6ZThLNVdWU3ZiOURFbENaek9Pdzg4TEZVU3Y0b0ErT3g0S3FrUVFYUnYK",
+      "endpoints": ["https://github.com/PAIdynamics/code/releases/latest/download/latest.json"]
     }
   }
 }

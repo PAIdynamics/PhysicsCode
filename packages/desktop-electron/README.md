@@ -1,6 +1,12 @@
-# PhysicsCode Desktop
+# PhysicsCode Desktop (Electron)
 
-Native PhysicsCode desktop app, built with Tauri v2.
+Native PhysicsCode desktop app, built with Electron.
+
+> **Status:** this is the legacy desktop shell. The primary desktop shell is
+> now [packages/desktop](../desktop) (Tauri) — smaller installers, a fully
+> permissive dependency stack, and the same shared UI from
+> [packages/app](../app). This Electron build is kept around while the Tauri
+> build is validated end-to-end, and will be removed once that's confirmed.
 
 ## Development
 
@@ -8,25 +14,13 @@ From the repo root:
 
 ```bash
 bun install
-bun run --cwd packages/desktop tauri dev
-```
-
-This starts the Vite dev server on http://localhost:1420 and opens the native window.
-
-If you only want the web dev server (no native shell):
-
-```bash
-bun run --cwd packages/desktop dev
+bun run dev:desktop:electron
 ```
 
 ## Build
 
-To create a production `dist/` and build the native app bundle:
-
 ```bash
-bun run --cwd packages/desktop tauri build
+bun run --cwd packages/desktop-electron package:mac   # or package:win / package:linux
 ```
 
-## Prerequisites
-
-Running the desktop app requires additional Tauri dependencies (Rust toolchain, platform-specific libraries). See the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for setup instructions.
+Packaged artifacts are written to `packages/desktop-electron/dist/`.

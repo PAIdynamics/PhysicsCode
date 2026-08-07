@@ -31,7 +31,7 @@ export async function GET({ params: { platform, channel } }: APIEvent) {
   if (!assetName) return new Response(null, { status: 404 })
 
   const resp = await fetch(
-    `https://github.com/anomalyco/${channel === "stable" ? "physicscode" : "physicscode-beta"}/releases/latest/download/${assetName}`,
+    `https://github.com/PAIdynamics/code/releases/latest/download/${assetName}`,
     {
       cf: {
         // in case gh releases has rate limits

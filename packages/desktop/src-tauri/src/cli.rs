@@ -1,4 +1,4 @@
-use futures::{FutureExt, Stream, StreamExt, future};
+use futures::{Stream, StreamExt, future};
 use process_wrap::tokio::CommandWrap;
 #[cfg(unix)]
 use process_wrap::tokio::ProcessGroup;
@@ -44,17 +44,6 @@ const CLI_INSTALL_DIR: &str = ".physicscode/bin";
 const CLI_BINARY_NAME: &str = "physicscode";
 const SHELL_ENV_TIMEOUT: Duration = Duration::from_secs(5);
 
-#[derive(serde::Deserialize, Debug)]
-pub struct ServerConfig {
-    pub hostname: Option<String>,
-    pub port: Option<u32>,
-}
-
-#[derive(serde::Deserialize, Debug)]
-pub struct Config {
-    pub server: Option<ServerConfig>,
-}
-
 #[derive(Clone, Debug)]
 pub enum CommandEvent {
     Stdout(String),
@@ -80,25 +69,6 @@ impl CommandChild {
             .try_send(())
             .map_err(|e| std::io::Error::other(e.to_string()))
     }
-}
-
-pub async fn get_config(app: &AppHandle) -> Option<Config> {
-    let (events, _) = spawn_command(app, "debug config", &[]).ok()?;
-
-    events
-        .fold(String::new(), async |mut config_str, event| {
-            if let CommandEvent::Stdout(s) = &event {
-                config_str += s.as_str()
-            }
-            if let CommandEvent::Stderr(s) = &event {
-                config_str += s.as_str()
-            }
-
-            config_str
-        })
-        .map(|v| serde_json::from_str::<Config>(&v))
-        .await
-        .ok()
 }
 
 fn get_cli_install_path() -> Option<std::path::PathBuf> {

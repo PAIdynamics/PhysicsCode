@@ -14,6 +14,7 @@ import { createEffect, createMemo, createSignal, For, on, ParentProps, Show } fr
 import { createStore } from "solid-js/store"
 import { Dynamic } from "solid-js/web"
 import { AssistantParts, Message, MessageDivider, PART_MAPPING, type UserActions } from "./message-part"
+import { Button } from "./button"
 import { Card } from "./card"
 import { Accordion } from "./accordion"
 import { StickyAccordionHeader } from "./sticky-accordion-header"
@@ -155,6 +156,7 @@ export function SessionTurn(
     active?: boolean
     status?: SessionStatus
     onUserInteracted?: () => void
+    onPaidynamicsLogin?: () => void
     classes?: {
       root?: string
       content?: string
@@ -313,6 +315,12 @@ export function SessionTurn(
     if (msg === undefined || msg === null) return ""
     // oxlint-disable-next-line no-base-to-string -- msg is unknown from error data, coercion is intentional
     return unwrap(String(msg))
+  })
+  const paidynamicsLoginRequired = createMemo(() => {
+    const err = error()
+    if (err?.name !== "ProviderAuthError") return false
+    const data = err.data as { providerID?: string } | undefined
+    return data?.providerID === "paidynamics"
   })
 
   const status = createMemo(() => {
@@ -520,7 +528,14 @@ export function SessionTurn(
               </Show>
               <Show when={error()}>
                 <Card variant="error" class="error-card">
-                  {errorText()}
+                  <div class="flex flex-col items-start gap-2">
+                    <div>{errorText()}</div>
+                    <Show when={paidynamicsLoginRequired() && props.onPaidynamicsLogin}>
+                      <Button type="button" size="small" variant="secondary" onClick={() => props.onPaidynamicsLogin?.()}>
+                        Log in to PhysicsCode
+                      </Button>
+                    </Show>
+                  </div>
                 </Card>
               </Show>
             </div>

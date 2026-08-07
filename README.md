@@ -4,8 +4,9 @@
 
 # physicscode
 
-physicscode is a closed-source agentic AI coding environment for
-physics-focused software, simulations, analysis, and research engineering.
+physicscode is a source-available agentic AI coding environment for
+physics-focused software, simulations, analysis, and research engineering. It's
+built on [OpenCode](https://github.com/anomalyco/opencode).
 
 ## Install
 
@@ -50,6 +51,45 @@ bun run build
 The build outputs platform-specific executables under
 `packages/physicscode/dist/`. Those binaries are the artifacts to publish for
 users who want to download and run physicscode directly.
+
+## Connect a Model Provider
+
+physicscode doesn't ship with any API keys — you connect your own. It supports
+75+ providers (Anthropic, OpenAI, Google, Azure, Bedrock, local models, and
+more) via [Models.dev](https://models.dev).
+
+**Interactive (recommended):** run physicscode, then inside the TUI run:
+
+```
+/connect
+```
+
+Pick a provider and paste your API key. It's written to
+`~/.local/share/physicscode/auth.json` on your machine — this file is never
+part of the repo and should never be committed anywhere.
+
+**Environment variables:** each provider also reads its standard env var, e.g.
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+export OPENAI_API_KEY=sk-...
+```
+
+**Config file:** provider behavior (base URL, proxies, model allowlists) can
+be set in `physicscode.json` — but never put a live API key in this file:
+
+```json
+{
+  "$schema": "https://physicscode.ai/config.json",
+  "provider": {
+    "anthropic": {
+      "options": { "baseURL": "https://api.anthropic.com/v1" }
+    }
+  }
+}
+```
+
+Full reference: [physicscode.ai/docs/providers](https://physicscode.ai/docs/providers).
 
 ## VS Code Extension
 

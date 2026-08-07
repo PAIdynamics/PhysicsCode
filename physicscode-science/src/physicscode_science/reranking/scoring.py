@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from physicscode_science.models import SearchCandidate
-from physicscode_science.retrieval.tokenize import split_identifier, tokenize
+from physicscode_science.retrieval.tokenize import STOPWORDS, significant_terms, split_identifier, tokenize
 from physicscode_science.retrieval.views import generated_view_text, scientific_metadata_text
 
 
@@ -20,7 +20,7 @@ def rerank_candidates(
     fused_scores: dict[str, float],
     channels: dict[str, tuple[str, ...]],
 ) -> list[RankedCandidate]:
-    query_terms = set(tokenize(query))
+    query_terms = set(significant_terms(query))
     ranked = [
         _rank_candidate(query_terms, candidate, fused_scores.get(candidate.object_id, 0.0), channels.get(candidate.object_id, ()))
         for candidate in candidates

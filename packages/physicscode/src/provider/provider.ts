@@ -146,6 +146,8 @@ function useLanguageModel(sdk: any) {
 
 function custom(dep: CustomDep): Record<string, CustomLoader> {
   const hasProviderCredential = async (provider: Info) => {
+    const auth = await Effect.runPromise(dep.auth(provider.id))
+    if (auth?.type === "oauth") return true
     return Boolean(await providerCredential(provider))
   }
 

@@ -59,7 +59,10 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-13
+          # macos-13 (the last Intel-hosted runner image) has been retired by
+          # GitHub; cross-compile x86_64 from the arm64 macos-latest image
+          # instead -- Xcode's toolchain links both Apple targets natively.
+          - host: macos-latest
             target: x86_64-apple-darwin
           - host: macos-latest
             target: aarch64-apple-darwin

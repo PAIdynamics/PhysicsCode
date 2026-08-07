@@ -54,6 +54,20 @@ export type EventGlobalDisposed = {
   }
 }
 
+export type EventInstallationUpdated = {
+  type: "installation.updated"
+  properties: {
+    version: string
+  }
+}
+
+export type EventInstallationUpdateAvailable = {
+  type: "installation.update-available"
+  properties: {
+    version: string
+  }
+}
+
 export type EventFileEdited = {
   type: "file.edited"
   properties: {
@@ -213,20 +227,6 @@ export type EventSessionError = {
       | StructuredOutputError
       | ContextOverflowError
       | ApiError
-  }
-}
-
-export type EventInstallationUpdated = {
-  type: "installation.updated"
-  properties: {
-    version: string
-  }
-}
-
-export type EventInstallationUpdateAvailable = {
-  type: "installation.update-available"
-  properties: {
-    version: string
   }
 }
 
@@ -1115,6 +1115,8 @@ export type GlobalEvent = {
     | EventServerInstanceDisposed
     | EventServerConnected
     | EventGlobalDisposed
+    | EventInstallationUpdated
+    | EventInstallationUpdateAvailable
     | EventFileEdited
     | EventFileWatcherUpdated
     | EventLspClientDiagnostics
@@ -1124,8 +1126,6 @@ export type GlobalEvent = {
     | EventPermissionReplied
     | EventSessionDiff
     | EventSessionError
-    | EventInstallationUpdated
-    | EventInstallationUpdateAvailable
     | EventQuestionAsked
     | EventQuestionReplied
     | EventQuestionRejected
@@ -2058,6 +2058,8 @@ export type Event =
   | EventServerInstanceDisposed
   | EventServerConnected
   | EventGlobalDisposed
+  | EventInstallationUpdated
+  | EventInstallationUpdateAvailable
   | EventFileEdited
   | EventFileWatcherUpdated
   | EventLspClientDiagnostics
@@ -2067,8 +2069,6 @@ export type Event =
   | EventPermissionReplied
   | EventSessionDiff
   | EventSessionError
-  | EventInstallationUpdated
-  | EventInstallationUpdateAvailable
   | EventQuestionAsked
   | EventQuestionReplied
   | EventQuestionRejected
@@ -3049,6 +3049,142 @@ export type ExperimentalConsoleSwitchOrgResponses = {
 
 export type ExperimentalConsoleSwitchOrgResponse =
   ExperimentalConsoleSwitchOrgResponses[keyof ExperimentalConsoleSwitchOrgResponses]
+
+export type ExperimentalConsoleLoginData = {
+  body?: {
+    url: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/experimental/console/login"
+}
+
+export type ExperimentalConsoleLoginResponses = {
+  /**
+   * Device code login started
+   */
+  200: {
+    code: string
+    user: string
+    url: string
+    server: string
+    expiryMs: number
+    intervalMs: number
+  }
+}
+
+export type ExperimentalConsoleLoginResponse =
+  ExperimentalConsoleLoginResponses[keyof ExperimentalConsoleLoginResponses]
+
+export type ExperimentalConsoleLoginPollData = {
+  body?: {
+    code: string
+    user: string
+    url: string
+    server: string
+    expiryMs: number
+    intervalMs: number
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/experimental/console/login/poll"
+}
+
+export type ExperimentalConsoleLoginPollResponses = {
+  /**
+   * Poll result
+   */
+  200:
+    | {
+        status: "success"
+        email: string
+      }
+    | {
+        status: "pending"
+      }
+    | {
+        status: "slow"
+      }
+    | {
+        status: "expired"
+      }
+    | {
+        status: "denied"
+      }
+    | {
+        status: "error"
+        message: string
+      }
+}
+
+export type ExperimentalConsoleLoginPollResponse =
+  ExperimentalConsoleLoginPollResponses[keyof ExperimentalConsoleLoginPollResponses]
+
+export type ExperimentalConsoleLoginApiKeyData = {
+  body?: {
+    url: string
+    apiKey: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/experimental/console/login/api-key"
+}
+
+export type ExperimentalConsoleLoginApiKeyErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type ExperimentalConsoleLoginApiKeyError =
+  ExperimentalConsoleLoginApiKeyErrors[keyof ExperimentalConsoleLoginApiKeyErrors]
+
+export type ExperimentalConsoleLoginApiKeyResponses = {
+  /**
+   * Logged in account
+   */
+  200: {
+    id: string
+    email: string
+    url: string
+    activeOrgID: string | null
+  }
+}
+
+export type ExperimentalConsoleLoginApiKeyResponse =
+  ExperimentalConsoleLoginApiKeyResponses[keyof ExperimentalConsoleLoginApiKeyResponses]
+
+export type ExperimentalConsoleLogoutData = {
+  body?: {
+    accountID: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/experimental/console/logout"
+}
+
+export type ExperimentalConsoleLogoutResponses = {
+  /**
+   * Logout success
+   */
+  200: boolean
+}
+
+export type ExperimentalConsoleLogoutResponse =
+  ExperimentalConsoleLogoutResponses[keyof ExperimentalConsoleLogoutResponses]
 
 export type ToolIdsData = {
   body?: never

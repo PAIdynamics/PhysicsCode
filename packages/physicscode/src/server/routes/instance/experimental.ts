@@ -15,7 +15,7 @@ import { Account } from "@/account/account"
 import { AccountID, OrgID } from "@/account/schema"
 import { errors } from "../../error"
 import { lazy } from "@/util/lazy"
-import { Effect, Option } from "effect"
+import { Duration, Effect, Option } from "effect"
 import { Agent } from "@/agent/agent"
 import { jsonRequest, runRequest } from "./trace"
 
@@ -36,6 +36,83 @@ const ConsoleSwitchBody = z.object({
   accountID: z.string(),
   orgID: z.string(),
 })
+
+// Account.Login/PollResult carry Effect Duration/Defect fields that the
+// Effect-Schema -> Zod walker can't derive a JSON schema for, so these routes
+// use hand-rolled wire shapes (ms instead of Duration, string instead of
+// Defect) rather than deriving directly from the Effect Schema classes.
+const ConsoleLoginStart = z.object({
+  code: z.string(),
+  user: z.string(),
+  url: z.string(),
+  server: z.string(),
+  expiryMs: z.number(),
+  intervalMs: z.number(),
+})
+
+function toWireLogin(login: Account.Login) {
+  return {
+    code: login.code,
+    user: login.user,
+    url: login.url,
+    server: login.server,
+    expiryMs: Duration.toMillis(login.expiry),
+    intervalMs: Duration.toMillis(login.interval),
+  }
+}
+
+function fromWireLogin(body: z.infer<typeof ConsoleLoginStart>): Account.Login {
+  return Account.Login.make({
+    code: Account.DeviceCode.make(body.code),
+    user: Account.UserCode.make(body.user),
+    url: body.url,
+    server: body.server,
+    expiry: Duration.millis(body.expiryMs),
+    interval: Duration.millis(body.intervalMs),
+  })
+}
+
+const ConsoleLoginPollResult = z.discriminatedUnion("status", [
+  z.object({ status: z.literal("success"), email: z.string() }),
+  z.object({ status: z.literal("pending") }),
+  z.object({ status: z.literal("slow") }),
+  z.object({ status: z.literal("expired") }),
+  z.object({ status: z.literal("denied") }),
+  z.object({ status: z.literal("error"), message: z.string() }),
+])
+
+function toWirePollResult(result: Account.PollResult): z.infer<typeof ConsoleLoginPollResult> {
+  switch (result._tag) {
+    case "PollSuccess":
+      return { status: "success", email: result.email }
+    case "PollPending":
+      return { status: "pending" }
+    case "PollSlow":
+      return { status: "slow" }
+    case "PollExpired":
+      return { status: "expired" }
+    case "PollDenied":
+      return { status: "denied" }
+    case "PollError":
+      return { status: "error", message: String(result.cause) }
+  }
+}
+
+const ConsoleAccount = z.object({
+  id: z.string(),
+  email: z.string(),
+  url: z.string(),
+  activeOrgID: z.string().nullable(),
+})
+
+function toWireAccount(info: Account.Info): z.infer<typeof ConsoleAccount> {
+  return {
+    id: info.id,
+    email: info.email,
+    url: info.url,
+    activeOrgID: info.active_org_id,
+  }
+}
 
 const QueryBoolean = z.union([
   z.preprocess((value) => (value === "true" ? true : value === "false" ? false : value), z.boolean()),
@@ -139,6 +216,113 @@ export const ExperimentalRoutes = lazy(() =>
           const body = c.req.valid("json")
           const account = yield* Account.Service
           yield* account.use(AccountID.make(body.accountID), Option.some(OrgID.make(body.orgID)))
+          return true
+        }),
+    )
+    .post(
+      "/console/login",
+      describeRoute({
+        summary: "Start Console device-code login",
+        description:
+          "Begin an OAuth device-code login against a Console server. Returns a URL and user code to present to " +
+          "the user, plus the poll interval/expiry (in ms) -- pass the returned object as-is to /console/login/poll.",
+        operationId: "experimental.console.login",
+        responses: {
+          200: {
+            description: "Device code login started",
+            content: {
+              "application/json": {
+                schema: resolver(ConsoleLoginStart),
+              },
+            },
+          },
+        },
+      }),
+      validator("json", z.object({ url: z.string() })),
+      async (c) =>
+        jsonRequest("ExperimentalRoutes.console.login", c, function* () {
+          const body = c.req.valid("json")
+          const account = yield* Account.Service
+          return toWireLogin(yield* account.login(body.url))
+        }),
+    )
+    .post(
+      "/console/login/poll",
+      describeRoute({
+        summary: "Poll Console device-code login",
+        description:
+          "Poll the status of a device-code login started via /console/login. Pass the exact object returned by " +
+          "that endpoint. Call repeatedly (respecting `intervalMs`, and the longer interval on a `slow` result) " +
+          "until the status is no longer `pending`/`slow`.",
+        operationId: "experimental.console.loginPoll",
+        responses: {
+          200: {
+            description: "Poll result",
+            content: {
+              "application/json": {
+                schema: resolver(ConsoleLoginPollResult),
+              },
+            },
+          },
+        },
+      }),
+      validator("json", ConsoleLoginStart),
+      async (c) =>
+        jsonRequest("ExperimentalRoutes.console.loginPoll", c, function* () {
+          const body = c.req.valid("json")
+          const account = yield* Account.Service
+          return toWirePollResult(yield* account.poll(fromWireLogin(body)))
+        }),
+    )
+    .post(
+      "/console/login/api-key",
+      describeRoute({
+        summary: "Log in to Console with a personal API key",
+        description: "Log in to a Console server using a personal API key instead of the device-code flow.",
+        operationId: "experimental.console.loginApiKey",
+        responses: {
+          200: {
+            description: "Logged in account",
+            content: {
+              "application/json": {
+                schema: resolver(ConsoleAccount),
+              },
+            },
+          },
+          ...errors(400),
+        },
+      }),
+      validator("json", z.object({ url: z.string(), apiKey: z.string() })),
+      async (c) =>
+        jsonRequest("ExperimentalRoutes.console.loginApiKey", c, function* () {
+          const body = c.req.valid("json")
+          const account = yield* Account.Service
+          return toWireAccount(yield* account.loginWithApiKey(body.url, body.apiKey))
+        }),
+    )
+    .post(
+      "/console/logout",
+      describeRoute({
+        summary: "Log out of a Console account",
+        description: "Remove a logged-in Console account.",
+        operationId: "experimental.console.logout",
+        responses: {
+          200: {
+            description: "Logout success",
+            content: {
+              "application/json": {
+                schema: resolver(z.boolean()),
+              },
+            },
+          },
+        },
+      }),
+      validator("json", z.object({ accountID: z.string() })),
+      async (c) =>
+        jsonRequest("ExperimentalRoutes.console.logout", c, function* () {
+          const body = c.req.valid("json")
+          const account = yield* Account.Service
+          yield* account.remove(AccountID.make(body.accountID))
           return true
         }),
     )

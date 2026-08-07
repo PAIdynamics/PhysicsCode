@@ -26,6 +26,11 @@ import type {
   EventTuiToastShow,
   ExperimentalConsoleGetResponses,
   ExperimentalConsoleListOrgsResponses,
+  ExperimentalConsoleLoginApiKeyErrors,
+  ExperimentalConsoleLoginApiKeyResponses,
+  ExperimentalConsoleLoginPollResponses,
+  ExperimentalConsoleLoginResponses,
+  ExperimentalConsoleLogoutResponses,
   ExperimentalConsoleSwitchOrgResponses,
   ExperimentalResourceListResponses,
   ExperimentalSessionListResponses,
@@ -827,6 +832,170 @@ export class Console extends HeyApiClient {
     )
     return (options?.client ?? this.client).post<ExperimentalConsoleSwitchOrgResponses, unknown, ThrowOnError>({
       url: "/experimental/console/switch",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Start Console device-code login
+   *
+   * Begin an OAuth device-code login against a Console server. Returns a URL and user code to present to the user, plus the poll interval/expiry (in ms) -- pass the returned object as-is to /console/login/poll.
+   */
+  public login<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+      url?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "url" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<ExperimentalConsoleLoginResponses, unknown, ThrowOnError>({
+      url: "/experimental/console/login",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Poll Console device-code login
+   *
+   * Poll the status of a device-code login started via /console/login. Pass the exact object returned by that endpoint. Call repeatedly (respecting `intervalMs`, and the longer interval on a `slow` result) until the status is no longer `pending`/`slow`.
+   */
+  public loginPoll<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+      code?: string
+      user?: string
+      url?: string
+      server?: string
+      expiryMs?: number
+      intervalMs?: number
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "code" },
+            { in: "body", key: "user" },
+            { in: "body", key: "url" },
+            { in: "body", key: "server" },
+            { in: "body", key: "expiryMs" },
+            { in: "body", key: "intervalMs" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<ExperimentalConsoleLoginPollResponses, unknown, ThrowOnError>({
+      url: "/experimental/console/login/poll",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Log in to Console with a personal API key
+   *
+   * Log in to a Console server using a personal API key instead of the device-code flow.
+   */
+  public loginApiKey<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+      url?: string
+      apiKey?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "url" },
+            { in: "body", key: "apiKey" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      ExperimentalConsoleLoginApiKeyResponses,
+      ExperimentalConsoleLoginApiKeyErrors,
+      ThrowOnError
+    >({
+      url: "/experimental/console/login/api-key",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Log out of a Console account
+   *
+   * Remove a logged-in Console account.
+   */
+  public logout<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+      accountID?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "accountID" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<ExperimentalConsoleLogoutResponses, unknown, ThrowOnError>({
+      url: "/experimental/console/logout",
       ...options,
       ...params,
       headers: {

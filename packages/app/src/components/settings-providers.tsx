@@ -9,6 +9,7 @@ import { useLanguage } from "@/context/language"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { DialogConnectProvider } from "./dialog-connect-provider"
+import { DialogPaidynamicsLogin } from "./dialog-paidynamics-login"
 import { DialogSelectProvider } from "./dialog-select-provider"
 import { DialogCustomProvider } from "./dialog-custom-provider"
 import { SettingsList } from "./settings-list"
@@ -199,6 +200,10 @@ export const SettingsProviders: Component = () => {
                     variant="secondary"
                     icon="plus-small"
                     onClick={() => {
+                      if (item.id === "paidynamics") {
+                        dialog.show(() => <DialogPaidynamicsLogin back="providers" />)
+                        return
+                      }
                       dialog.show(() => <DialogConnectProvider provider={item.id} />)
                     }}
                   >

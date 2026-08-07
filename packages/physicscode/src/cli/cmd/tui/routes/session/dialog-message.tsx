@@ -6,6 +6,7 @@ import { useRoute } from "@tui/context/route"
 import * as Clipboard from "@tui/util/clipboard"
 import type { PromptInfo } from "@tui/component/prompt/history"
 import { strip } from "@tui/component/prompt/part"
+import { useToast } from "@tui/ui/toast"
 
 export function DialogMessage(props: {
   messageID: string
@@ -14,6 +15,7 @@ export function DialogMessage(props: {
 }) {
   const sync = useSync()
   const sdk = useSDK()
+  const toast = useToast()
   const message = createMemo(() => sync.data.message[props.sessionID]?.find((x) => x.id === props.messageID))
   const route = useRoute()
 
@@ -68,7 +70,12 @@ export function DialogMessage(props: {
               return agg
             }, "")
 
-            await Clipboard.copy(text)
+            try {
+              await Clipboard.copy(text)
+              toast.show({ message: "Message copied to clipboard!", variant: "success" })
+            } catch (error) {
+              toast.show({ message: `Failed to copy to clipboard: ${String(error)}`, variant: "error" })
+            }
             dialog.clear()
           },
         },

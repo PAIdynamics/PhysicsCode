@@ -201,10 +201,7 @@ const getCopyMethod = lazy(async () => {
 export async function copy(text: string): Promise<void> {
   writeOsc52(text)
   const method = await getCopyMethod()
-  await method(text).catch((error) => {
-    if (process.stdout.isTTY) return
-    throw error
-  })
+  await method(text)
 }
 
 export * as Clipboard from "./clipboard"

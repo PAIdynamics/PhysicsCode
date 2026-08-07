@@ -56,9 +56,9 @@ export function ErrorComponent(props: {
   issueURL.searchParams.set("physicscode-version", InstallationVersion)
 
   const copyIssueURL = () => {
-    void Clipboard.copy(issueURL.toString()).then(() => {
-      setCopied(true)
-    })
+    void Clipboard.copy(issueURL.toString())
+      .then(() => setCopied(true))
+      .catch(() => {})
   }
 
   return (

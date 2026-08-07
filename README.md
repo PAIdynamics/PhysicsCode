@@ -5,8 +5,7 @@
 # physicscode
 
 physicscode is a source-available agentic AI coding environment for
-physics-focused software, simulations, analysis, and research engineering. It's
-built on [OpenCode](https://github.com/anomalyco/opencode).
+physics-focused software, simulations, analysis, and research engineering.
 
 ## Install
 
@@ -125,6 +124,3 @@ is `paidynamicsch.physicscode`. If publishing from a new machine, first run
 
 Original physicscode materials are proprietary and governed by the root
 [`LICENSE`](./LICENSE).
-
-PhysicsCode is derived from OpenCode. The original OpenCode MIT notice and other
-third-party notices are preserved in [`Licenses`](./Licenses).

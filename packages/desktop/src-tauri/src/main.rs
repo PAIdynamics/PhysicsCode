@@ -19,20 +19,30 @@ fn configure_display_backend() -> Option<String> {
     let prefer_wayland = physicscode_lib::linux_display::read_wayland().unwrap_or(false);
     let decision = select_backend(&session, prefer_wayland)?;
 
+    // Some GPU/driver combos (e.g. proprietary NVIDIA drivers, or a remote-desktop
+    // session that doesn't hold DRM master) reject WebKitGTK's GBM dumb-buffer
+    // allocation with EACCES, leaving the window blank. Disabling DMABUF alone
+    // isn't always enough; forcing software GL sidesteps the GBM path entirely.
+    let set_software_rendering_fallback = || {
+        set_env_if_absent("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        set_env_if_absent("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+        set_env_if_absent("LIBGL_ALWAYS_SOFTWARE", "1");
+    };
+
     match decision.backend {
         Backend::X11 => {
             set_env_if_absent("WINIT_UNIX_BACKEND", "x11");
             set_env_if_absent("GDK_BACKEND", "x11");
-            set_env_if_absent("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+            set_software_rendering_fallback();
         }
         Backend::Wayland => {
             set_env_if_absent("WINIT_UNIX_BACKEND", "wayland");
             set_env_if_absent("GDK_BACKEND", "wayland");
-            set_env_if_absent("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+            set_software_rendering_fallback();
         }
         Backend::Auto => {
             set_env_if_absent("GDK_BACKEND", "wayland,x11");
-            set_env_if_absent("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+            set_software_rendering_fallback();
         }
     }
 

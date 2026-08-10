@@ -245,7 +245,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
           panelOpened: true,
         },
         fileTree: {
-          opened: false,
+          opened: true,
           width: DEFAULT_FILE_TREE_WIDTH,
           tab: "changes" as "changes" | "all",
         },

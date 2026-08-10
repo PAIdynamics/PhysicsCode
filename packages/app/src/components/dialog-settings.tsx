@@ -8,6 +8,7 @@ import { SettingsGeneral } from "./settings-general"
 import { SettingsKeybinds } from "./settings-keybinds"
 import { SettingsProviders } from "./settings-providers"
 import { SettingsModels } from "./settings-models"
+import { SettingsAccount } from "./settings-account"
 
 export const DialogSettings: Component = () => {
   const language = useLanguage()
@@ -37,6 +38,10 @@ export const DialogSettings: Component = () => {
                 <div class="flex flex-col gap-1.5">
                   <Tabs.SectionTitle>{language.t("settings.section.server")}</Tabs.SectionTitle>
                   <div class="flex flex-col gap-1.5 w-full">
+                    <Tabs.Trigger value="account">
+                      <Icon name="providers" />
+                      Account
+                    </Tabs.Trigger>
                     <Tabs.Trigger value="providers">
                       <Icon name="providers" />
                       {language.t("settings.providers.title")}
@@ -60,6 +65,9 @@ export const DialogSettings: Component = () => {
         </Tabs.Content>
         <Tabs.Content value="shortcuts" class="no-scrollbar">
           <SettingsKeybinds />
+        </Tabs.Content>
+        <Tabs.Content value="account" class="no-scrollbar">
+          <SettingsAccount />
         </Tabs.Content>
         <Tabs.Content value="providers" class="no-scrollbar">
           <SettingsProviders />

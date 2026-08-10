@@ -7,9 +7,12 @@ import { TextField } from "@physicscode-ai/ui/text-field"
 import { showToast } from "@physicscode-ai/ui/toast"
 import { useQueryClient } from "@tanstack/solid-query"
 import { createSignal, Show } from "solid-js"
+import { useParams } from "@solidjs/router"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useLanguage } from "@/context/language"
 import { usePlatform } from "@/context/platform"
+import { decode64 } from "@/utils/base64"
+import { directoryKey } from "@/context/global-sync/utils"
 import { DialogSelectProvider } from "./dialog-select-provider"
 
 const PAIDYNAMICS_LOGIN_SERVER = "https://www.physicscode.ai"
@@ -31,6 +34,7 @@ export function DialogPaidynamicsLogin(props: { back?: "providers" | "close" }) 
   const language = useLanguage()
   const platform = usePlatform()
   const queryClient = useQueryClient()
+  const params = useParams<{ dir?: string }>()
 
   const [view, setView] = createSignal<View>("start")
   const [status, setStatus] = createSignal<Status>("idle")
@@ -52,7 +56,16 @@ export function DialogPaidynamicsLogin(props: { back?: "providers" | "close" }) 
 
   const onLoggedIn = async (email: string) => {
     setMessage(`Logged in as ${email}. Refreshing...`)
-    await queryClient.refetchQueries({ queryKey: ["bootstrap"] })
+    // The global "bootstrap" refetch below only covers the directory-less provider
+    // query. When this dialog is opened from an active project (e.g. the inline
+    // login prompt in chat), that project's own provider query is a SEPARATE cache
+    // entry that never gets touched by it -- refresh it too, or the model/provider
+    // selector keeps showing stale "not connected" state until a manual reload.
+    const directory = decode64(params.dir)
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ["bootstrap"] }),
+      directory ? queryClient.refetchQueries({ queryKey: [directoryKey(directory), "providers"] }) : Promise.resolve(),
+    ])
     showToast({
       variant: "success",
       icon: "circle-check",

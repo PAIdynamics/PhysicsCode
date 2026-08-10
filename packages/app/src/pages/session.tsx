@@ -1822,6 +1822,20 @@ export default function Page() {
           </Tabs>
         </Show>
 
+        <SessionSidePanel
+          canReview={canReview}
+          diffs={reviewDiffs}
+          diffsReady={reviewReady}
+          empty={reviewEmptyText}
+          hasReview={hasReview}
+          reviewCount={reviewCount}
+          reviewPanel={reviewPanel}
+          activeDiff={tree.activeDiff}
+          focusReviewDiff={focusReviewDiff}
+          reviewSnap={ui.reviewSnap}
+          size={size}
+        />
+
         {/* Session panel */}
         <div
           classList={{
@@ -1939,6 +1953,7 @@ export default function Page() {
             <div onPointerDown={() => size.start()}>
               <ResizeHandle
                 direction="horizontal"
+                edge="start"
                 size={layout.session.width()}
                 min={450}
                 max={typeof window === "undefined" ? 1000 : window.innerWidth * 0.45}
@@ -1950,20 +1965,6 @@ export default function Page() {
             </div>
           </Show>
         </div>
-
-        <SessionSidePanel
-          canReview={canReview}
-          diffs={reviewDiffs}
-          diffsReady={reviewReady}
-          empty={reviewEmptyText}
-          hasReview={hasReview}
-          reviewCount={reviewCount}
-          reviewPanel={reviewPanel}
-          activeDiff={tree.activeDiff}
-          focusReviewDiff={focusReviewDiff}
-          reviewSnap={ui.reviewSnap}
-          size={size}
-        />
       </div>
 
       <TerminalPanel />

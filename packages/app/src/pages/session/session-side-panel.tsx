@@ -434,7 +434,7 @@ export function SessionSidePanel(props: {
                   </Show>
 
                   <Show when={activeFileTab()} keyed>
-                    {(tab) => <FileTabContent tab={tab} />}
+                    {(tab) => <FileTabContent tab={tab} diffs={props.diffs} />}
                   </Show>
                 </Tabs>
                 <DragOverlay>

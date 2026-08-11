@@ -6,7 +6,9 @@ import type { FileSearchHandle } from "@physicscode-ai/ui/file"
 import { useFileComponent } from "@physicscode-ai/ui/context/file"
 import { cloneSelectedLineRange, previewSelectedLines } from "@physicscode-ai/ui/pierre/selection-bridge"
 import { createLineCommentController } from "@physicscode-ai/ui/line-comment-annotations"
+import { normalize as normalizeDiff, text as diffText } from "@physicscode-ai/ui/session-diff"
 import { sampledChecksum } from "@physicscode-ai/core/util/encode"
+import type { SnapshotFileDiff, VcsFileDiff } from "@physicscode-ai/sdk/v2"
 import { DropdownMenu } from "@physicscode-ai/ui/dropdown-menu"
 import { IconButton } from "@physicscode-ai/ui/icon-button"
 import { Tabs } from "@physicscode-ai/ui/tabs"
@@ -171,7 +173,9 @@ function createScrollSync(input: { tab: () => string; view: ReturnType<typeof us
   }
 }
 
-export function FileTabContent(props: { tab: string }) {
+const normalizePath = (path: string) => path.replaceAll("\\", "/").replace(/\/+$/, "")
+
+export function FileTabContent(props: { tab: string; diffs?: () => (SnapshotFileDiff | VcsFileDiff)[] }) {
   const file = useFile()
   const comments = useComments()
   const language = useLanguage()
@@ -200,6 +204,23 @@ export function FileTabContent(props: { tab: string }) {
   })
   const contents = createMemo(() => state()?.content?.content ?? "")
   const cacheKey = createMemo(() => sampledChecksum(contents()))
+  const fileDiff = createMemo(() => {
+    const p = path()
+    if (!p) return undefined
+    const diffs = props.diffs?.() ?? []
+    if (diffs.length === 0) return undefined
+    const target = normalizePath(p)
+    const match = diffs.find((d) => {
+      const file = normalizePath(d.file)
+      return file === target || file.endsWith(`/${target}`) || target.endsWith(`/${file}`)
+    })
+    if (!match || (match.additions === 0 && match.deletions === 0)) return undefined
+    const view = normalizeDiff(match)
+    return {
+      before: diffText(view, "deletions"),
+      after: diffText(view, "additions"),
+    }
+  })
   const selectedLines = createMemo<SelectedLineRange | null>(() => {
     const p = path()
     if (!p) return null
@@ -394,51 +415,68 @@ export function FileTabContent(props: { tab: string }) {
     scrollSync.queueRestore()
   })
 
-  const renderFile = (source: string) => (
-    <div class="relative overflow-hidden pb-40">
-      <Dynamic
-        component={fileComponent}
-        mode="text"
-        file={{
-          name: path() ?? "",
-          contents: source,
-          cacheKey: cacheKey(),
-        }}
-        enableLineSelection
-        enableHoverUtility
-        selectedLines={activeSelection()}
-        commentedLines={commentedLines()}
-        onRendered={() => {
-          scrollSync.queueRestore()
-        }}
-        annotations={commentsUi.annotations()}
-        renderAnnotation={commentsUi.renderAnnotation}
-        renderHoverUtility={commentsUi.renderHoverUtility}
-        onLineSelected={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelected(range)
-        }}
-        onLineNumberSelectionEnd={commentsUi.onLineNumberSelectionEnd}
-        onLineSelectionEnd={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelectionEnd(range)
-        }}
-        search={search}
-        class="select-text"
-        media={{
-          mode: "auto",
-          path: path(),
-          current: state()?.content,
-          onLoad: scrollSync.queueRestore,
-          onError: (args: { kind: "image" | "audio" | "svg" }) => {
-            if (args.kind !== "svg") return
-            showToast({
-              variant: "error",
-              title: language.t("toast.file.loadFailed.title"),
-            })
-          },
-        }}
-      />
-    </div>
-  )
+  const renderFile = (source: string) => {
+    const sharedProps = {
+      enableLineSelection: true,
+      enableHoverUtility: true,
+      selectedLines: activeSelection(),
+      commentedLines: commentedLines(),
+      onRendered: () => {
+        scrollSync.queueRestore()
+      },
+      annotations: commentsUi.annotations(),
+      renderAnnotation: commentsUi.renderAnnotation,
+      renderHoverUtility: commentsUi.renderHoverUtility,
+      onLineSelected: (range: SelectedLineRange | null) => {
+        commentsUi.onLineSelected(range)
+      },
+      onLineNumberSelectionEnd: commentsUi.onLineNumberSelectionEnd,
+      onLineSelectionEnd: (range: SelectedLineRange | null) => {
+        commentsUi.onLineSelectionEnd(range)
+      },
+      search,
+      class: "select-text",
+      media: {
+        mode: "auto" as const,
+        path: path(),
+        current: state()?.content,
+        onLoad: scrollSync.queueRestore,
+        onError: (args: { kind: "image" | "audio" | "svg" }) => {
+          if (args.kind !== "svg") return
+          showToast({
+            variant: "error",
+            title: language.t("toast.file.loadFailed.title"),
+          })
+        },
+      },
+    }
+
+    return (
+      <div role="log" class="relative overflow-hidden pb-40">
+        <Switch>
+          <Match when={fileDiff()}>
+            {(diff) => (
+              <Dynamic
+                component={fileComponent}
+                mode="diff"
+                before={{ name: path() ?? "", contents: diff().before }}
+                after={{ name: path() ?? "", contents: diff().after }}
+                {...sharedProps}
+              />
+            )}
+          </Match>
+          <Match when={true}>
+            <Dynamic
+              component={fileComponent}
+              mode="text"
+              file={{ name: path() ?? "", contents: source, cacheKey: cacheKey() }}
+              {...sharedProps}
+            />
+          </Match>
+        </Switch>
+      </div>
+    )
+  }
 
   return (
     <Tabs.Content value={props.tab} class="mt-3 relative h-full">

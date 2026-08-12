@@ -64,7 +64,7 @@ export interface Interface {
   readonly defaultBranch: (cwd: string) => Effect.Effect<Base | undefined>
   readonly hasHead: (cwd: string) => Effect.Effect<boolean>
   readonly mergeBase: (cwd: string, base: string, head?: string) => Effect.Effect<string | undefined>
-  readonly show: (cwd: string, ref: string, file: string, prefix?: string) => Effect.Effect<string>
+  readonly show: (cwd: string, ref: string, file: string) => Effect.Effect<string>
   readonly status: (cwd: string) => Effect.Effect<Item[]>
   readonly diff: (cwd: string, ref: string) => Effect.Effect<Item[]>
   readonly stats: (cwd: string, ref: string) => Effect.Effect<Stat[]>
@@ -184,9 +184,10 @@ export const layer = Layer.effect(
       return text || undefined
     })
 
-    const show = Effect.fn("Git.show")(function* (cwd: string, ref: string, file: string, prefix = "") {
-      const target = prefix ? `${prefix}${file}` : file
-      const result = yield* run(["show", `${ref}:${target}`], { cwd })
+    const show = Effect.fn("Git.show")(function* (cwd: string, ref: string, file: string) {
+      // `file` here is always repo-root-relative (matching `git status`/`git diff` output), which
+      // is exactly what `<ref>:<path>` expects -- no further prefixing against `cwd` needed.
+      const result = yield* run(["show", `${ref}:${file}`], { cwd })
       if (result.exitCode !== 0) return ""
       if (result.stdout.includes(0)) return ""
       return result.text()

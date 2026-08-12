@@ -46,15 +46,21 @@ const files = Effect.fnUntraced(function* (
   list: Git.Item[],
   map: Map<string, { additions: number; deletions: number }>,
 ) {
-  const base = ref ? yield* git.prefix(cwd) : ""
+  // `item.file` (from `git status`/`git diff`) is always repo-root-relative, regardless of `cwd`.
+  // `git show <ref>:<path>` expects that same root-relative form directly (verified empirically:
+  // prefixing it further, as this used to do, produces a doubled/nonexistent path and silently
+  // resolves to an empty string). Reading the working-tree copy via `fs`, however, needs a path
+  // relative to `cwd`, so strip the prefix back off for that one case.
+  const base = yield* git.prefix(cwd)
   const patch = (file: string, before: string, after: string) =>
     formatPatch(structuredPatch(file, file, before, after, "", "", { context: Number.MAX_SAFE_INTEGER }))
   const next = yield* Effect.forEach(
     list,
     (item) =>
       Effect.gen(function* () {
-        const before = item.status === "added" || !ref ? "" : yield* git.show(cwd, ref, item.file, base)
-        const after = item.status === "deleted" ? "" : yield* work(fs, cwd, item.file)
+        const relative = base && item.file.startsWith(base) ? item.file.slice(base.length) : item.file
+        const before = item.status === "added" || !ref ? "" : yield* git.show(cwd, ref, item.file)
+        const after = item.status === "deleted" ? "" : yield* work(fs, cwd, relative)
         const stat = map.get(item.file)
         return {
           file: item.file,

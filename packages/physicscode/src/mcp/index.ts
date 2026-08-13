@@ -666,9 +666,12 @@ export const layer = Layer.effect(
       s: State,
       listFn: (c: Client) => Promise<T[]>,
       label: string,
+      supported: (c: Client) => boolean,
     ) {
       return Effect.forEach(
-        Object.entries(s.clients).filter(([name]) => s.status[name]?.status === "connected"),
+        Object.entries(s.clients).filter(
+          ([name, client]) => s.status[name]?.status === "connected" && supported(client),
+        ),
         ([clientName, client]) =>
           fetchFromClient(clientName, client, listFn, label).pipe(Effect.map((items) => Object.entries(items ?? {}))),
         { concurrency: "unbounded" },
@@ -677,12 +680,22 @@ export const layer = Layer.effect(
 
     const prompts = Effect.fn("MCP.prompts")(function* () {
       const s = yield* InstanceState.get(state)
-      return yield* collectFromConnected(s, (c) => c.listPrompts().then((r) => r.prompts), "prompts")
+      return yield* collectFromConnected(
+        s,
+        (c) => c.listPrompts().then((r) => r.prompts),
+        "prompts",
+        (c) => c.getServerCapabilities()?.prompts !== undefined,
+      )
     })
 
     const resources = Effect.fn("MCP.resources")(function* () {
       const s = yield* InstanceState.get(state)
-      return yield* collectFromConnected(s, (c) => c.listResources().then((r) => r.resources), "resources")
+      return yield* collectFromConnected(
+        s,
+        (c) => c.listResources().then((r) => r.resources),
+        "resources",
+        (c) => c.getServerCapabilities()?.resources !== undefined,
+      )
     })
 
     const withClient = Effect.fnUntraced(function* <A>(

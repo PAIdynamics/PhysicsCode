@@ -8,10 +8,14 @@ import type { MCP as MCPNS } from "../../src/mcp/index"
 interface MockClientState {
   tools: Array<{ name: string; description?: string; inputSchema: object }>
   listToolsCalls: number
+  listPromptsCalls: number
+  listResourcesCalls: number
   listToolsShouldFail: boolean
   listToolsError: string
   listPromptsShouldFail: boolean
   listResourcesShouldFail: boolean
+  supportsPrompts: boolean
+  supportsResources: boolean
   prompts: Array<{ name: string; description?: string }>
   resources: Array<{ name: string; uri: string; description?: string }>
   closed: boolean
@@ -35,10 +39,14 @@ function getOrCreateClientState(name?: string): MockClientState {
     state = {
       tools: [{ name: "test_tool", description: "A test tool", inputSchema: { type: "object", properties: {} } }],
       listToolsCalls: 0,
+      listPromptsCalls: 0,
+      listResourcesCalls: 0,
       listToolsShouldFail: false,
       listToolsError: "listTools failed",
       listPromptsShouldFail: false,
       listResourcesShouldFail: false,
+      supportsPrompts: true,
+      supportsResources: true,
       prompts: [],
       resources: [],
       closed: false,
@@ -139,6 +147,7 @@ void mock.module("@modelcontextprotocol/sdk/client/index.js", () => ({
     }
 
     async listPrompts() {
+      if (this._state) this._state.listPromptsCalls++
       if (this._state?.listPromptsShouldFail) {
         throw new Error("listPrompts failed")
       }
@@ -146,10 +155,19 @@ void mock.module("@modelcontextprotocol/sdk/client/index.js", () => ({
     }
 
     async listResources() {
+      if (this._state) this._state.listResourcesCalls++
       if (this._state?.listResourcesShouldFail) {
         throw new Error("listResources failed")
       }
       return { resources: this._state?.resources ?? [] }
+    }
+
+    getServerCapabilities() {
+      return {
+        tools: {},
+        ...(this._state?.supportsPrompts ? { prompts: {} } : {}),
+        ...(this._state?.supportsResources ? { resources: {} } : {}),
+      }
     }
 
     async close() {
@@ -550,6 +568,37 @@ test(
 
         const prompts = yield* mcp.prompts()
         expect(Object.keys(prompts).length).toBe(0)
+      }),
+  ),
+)
+
+test(
+  "prompts() and resources() skip unsupported server capabilities",
+  withInstance(
+    {
+      "tools-only-server": {
+        type: "local",
+        command: ["echo", "test"],
+      },
+    },
+    (mcp) =>
+      Effect.gen(function* () {
+        lastCreatedClientName = "tools-only-server"
+        const serverState = getOrCreateClientState("tools-only-server")
+        serverState.supportsPrompts = false
+        serverState.supportsResources = false
+        serverState.listPromptsShouldFail = true
+        serverState.listResourcesShouldFail = true
+
+        yield* mcp.add("tools-only-server", {
+          type: "local",
+          command: ["echo", "test"],
+        })
+
+        expect(yield* mcp.prompts()).toEqual({})
+        expect(yield* mcp.resources()).toEqual({})
+        expect(serverState.listPromptsCalls).toBe(0)
+        expect(serverState.listResourcesCalls).toBe(0)
       }),
   ),
 )

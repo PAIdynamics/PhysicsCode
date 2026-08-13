@@ -1,6 +1,5 @@
 # Licenses
 
-PhysicsCode itself is MIT licensed — see the root [`LICENSE`](../LICENSE).
 This directory preserves license notices for OpenCode-derived code and other
 third-party materials included in this repository.
 

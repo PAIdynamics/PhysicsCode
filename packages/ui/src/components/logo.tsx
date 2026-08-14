@@ -1,5 +1,5 @@
 import type { ComponentProps } from "solid-js"
-import logoCircular from "../assets/logo-circular.png"
+import logoCircular from "../assets/logo-circular.webp"
 
 type LogoImageProps = Pick<ComponentProps<"img">, "ref" | "class">
 

@@ -263,19 +263,27 @@ export function SessionTurn(
     setState("showAll", !showAll())
   }
 
+  // A turn's assistant messages always sit between its user message and the
+  // next one — the list is sorted by ascending id, and a reply cannot predate
+  // the prompt it answers. Scanning that window instead of the whole list keeps
+  // this O(turn) rather than O(session), which matters because every turn
+  // mounted in the timeline runs this memo and subscribes to every message it
+  // touches.
   const assistantMessages = createMemo(
     () => {
       const msg = message()
       if (!msg) return emptyAssistant
 
-      const messages = allMessages() ?? emptyMessages
-      if (messageIndex() < 0) return emptyAssistant
+      const start = messageIndex()
+      if (start < 0) return emptyAssistant
 
+      const messages = allMessages() ?? emptyMessages
       const result: AssistantMessage[] = []
-      for (let i = 0; i < messages.length; i++) {
+      for (let i = start + 1; i < messages.length; i++) {
         const item = messages[i]
         if (!item) continue
-        if (item.role === "assistant" && item.parentID === msg.id) result.push(item as AssistantMessage)
+        if (item.role === "user") break
+        if (item.parentID === msg.id) result.push(item)
       }
       return result
     },

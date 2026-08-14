@@ -2,7 +2,7 @@ import { Platform, usePlatform } from "@/context/platform"
 import { makePersisted, type AsyncStorage, type SyncStorage } from "@solid-primitives/storage"
 import { checksum } from "@physicscode-ai/core/util/encode"
 import { createResource, type Accessor } from "solid-js"
-import type { SetStoreFunction, Store } from "solid-js/store"
+import { unwrap, type SetStoreFunction, type Store } from "solid-js/store"
 import { pathKey } from "@/utils/path-key"
 
 type InitType = Promise<string> | string | null
@@ -25,6 +25,102 @@ const LEGACY_STORAGE = "default.dat"
 const GLOBAL_STORAGE = "physicscode.global.dat"
 const LOCAL_PREFIX = "physicscode."
 const fallback = new Map<string, boolean>()
+
+// `makePersisted` serializes the whole store and hits storage on *every* setter
+// call. High-frequency setters (panel resize drags, editor scroll offsets,
+// prompt keystrokes) then pay a full JSON.stringify plus a synchronous
+// localStorage write — or a Tauri IPC round trip on desktop — per event.
+// Writes are coalesced instead: the newest value per key wins and is flushed
+// once per window, and serialization is deferred to flush time so intermediate
+// states are never stringified at all.
+const WRITE_DELAY_MS = 250
+
+const LAZY = Symbol("persist.lazy")
+type Lazy = { [LAZY]: true; read: () => unknown }
+
+const lazy = (read: () => unknown) => ({ [LAZY]: true, read }) as Lazy
+const isLazy = (value: unknown): value is Lazy =>
+  typeof value === "object" && value !== null && (value as Partial<Lazy>)[LAZY] === true
+
+const render = (value: string | Lazy) => (isLazy(value) ? JSON.stringify(value.read()) : value)
+
+type PendingWrite = {
+  write: (value: string) => void
+  value: string | Lazy
+}
+
+const pending = new Map<string, PendingWrite>()
+let flushTimer: ReturnType<typeof setTimeout> | undefined
+
+function flushPersisted() {
+  if (flushTimer !== undefined) {
+    clearTimeout(flushTimer)
+    flushTimer = undefined
+  }
+  if (pending.size === 0) return
+
+  const entries = [...pending.values()]
+  pending.clear()
+  for (const entry of entries) {
+    entry.write(render(entry.value))
+  }
+}
+
+function schedulePersisted(id: string, value: string | Lazy, write: (value: string) => void) {
+  pending.set(id, { value, write })
+  if (flushTimer !== undefined) return
+  flushTimer = setTimeout(() => {
+    flushTimer = undefined
+    flushPersisted()
+  }, WRITE_DELAY_MS)
+}
+
+function flushPersistedKey(id: string) {
+  const entry = pending.get(id)
+  if (!entry) return
+  pending.delete(id)
+  entry.write(render(entry.value))
+}
+
+function cancelPersisted(id: string) {
+  pending.delete(id)
+}
+
+const pendingID = (scope: string | undefined, key: string) => `${scope ?? "direct"} ${key}`
+
+if (typeof window !== "undefined") {
+  // Never let a coalesced write outlive the page.
+  window.addEventListener("pagehide", flushPersisted)
+  window.addEventListener("beforeunload", flushPersisted)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushPersisted()
+  })
+}
+
+export const flushPersistedWrites = flushPersisted
+
+/**
+ * Wraps a storage so writes are coalesced and serialized lazily. Reads flush
+ * the key first so a pending write is never observed as stale.
+ */
+function coalesced<T extends SyncStorage | AsyncStorage>(storage: T, scope: string | undefined): T {
+  const id = (key: string) => pendingID(scope, key)
+
+  return {
+    ...storage,
+    getItem: (key: string) => {
+      flushPersistedKey(id(key))
+      return storage.getItem(key)
+    },
+    setItem: (key: string, value: string) => {
+      schedulePersisted(id(key), value, (next) => void storage.setItem(key, next))
+    },
+    removeItem: (key: string) => {
+      cancelPersisted(id(key))
+      return storage.removeItem(key)
+    },
+  } as T
+}
 
 const CACHE_MAX_ENTRIES = 500
 const CACHE_MAX_BYTES = 8 * 1024 * 1024
@@ -450,6 +546,8 @@ export const PersistTesting = {
   migrateLegacy,
   normalize,
   workspaceStorage,
+  coalesced,
+  lazy,
 }
 
 export const Persist = {
@@ -480,6 +578,14 @@ export function removePersisted(
   platform?: Platform,
 ) {
   const isDesktop = platform?.platform === "desktop" && !!platform.storage
+
+  // This writes straight to storage rather than through `persisted`, so a
+  // coalesced write still in flight for the same key would resurrect the value
+  // moments after it was deleted.
+  cancelPersisted(pendingID(target.storage, target.key))
+  for (const storage of target.legacyStorageNames ?? []) {
+    cancelPersisted(pendingID(storage, target.key))
+  }
 
   if (isDesktop) {
     void platform.storage?.(target.storage)?.removeItem(target.key)
@@ -588,7 +694,17 @@ export function persisted<T>(
     return api
   })()
 
-  const [state, setState, init] = makePersisted(store, { name: config.key, storage })
+  // `serialize` runs on every setter call, so it only captures the live store
+  // here; the real JSON.stringify happens once per flush in `coalesced`. The
+  // cast is the seam: makePersisted types this as returning a string and passes
+  // the result straight to `storage.setItem`, which is ours and understands the
+  // lazy holder.
+  const [state, setState, init] = makePersisted(store, {
+    name: config.key,
+    storage: coalesced(storage, config.storage),
+    // oxlint-disable-next-line no-unsafe-type-assertion -- see above
+    serialize: (() => lazy(() => unwrap(store[0]))) as unknown as (value: T) => string,
+  })
 
   const isAsync = init instanceof Promise
   const [ready] = createResource(

@@ -74,38 +74,39 @@ function createViewSession(dir: string, id: string | undefined) {
   const scrollLeft = (path: string) => view.file[path]?.scrollLeft
   const selectedLines = (path: string) => view.file[path]?.selectedLines
 
-  const setScrollTop = (path: string, top: number) => {
+  // Scroll setters fire on every scroll event, so they bail out before touching
+  // the store when nothing changed, and only walk the key set when a new file
+  // entry is actually added.
+  const edit = (path: string, apply: (file: FileViewState) => void) => {
+    const added = view.file[path] === undefined
     setView(
       produce((draft) => {
-        const file = draft.file[path] ?? (draft.file[path] = {})
-        if (file.scrollTop === top) return
-        file.scrollTop = top
+        apply(draft.file[path] ?? (draft.file[path] = {}))
       }),
     )
-    pruneView(path)
+    if (added) pruneView(path)
+  }
+
+  const setScrollTop = (path: string, top: number) => {
+    if (view.file[path]?.scrollTop === top) return
+    edit(path, (file) => {
+      file.scrollTop = top
+    })
   }
 
   const setScrollLeft = (path: string, left: number) => {
-    setView(
-      produce((draft) => {
-        const file = draft.file[path] ?? (draft.file[path] = {})
-        if (file.scrollLeft === left) return
-        file.scrollLeft = left
-      }),
-    )
-    pruneView(path)
+    if (view.file[path]?.scrollLeft === left) return
+    edit(path, (file) => {
+      file.scrollLeft = left
+    })
   }
 
   const setSelectedLines = (path: string, range: SelectedLineRange | null) => {
     const next = range ? normalizeSelectedLines(range) : null
-    setView(
-      produce((draft) => {
-        const file = draft.file[path] ?? (draft.file[path] = {})
-        if (equalSelectedLines(file.selectedLines, next)) return
-        file.selectedLines = next
-      }),
-    )
-    pruneView(path)
+    if (equalSelectedLines(view.file[path]?.selectedLines, next)) return
+    edit(path, (file) => {
+      file.selectedLines = next
+    })
   }
 
   return {

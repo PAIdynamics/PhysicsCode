@@ -49,6 +49,7 @@ const storage = new MemoryStorage()
 let persistTesting: PersistTestingType
 let Persist: PersistType
 let removePersisted: RemovePersistedType
+let flushPersistedWrites: typeof import("./persist").flushPersistedWrites
 
 beforeAll(async () => {
   mock.module("@/context/platform", () => ({
@@ -59,6 +60,7 @@ beforeAll(async () => {
   persistTesting = mod.PersistTesting
   Persist = mod.Persist
   removePersisted = mod.removePersisted
+  flushPersistedWrites = mod.flushPersistedWrites
 })
 
 beforeEach(() => {
@@ -163,5 +165,57 @@ describe("persist localStorage resilience", () => {
 
     expect(storage.getItem(`${target.storage}:${target.key}`)).toBeNull()
     expect(storage.getItem(`${target.legacyStorageNames![0]}:${target.key}`)).toBeNull()
+  })
+})
+
+describe("persist write coalescing", () => {
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 400))
+
+  // `persisted` hands makePersisted a lazy holder in place of a serialized
+  // string so the JSON.stringify happens once, at flush time.
+  const lazyValue = (read: () => unknown) => persistTesting.lazy(read) as unknown as string
+
+  test("collapses a burst of writes into one storage write of the latest value", async () => {
+    const state = { width: 0 }
+    const api = persistTesting.coalesced(persistTesting.localStorageWithPrefix("physicscode.burst"), "physicscode.burst")
+
+    const before = storage.calls.set
+    for (let width = 1; width <= 50; width += 1) {
+      state.width = width
+      api.setItem("layout", lazyValue(() => state))
+    }
+
+    // Nothing has hit storage yet -- this is what keeps resize drags smooth.
+    expect(storage.calls.set).toBe(before)
+
+    await settle()
+    expect(storage.calls.set).toBe(before + 1)
+    expect(JSON.parse(String(api.getItem("layout"))).width).toBe(50)
+  })
+
+  test("a read observes a still-pending write", () => {
+    const api = persistTesting.coalesced(persistTesting.localStorageWithPrefix("physicscode.read"), "physicscode.read")
+    api.setItem("layout", lazyValue(() => ({ value: 7 })))
+
+    expect(JSON.parse(String(api.getItem("layout"))).value).toBe(7)
+  })
+
+  test("flushPersistedWrites drains pending writes immediately", () => {
+    const api = persistTesting.coalesced(persistTesting.localStorageWithPrefix("physicscode.flush"), "physicscode.flush")
+    api.setItem("layout", lazyValue(() => ({ value: 9 })))
+
+    flushPersistedWrites()
+    expect(JSON.parse(storage.getItem("physicscode.flush:layout") ?? "{}").value).toBe(9)
+  })
+
+  test("removePersisted is not undone by an in-flight write", async () => {
+    const target = Persist.global("coalesce-remove")
+    const api = persistTesting.coalesced(persistTesting.localStorageWithPrefix(target.storage!), target.storage)
+    api.setItem(target.key, lazyValue(() => ({ value: 42 })))
+
+    removePersisted(target)
+
+    await settle()
+    expect(storage.getItem(`${target.storage}:${target.key}`)).toBeNull()
   })
 })

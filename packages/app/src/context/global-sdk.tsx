@@ -3,15 +3,13 @@ import { createSimpleContext } from "@physicscode-ai/ui/context"
 import { createGlobalEmitter } from "@solid-primitives/event-bus"
 import { makeEventListener } from "@solid-primitives/event-listener"
 import { batch, onCleanup, onMount } from "solid-js"
-import z from "zod"
 import { createSdkForServer } from "@/utils/server"
 import { useLanguage } from "./language"
 import { usePlatform } from "./platform"
 import { useServer } from "./server"
 
-const abortError = z.object({
-  name: z.literal("AbortError"),
-})
+const aborted = (error: unknown) =>
+  typeof error === "object" && error !== null && (error as { name?: unknown }).name === "AbortError"
 
 export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleContext({
   name: "GlobalSDK",
@@ -103,7 +101,6 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
 
     let streamErrorLogged = false
     const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
-    const aborted = (error: unknown) => abortError.safeParse(error).success
 
     let attempt: AbortController | undefined
     let run: Promise<void> | undefined

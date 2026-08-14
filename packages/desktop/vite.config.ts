@@ -16,7 +16,10 @@ export default defineConfig({
     keepNames: true,
   },
   build: {
-    sourcemap: true,
+    // Sourcemaps add ~25MB to the installed app and nothing in a shipped build
+    // uploads or reads them, so they are opt-in. The dev server is unaffected,
+    // and `keepNames` above keeps production stack traces readable.
+    sourcemap: process.env.PHYSICSCODE_SOURCEMAPS === "true",
   },
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {

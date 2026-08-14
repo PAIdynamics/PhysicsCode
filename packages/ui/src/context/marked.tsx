@@ -1,7 +1,5 @@
 import { marked } from "marked"
-import markedKatex from "marked-katex-extension"
 import markedShiki from "marked-shiki"
-import katex from "katex"
 import { bundledLanguages, type BundledLanguage } from "shiki"
 import { createSimpleContext } from "./helper"
 import { getSharedHighlighter, registerCustomTheme, ThemeRegistrationResolved } from "@pierre/diffs"
@@ -376,7 +374,30 @@ registerCustomTheme("PhysicsCode", () => {
   } as unknown as ThemeRegistrationResolved)
 })
 
-function renderMathInText(text: string): string {
+// KaTeX is ~600KB of the bundle and only matters once a document actually
+// contains math, so it is split out and pulled in on demand. It is also warmed
+// in the background after first paint, so in practice math-heavy sessions never
+// wait on the fetch.
+let katexModule: Promise<typeof import("katex").default> | undefined
+const loadKatex = () => (katexModule ??= import("katex").then((m) => m.default))
+
+const HAS_MATH = /\$|\\\[|\\\(|\\begin\{/
+
+function warmMath() {
+  if (typeof window === "undefined") return
+  const idle = (window as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback
+  const start = () => {
+    void loadKatex()
+    void import("marked-katex-extension")
+  }
+  if (idle) {
+    idle(start)
+    return
+  }
+  setTimeout(start, 2000)
+}
+
+function renderMathInText(text: string, katex: typeof import("katex").default): string {
   let result = text
 
   // Display math: $$...$$
@@ -426,18 +447,19 @@ function normalizeMathDelimiters(markdown: string): string {
     .join("")
 }
 
-function renderMathExpressions(html: string): string {
+async function renderMathExpressions(html: string): Promise<string> {
+  if (!HAS_MATH.test(html)) return html
+
+  const katex = await loadKatex()
+
   // Split on code/pre/kbd tags to avoid processing their contents
   const codeBlockPattern = /(<(?:pre|code|kbd)[^>]*>[\s\S]*?<\/(?:pre|code|kbd)>)/gi
-  const parts = html.split(codeBlockPattern)
 
-  return parts
-    .map((part, i) => {
-      // Odd indices are the captured code blocks - leave them alone
-      if (i % 2 === 1) return part
-      // Process math only in non-code parts
-      return renderMathInText(part)
-    })
+  return html
+    .split(codeBlockPattern)
+    // Odd indices are the captured code blocks - leave them alone, and process
+    // math only in the parts between them
+    .map((part, i) => (i % 2 === 1 ? part : renderMathInText(part, katex)))
     .join("")
 }
 
@@ -495,10 +517,6 @@ export const { use: useMarked, provider: MarkedProvider } = createSimpleContext(
           },
         },
       },
-      markedKatex({
-        throwOnError: false,
-        nonStandard: true,
-      }),
       markedShiki({
         async highlight(code, lang) {
           const highlighter = await getSharedHighlighter({
@@ -521,12 +539,22 @@ export const { use: useMarked, provider: MarkedProvider } = createSimpleContext(
       }),
     )
 
+    // The KaTeX marked extension drags KaTeX in with it, so it is registered
+    // the first time a document containing math is parsed rather than up front.
+    let katexExtension: Promise<void> | undefined
+    const ensureKatexExtension = () =>
+      (katexExtension ??= import("marked-katex-extension").then(({ default: markedKatex }) => {
+        jsParser.use(markedKatex({ throwOnError: false, nonStandard: true }))
+      }))
+
+    warmMath()
+
     if (props.nativeParser) {
       const nativeParser = props.nativeParser
       return {
         async parse(markdown: string): Promise<string> {
           const html = await nativeParser(normalizeMathDelimiters(markdown))
-          const withMath = renderMathExpressions(html)
+          const withMath = await renderMathExpressions(html)
           return highlightCodeBlocks(withMath)
         },
       }
@@ -534,7 +562,9 @@ export const { use: useMarked, provider: MarkedProvider } = createSimpleContext(
 
     return {
       async parse(markdown: string): Promise<string> {
-        return jsParser.parse(normalizeMathDelimiters(markdown))
+        const normalized = normalizeMathDelimiters(markdown)
+        if (HAS_MATH.test(normalized)) await ensureKatexExtension()
+        return jsParser.parse(normalized)
       },
     }
   },

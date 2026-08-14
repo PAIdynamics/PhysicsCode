@@ -1,5 +1,5 @@
 import { Show, createMemo } from "solid-js"
-import { DateTime } from "luxon"
+import { formatRelative } from "@/utils/time"
 import { useSync } from "@/context/sync"
 import { useSDK } from "@/context/sdk"
 import { useLanguage } from "@/context/language"
@@ -75,9 +75,7 @@ export function NewSessionView(props: NewSessionViewProps) {
                   <div class="text-12-medium text-text-weak leading-5 min-w-0 max-w-160 break-words text-center">
                     {language.t("session.new.lastModified")}&nbsp;
                     <span class="text-text-strong">
-                      {DateTime.fromMillis(project().time.updated ?? project().time.created)
-                        .setLocale(language.intl())
-                        .toRelative()}
+                      {formatRelative(project().time.updated ?? project().time.created, language.intl())}
                     </span>
                   </div>
                 </div>

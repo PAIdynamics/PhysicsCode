@@ -53,10 +53,8 @@
         "@tanstack/solid-query": "5.91.4",
         "@thisbeyond/solid-dnd": "0.7.5",
         "diff": "catalog:",
-        "effect": "catalog:",
         "fuzzysort": "catalog:",
         "ghostty-web": "github:anomalyco/ghostty-web#main",
-        "luxon": "catalog:",
         "marked": "catalog:",
         "marked-shiki": "catalog:",
         "remeda": "catalog:",
@@ -65,7 +63,6 @@
         "solid-list": "catalog:",
         "tailwindcss": "catalog:",
         "virtua": "catalog:",
-        "zod": "catalog:",
       },
       "devDependencies": {
         "@happy-dom/global-registrator": "20.0.11",
@@ -74,7 +71,6 @@
         "@tailwindcss/vite": "catalog:",
         "@tsconfig/bun": "1.0.9",
         "@types/bun": "catalog:",
-        "@types/luxon": "catalog:",
         "@types/node": "catalog:",
         "@typescript/native-preview": "catalog:",
         "typescript": "catalog:",
@@ -598,7 +594,6 @@
         "dompurify": "3.3.1",
         "fuzzysort": "catalog:",
         "katex": "0.16.27",
-        "luxon": "catalog:",
         "marked": "catalog:",
         "marked-katex-extension": "5.1.6",
         "marked-shiki": "catalog:",
@@ -619,7 +614,6 @@
         "@tsconfig/node22": "catalog:",
         "@types/bun": "catalog:",
         "@types/katex": "0.16.7",
-        "@types/luxon": "catalog:",
         "@typescript/native-preview": "catalog:",
         "tailwindcss": "catalog:",
         "typescript": "catalog:",
@@ -3362,7 +3356,7 @@
 
     "get-tsconfig": ["get-tsconfig@4.13.8", "", { "dependencies": { "resolve-pkg-maps": "^1.0.0" } }, "sha512-J87BxkLXykmisLQ+KA4x2+O6rVf+PJrtFUO8lGyiRg4lyxJLJ8/v0sRAKdVZQOy6tR6lMRAF1NqzCf9BQijm0w=="],
 
-    "ghostty-web": ["ghostty-web@github:anomalyco/ghostty-web#513463a", {}, "anomalyco-ghostty-web-513463a", "sha512-GZR8LSmgGzViWnBJrqRI8MpAZRCJxhcr1Hi9Tyeh7YRooHZQjK9J97FQRD3tbBaM2wjq05gzGY2UEsG+JtZeBw=="],
+    "ghostty-web": ["ghostty-web@github:anomalyco/ghostty-web#83c0a07", {}, "anomalyco-ghostty-web-83c0a07", "sha512-Lf2v1agHkVUpMpHBWWuCZrhOEmcwwin5/Hboc9rZwQ7/CKkIh5rU1r1CvfLlhkMoFv+ed8z52RZ8hkzGZZj3MQ=="],
 
     "gifwrap": ["gifwrap@0.10.1", "", { "dependencies": { "image-q": "^4.0.0", "omggif": "^1.0.10" } }, "sha512-2760b1vpJHNmLzZ/ubTtNnEx5WApN/PYWJvXvgS+tL1egTTthayFYIQQNi136FLEDcN/IyEY2EcGpIITD6eYUw=="],
 

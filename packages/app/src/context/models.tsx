@@ -1,6 +1,6 @@
 import { createMemo } from "solid-js"
 import { createStore } from "solid-js/store"
-import { DateTime } from "luxon"
+import { MS_PER_MONTH } from "@/utils/time"
 import { filter, firstBy, flat, groupBy, mapValues, pipe, uniqueBy, values } from "remeda"
 import { createSimpleContext } from "@physicscode-ai/ui/context"
 import { useProviders } from "@/hooks/use-providers"
@@ -48,10 +48,10 @@ export const { use: useModels, provider: ModelsProvider } = createSimpleContext(
     const release = createMemo(
       () =>
         new Map(
-          available().map((model) => {
-            const parsed = DateTime.fromISO(model.release_date)
-            return [modelKey({ providerID: model.provider.id, modelID: model.id }), parsed] as const
-          }),
+          available().map(
+            (model) =>
+              [modelKey({ providerID: model.provider.id, modelID: model.id }), Date.parse(model.release_date)] as const,
+          ),
         ),
     )
 
@@ -59,11 +59,13 @@ export const { use: useModels, provider: ModelsProvider } = createSimpleContext(
       pipe(
         available(),
         filter(
+          // NaN for a missing or unparseable release date, which fails the
+          // comparison and drops the model — same as the previous invalid
+          // DateTime did.
           (x) =>
             Math.abs(
-              (release().get(modelKey({ providerID: x.provider.id, modelID: x.id })) ?? DateTime.invalid("invalid"))
-                .diffNow()
-                .as("months"),
+              ((release().get(modelKey({ providerID: x.provider.id, modelID: x.id })) ?? NaN) - Date.now()) /
+                MS_PER_MONTH,
             ) < 6,
         ),
         groupBy((x) => x.provider.id),
@@ -121,7 +123,7 @@ export const { use: useModels, provider: ModelsProvider } = createSimpleContext(
       }
       if (latestSet().has(key)) return true
       const date = release().get(key)
-      if (!date?.isValid) return true
+      if (date === undefined || Number.isNaN(date)) return true
       return false
     }
 

@@ -1,0 +1,24 @@
+diff --git a/dist/components/FileDiff.js b/dist/components/FileDiff.js
+index 7ecaa0434ef0777eae31f475340b4311e58eab46..5ae6f9507409c5f5c856b938ab8b4ffa461661aa 100644
+--- a/dist/components/FileDiff.js
++++ b/dist/components/FileDiff.js
+@@ -623,10 +623,18 @@ var FileDiff = class {
+ 		if (this.fileContainer?.shadowRoot == null) return;
+ 		const { unsafeCSS } = this.options;
+ 		if (unsafeCSS == null || unsafeCSS === "") return;
+-		if (this.unsafeCSSStyle == null) {
++		// File containers get recycled, which detaches the style node from the shadow
++		// root, so re-create it whenever it is no longer attached to the current one.
++		if (this.unsafeCSSStyle == null || this.unsafeCSSStyle.getRootNode() !== this.fileContainer.shadowRoot) {
+ 			this.unsafeCSSStyle = createUnsafeCSSStyleNode();
+ 			this.fileContainer.shadowRoot.appendChild(this.unsafeCSSStyle);
++			this.__unsafeCSSSource = void 0;
+ 		}
++		// Re-writing a <style> node's text forces the browser to re-parse the whole
++		// sheet. injectUnsafeCSS runs on every render pass but the CSS is a constant,
++		// so skip the write when the same source is already applied to this node.
++		if (this.__unsafeCSSSource === unsafeCSS) return;
++		this.__unsafeCSSSource = unsafeCSS;
+ 		this.unsafeCSSStyle.innerText = wrapUnsafeCSS(unsafeCSS);
+ 	}
+ 	applyHunksToDOM(pre, result) {

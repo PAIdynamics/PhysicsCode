@@ -7,9 +7,15 @@ name: publish-desktop
 # their Blacksmith runners, Apple/Azure signing, and custom GitHub App -- none
 # of which exist here). This workflow builds unsigned Tauri installers on
 # standard GitHub-hosted runners and publishes them as a GitHub Release on
-# this repo. Upgrade path to real code signing: add APPLE_CERTIFICATE(_PASSWORD),
-# APPLE_API_KEY(_ISSUER), and Windows signing secrets, then mirror the signing
-# steps from publish.yml's build-tauri job.
+# this repo.
+#
+# macOS signing is wired but inactive: set APPLE_CERTIFICATE,
+# APPLE_CERTIFICATE_PASSWORD, APPLE_API_KEY, APPLE_API_ISSUER and
+# APPLE_API_KEY_PATH as repo secrets and the build-tauri job signs and notarizes
+# automatically. Until then the published .app is unsigned, so Gatekeeper
+# quarantines it on download and users must clear it by hand
+# (`xattr -dr com.apple.quarantine /Applications/PhysicsCode.app`).
+# Windows signing still needs its own secrets, mirrored from publish.yml.
 
 on:
   workflow_dispatch:
@@ -100,6 +106,32 @@ jobs:
           workspaces: packages/desktop/src-tauri
           shared-key: ${{ matrix.settings.target }}
 
+      # Apple signing is opt-in: without a Developer ID the downloaded .app is
+      # quarantined by Gatekeeper and refuses to launch. These steps no-op when
+      # the secrets are absent, so adding them to the repo is all that is needed
+      # to start shipping a signed, notarized macOS build.
+      - name: Check Apple signing secrets
+        id: apple
+        if: ${{ runner.os == 'macOS' }}
+        run: echo "enabled=${{ secrets.APPLE_CERTIFICATE != '' && secrets.APPLE_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
+
+      - uses: apple-actions/import-codesign-certs@v2
+        if: ${{ steps.apple.outputs.enabled == 'true' }}
+        with:
+          keychain: build
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+
+      - name: Resolve signing identity
+        if: ${{ steps.apple.outputs.enabled == 'true' }}
+        run: |
+          CERT_INFO=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application")
+          echo "CERT_ID=$(echo "$CERT_INFO" | awk -F'"' '{print $2}')" >> $GITHUB_ENV
+
+      - name: Setup Apple API key
+        if: ${{ steps.apple.outputs.enabled == 'true' }}
+        run: echo "${{ secrets.APPLE_API_KEY_PATH }}" > $RUNNER_TEMP/apple-api-key.p8
+
       - name: Prepare sidecar
         working-directory: packages/desktop
         run: bun ./scripts/prepare.ts
@@ -124,6 +156,13 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Empty on repos without Apple secrets, which leaves the build unsigned.
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ env.CERT_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_PATH: ${{ runner.temp }}/apple-api-key.p8
 
   publish:
     needs: build-tauri

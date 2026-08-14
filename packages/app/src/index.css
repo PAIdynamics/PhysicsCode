@@ -5,6 +5,11 @@
   src: url("/assets/JetBrainsMonoNerdFontMono-Regular.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
+  /* This is the terminal default and the file is ~1MB, so the `auto` default
+     can leave terminal output invisible for up to 3s on a cold cache while it
+     loads. Show the monospace fallback immediately and swap the Nerd Font in
+     when it arrives. */
+  font-display: swap;
 }
 
 @layer components {

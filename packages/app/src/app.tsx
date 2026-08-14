@@ -11,7 +11,6 @@ import { ThemeProvider } from "@physicscode-ai/ui/theme/context"
 import { MetaProvider } from "@solidjs/meta"
 import { type BaseRouterProps, Navigate, Route, Router } from "@solidjs/router"
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
-import { Effect } from "effect"
 import {
   type Component,
   createMemo,
@@ -51,6 +50,10 @@ const HomeRoute = lazy(() => import("@/pages/home"))
 const loadSession = () => import("@/pages/session")
 const Session = lazy(loadSession)
 const Loading = () => <div class="size-full" />
+
+// How long a non-http connection may keep retrying before the UI falls back to
+// background checks and shows the connection error screen.
+const HEALTH_CHECK_GRACE_MS = 10_000
 
 if (typeof location === "object" && /\/session(?:\/|$)/.test(location.pathname)) {
   void loadSession()
@@ -178,24 +181,29 @@ function ConnectionGate(props: ParentProps<{ disableHealthCheck?: boolean }>) {
 
   // performs repeated health check with a grace period for
   // non-http connections, otherwise fails instantly
-  const [startupHealthCheck, healthCheckActions] = createResource(() =>
-    props.disableHealthCheck
-      ? true
-      : Effect.gen(function* () {
-          if (!server.current) return true
-          const { http, type } = server.current
+  const [startupHealthCheck, healthCheckActions] = createResource(async () => {
+    if (props.disableHealthCheck) return true
+    if (!server.current) return true
 
-          while (true) {
-            const res = yield* Effect.promise(() => checkServerHealth(http))
-            if (res.healthy) return true
-            if (checkMode() === "background" || type === "http") return false
-          }
-        }).pipe(
-          Effect.timeoutOrElse({ duration: "10 seconds", orElse: () => Effect.succeed(false) }),
-          Effect.ensuring(Effect.sync(() => setCheckMode("background"))),
-          Effect.runPromise,
-        ),
-  )
+    const { http, type } = server.current
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const expired = new Promise<false>((resolve) => {
+      timer = setTimeout(() => resolve(false), HEALTH_CHECK_GRACE_MS)
+    })
+
+    const poll = async () => {
+      for (;;) {
+        const res = await checkServerHealth(http)
+        if (res.healthy) return true
+        if (checkMode() === "background" || type === "http") return false
+      }
+    }
+
+    return Promise.race([poll(), expired]).finally(() => {
+      clearTimeout(timer)
+      setCheckMode("background")
+    })
+  })
 
   return (
     <Suspense

@@ -6,7 +6,7 @@ import { useNavigate } from "@solidjs/router"
 import { base64Encode } from "@physicscode-ai/core/util/encode"
 import { Icon } from "@physicscode-ai/ui/icon"
 import { usePlatform } from "@/context/platform"
-import { DateTime } from "luxon"
+import { formatRelative } from "@/utils/time"
 import { useDialog } from "@physicscode-ai/ui/context/dialog"
 import { DialogSelectDirectory } from "@/components/dialog-select-directory"
 import { DialogSelectServer } from "@/components/dialog-select-server"
@@ -105,7 +105,7 @@ export default function Home() {
                   >
                     {project.worktree.replace(homedir(), "~")}
                     <div class="text-14-regular text-text-weak">
-                      {DateTime.fromMillis(project.time.updated ?? project.time.created).toRelative()}
+                      {formatRelative(project.time.updated ?? project.time.created, language.intl())}
                     </div>
                   </Button>
                 )}

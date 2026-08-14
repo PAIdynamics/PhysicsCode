@@ -418,7 +418,11 @@ export function FileTabContent(props: { tab: string; diffs?: () => (SnapshotFile
   const renderFile = (source: string) => {
     const sharedProps = {
       enableLineSelection: true,
-      enableHoverUtility: true,
+      // No comment affordance in the file tabs: this panel is for reading and
+      // editing files, so the gutter "+" only gets in the way of clicking a
+      // line. Existing comments still render via renderAnnotation, and the
+      // review tab keeps its own commenting flow.
+      enableHoverUtility: false,
       selectedLines: activeSelection(),
       commentedLines: commentedLines(),
       onRendered: () => {
@@ -426,7 +430,6 @@ export function FileTabContent(props: { tab: string; diffs?: () => (SnapshotFile
       },
       annotations: commentsUi.annotations(),
       renderAnnotation: commentsUi.renderAnnotation,
-      renderHoverUtility: commentsUi.renderHoverUtility,
       onLineSelected: (range: SelectedLineRange | null) => {
         commentsUi.onLineSelected(range)
       },

@@ -400,6 +400,42 @@ Below are examples of some common MCP servers. You can submit a PR if you want t
 
 ---
 
+### PhysicsCode Science
+
+PhysicsCode Science is a provenance-aware retrieval service for scientific
+software — source-backed evidence from an indexed set of scientific
+repositories (solvers, simulation libraries, HPC codes), used by the `/science`
+command and `science` agent.
+
+**In PhysicsCode itself**, this is already configured automatically once
+you're logged in (`physicscode account login`) — no setup needed, and no
+entry needed in your `mcp` config.
+
+**In Claude Code or Codex**, add it manually, authenticated with a PhysicsCode
+API key (create one from the account portal's Profile tab, or run
+`physicscode account login` and reuse that session's token):
+
+```bash
+claude mcp add --transport http physicscode-science https://www.physicscode.ai/mcp \
+  --header "Authorization: Bearer <your PhysicsCode API key>"
+```
+
+```bash
+export PHYSICSCODE_TOKEN=<your PhysicsCode API key>
+codex mcp add physicscode-science \
+  --url https://www.physicscode.ai/mcp \
+  --bearer-token-env-var PHYSICSCODE_TOKEN
+```
+
+This gives either client the `science_search`, `science_get_source`,
+`science_get_symbol`, `science_get_context`, `science_check_license`,
+`science_project_context`, and `science_status` tools. If you're running your
+own local science index instead of using the hosted one, see
+[`physicscode-science/docs/mcp-clients.md`](https://github.com/PAIdynamics/PhysicsCode/blob/main/physicscode-science/docs/mcp-clients.md)
+for the stdio and local-HTTP transport options.
+
+---
+
 ### Sentry
 
 Add the [Sentry MCP server](https://mcp.sentry.dev) to interact with your Sentry projects and issues.

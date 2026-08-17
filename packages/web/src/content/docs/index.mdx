@@ -3,11 +3,10 @@ title: Intro
 description: Get started with PhysicsCode.
 ---
 
-import { Tabs, TabItem } from "@astrojs/starlight/components"
 import config from "../../../config.mjs"
 export const console = config.console
 
-[**PhysicsCode**](/) is an open source AI coding agent. It's available as a terminal-based interface, desktop app, or IDE extension.
+[**PhysicsCode**](/) is an open source AI coding agent. It's available as a terminal-based interface and a VS Code extension, with a desktop app in progress.
 
 ![PhysicsCode TUI with the physicscode theme](../../assets/lander/screenshot.png)
 
@@ -31,102 +30,21 @@ To use PhysicsCode in your terminal, you'll need:
 
 ## Install
 
-The easiest way to install PhysicsCode is through the install script.
+Install PhysicsCode with the install script, which downloads the right binary
+for your platform and updates it in place on later runs:
 
 ```bash
-curl -fsSL https://physicscode.ai/install | bash
+curl -fsSL https://www.physicscode.ai/physicscode/install | bash
 ```
 
-You can also install it with the following commands:
-
-- **Using Node.js**
-
-        <Tabs>
-
-      <TabItem label="npm">
-      ```bash
-      npm install -g physicscode-ai
-      ```
-
-          </TabItem>
-
-        <TabItem label="Bun">
-        ```bash
-        bun install -g physicscode-ai
-        ```
-
-          </TabItem>
-
-        <TabItem label="pnpm">
-        ```bash
-        pnpm install -g physicscode-ai
-        ```
-
-          </TabItem>
-
-        <TabItem label="Yarn">
-        ```bash
-        yarn global add physicscode-ai
-        ```
-
-      </TabItem>
-
-  </Tabs>
-
-- **Using Homebrew on macOS and Linux**
-
-  ```bash
-  brew install anomalyco/tap/physicscode
-  ```
-
-  > We recommend using the PhysicsCode tap for the most up to date releases. The official `brew install physicscode` formula is maintained by the Homebrew team and is updated less frequently.
-
-- **Installing on Arch Linux**
-
-  ```bash
-  sudo pacman -S physicscode           # Arch Linux (Stable)
-  paru -S physicscode-bin              # Arch Linux (Latest from AUR)
-  ```
+You can also install the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=paidynamicsch.physicscode)
+to use PhysicsCode from your editor.
 
 #### Windows
 
 :::tip[Recommended: Use WSL]
 For the best experience on Windows, we recommend using [Windows Subsystem for Linux (WSL)](/docs/windows-wsl). It provides better performance and full compatibility with PhysicsCode's features.
 :::
-
-- **Using Chocolatey**
-
-  ```bash
-  choco install physicscode
-  ```
-
-- **Using Scoop**
-
-  ```bash
-  scoop install physicscode
-  ```
-
-- **Using NPM**
-
-  ```bash
-  npm install -g physicscode-ai
-  ```
-
-- **Using Mise**
-
-  ```bash
-  mise use -g github:anomalyco/physicscode
-  ```
-
-- **Using Docker**
-
-  ```bash
-  docker run -it --rm ghcr.io/anomalyco/physicscode
-  ```
-
-Support for installing PhysicsCode on Windows using Bun is currently in progress.
-
-You can also grab the binary from the [Releases](https://github.com/anomalyco/physicscode/releases).
 
 ---
 

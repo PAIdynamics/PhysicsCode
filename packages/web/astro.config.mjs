@@ -9,14 +9,28 @@ import { rehypeHeadingIds } from "@astrojs/markdown-remark"
 import rehypeAutolinkHeadings from "rehype-autolink-headings"
 import { spawnSync } from "child_process"
 
+// Publishing the docs to GitHub Pages (see .github/workflows/docs.yml) needs
+// a fully static build with no Cloudflare adapter and a base path matching
+// the project-pages URL, instead of the SSR build the real physicscode.ai
+// deploy uses (which also serves the dynamic /s/[id] share page - excluded
+// from the static build by the workflow before it runs, since GitHub Pages
+// can't serve anything server-rendered).
+const isGithubPages = process.env.DOCS_TARGET === "github-pages"
+
 // https://astro.build/config
 export default defineConfig({
-  site: config.url,
-  base: "/docs",
-  output: "server",
-  adapter: cloudflare({
-    imageService: "passthrough",
-  }),
+  site: isGithubPages ? "https://paidynamics.github.io" : config.url,
+  base: isGithubPages ? "/PhysicsCode" : "/docs",
+  output: isGithubPages ? "static" : "server",
+  adapter: isGithubPages
+    ? undefined
+    : cloudflare({
+        imageService: "passthrough",
+      }),
+  // Matches the Cloudflare adapter's "passthrough" image service above -
+  // Sharp isn't a project dependency, and images don't need
+  // build-time optimization for a docs mirror.
+  image: isGithubPages ? { service: { entrypoint: "astro/assets/services/noop" } } : undefined,
   devToolbar: {
     enabled: false,
   },

@@ -1,0 +1,62 @@
+name: docs-pages
+
+# Publishes packages/web (Starlight docs) as a static site to GitHub Pages,
+# separately from the real physicscode.ai deploy (which runs via SST/
+# Cloudflare in deploy.yml and needs secrets/credentials this repo's public
+# fork doesn't have configured). See packages/web/astro.config.mjs for the
+# DOCS_TARGET=github-pages build mode this uses.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/web/**"
+      - ".github/workflows/docs-pages.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-bun
+
+      # GitHub Pages can only serve static files - drop the pages that need
+      # a live backend (session sharing, raw-markdown API route) rather than
+      # trying to prerender them.
+      - name: Remove server-only pages from the static build
+        run: |
+          rm -rf packages/web/src/pages/s
+          rm -f "packages/web/src/pages/[...slug].md.ts"
+
+      - name: Build docs
+        working-directory: packages/web
+        env:
+          DOCS_TARGET: github-pages
+          SST_STAGE: production
+        run: bun run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

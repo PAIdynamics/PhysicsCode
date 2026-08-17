@@ -161,3 +161,6 @@ available:
 PYTHONPATH=src python3 -m physicscode_science.cli.main mcp \
   --db .science/physicscode-science.sqlite
 ```
+
+See `docs/mcp-clients.md` for adding this server (stdio, local HTTP, or the
+hosted PhysicsCode endpoint) to Claude Code or Codex specifically.

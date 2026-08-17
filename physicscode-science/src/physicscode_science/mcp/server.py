@@ -27,7 +27,10 @@ def serve_stdio(db_path: str, stdin: BinaryIO | None = None, stdout: BinaryIO | 
     input_stream = stdin or sys.stdin.buffer
     output_stream = stdout or sys.stdout.buffer
     while True:
-        message = _read_message(input_stream)
+        try:
+            message = _read_message(input_stream)
+        except json.JSONDecodeError:
+            continue
         if message is None:
             break
         response = handle_request(db_path, message)
@@ -54,21 +57,21 @@ def _result(db_path: str, method: str, params: dict[str, Any]) -> dict[str, Any]
 
 
 def _read_message(stream: BinaryIO) -> dict[str, Any] | None:
-    headers: dict[str, str] = {}
+    # MCP's stdio transport is newline-delimited JSON-RPC, one message per
+    # line - not LSP's Content-Length-framed headers. A framing mismatch
+    # here means every real MCP client (Claude Code, Codex, ...) sees the
+    # pipe go silent and reports the connection as closed.
     while True:
         line = stream.readline()
         if line == b"":
             return None
-        if line in {b"\r\n", b"\n"}:
-            break
-        key, value = line.decode("ascii").split(":", 1)
-        headers[key.lower()] = value.strip()
-    content_length = int(headers["content-length"])
-    return json.loads(stream.read(content_length).decode("utf-8"))
+        line = line.strip()
+        if not line:
+            continue
+        return json.loads(line.decode("utf-8"))
 
 
 def _write_message(stream: BinaryIO, message: dict[str, Any]) -> None:
-    body = json.dumps(message, separators=(",", ":")).encode("utf-8")
-    stream.write(f"Content-Length: {len(body)}\r\n\r\n".encode("ascii"))
-    stream.write(body)
+    body = json.dumps(message, separators=(",", ":"))
+    stream.write((body + "\n").encode("utf-8"))
     stream.flush()

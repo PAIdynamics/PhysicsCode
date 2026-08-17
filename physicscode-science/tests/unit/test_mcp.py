@@ -64,7 +64,7 @@ class McpTest(unittest.TestCase):
             self.assertEqual(payload["database"]["object_count"], 1)
             self.assertTrue(payload["vector_index"]["present"])
 
-    def test_mcp_content_length_framing_round_trips(self):
+    def test_mcp_stdio_framing_round_trips(self):
         stream = BytesIO()
         _write_message(stream, {"jsonrpc": "2.0", "id": 1, "result": {"ok": True}})
         stream.seek(0)

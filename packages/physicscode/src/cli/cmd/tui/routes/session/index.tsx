@@ -357,6 +357,29 @@ export function Session() {
     }, 50)
   }
 
+  // Follow the streaming response only while the user hasn't scrolled away.
+  // "Near bottom" is judged against the scroll height captured the *last*
+  // time we settled, not the live one, since content has usually already
+  // grown by the time this effect runs. The settle is debounced so a burst
+  // of deltas doesn't queue up multiple independent scroll-to-bottom calls
+  // that would keep firing after the user has since scrolled away.
+  let lastKnownScrollHeight = 0
+  let scrollSettleTimer: ReturnType<typeof setTimeout> | undefined
+  createEffect(() => {
+    const streamingID = pending()
+    const parts = streamingID ? sync.data.part[streamingID] : undefined
+    if (parts) void JSON.stringify(parts)
+    if (!scroll || scroll.isDestroyed) return
+    const wasNearBottom = streamingID ? lastKnownScrollHeight - scroll.scrollTop - scroll.height < 40 : false
+    if (scrollSettleTimer) clearTimeout(scrollSettleTimer)
+    scrollSettleTimer = setTimeout(() => {
+      scrollSettleTimer = undefined
+      if (!scroll || scroll.isDestroyed) return
+      if (wasNearBottom) scroll.scrollTo(scroll.scrollHeight)
+      lastKnownScrollHeight = scroll.scrollHeight
+    }, 60)
+  })
+
   const local = useLocal()
 
   function moveFirstChild() {
@@ -1071,8 +1094,6 @@ export function Session() {
                   foregroundColor: theme.border,
                 },
               }}
-              stickyScroll={true}
-              stickyStart="bottom"
               flexGrow={1}
               scrollAcceleration={scrollAcceleration()}
             >

@@ -1,0 +1,16 @@
+diff --git a/node_modules/@opentui/core/.bun-tag-aecb10571bf125ca b/.bun-tag-aecb10571bf125ca
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/index-mch6dv67.js b/index-mch6dv67.js
+index 1dd93e55cf1d0c31bb7eccf4dc7e9c4aa3f0191f..b8d95cae0fa180734944ff3cc2d3791fd55cd2f8 100644
+--- a/index-mch6dv67.js
++++ b/index-mch6dv67.js
+@@ -9912,7 +9912,7 @@ class ScrollBoxRenderable extends BoxRenderable {
+         const newMaxScrollLeft = Math.max(0, this.scrollWidth - this.viewport.width);
+         if (this._stickyStart && !this._hasManualScroll) {
+           this.applyStickyStart(this._stickyStart);
+-        } else {
++        } else if (!this._hasManualScroll) {
+           if (this._stickyScrollTop) {
+             this.scrollTop = 0;
+           } else if (this._stickyScrollBottom && newMaxScrollTop > 0) {

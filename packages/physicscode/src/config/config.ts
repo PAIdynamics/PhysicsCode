@@ -20,6 +20,7 @@ import { Account } from "@/account/account"
 import { isRecord } from "@/util/record"
 import type { ConsoleState } from "./console-state"
 import { AppFileSystem } from "@physicscode-ai/core/filesystem"
+import { ModelsDev } from "@/provider/models"
 import { InstanceState } from "@/effect/instance-state"
 import { Context, Duration, Effect, Exit, Fiber, Layer, Option, Schema } from "effect"
 import { EffectFlock } from "@physicscode-ai/core/util/effect-flock"
@@ -610,9 +611,7 @@ export const layer = Layer.effect(
         }
 
         result.enabled_providers =
-          result.enabled_providers?.length === 1 && result.enabled_providers[0] === "paidynamics"
-            ? ["paidynamics", "openai", "anthropic"]
-            : (result.enabled_providers ?? ["paidynamics", "openai", "anthropic"])
+          ModelsDev.normalizeFrontierEnabledProviders(result.enabled_providers) ?? [...ModelsDev.FRONTIER_PROVIDER_IDS]
         result.model ??= "paidynamics/pai-120b"
         result.small_model ??= result.model
         result.default_agent ??= "science"

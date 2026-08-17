@@ -334,6 +334,41 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         options: {},
       }
     }),
+    "physicscode-openai": Effect.fnUntraced(function* (input: Info) {
+      const apiKey = yield* dep.accountToken()
+      return {
+        // Requires an explicit choice, unlike paidynamics's free hosted
+        // model - this spends real PhysicsCode credit at real vendor
+        // pricing, so it shouldn't become the default just because the
+        // user is logged in.
+        autoload: false,
+        async getModel(sdk: any, modelID: string) {
+          const freshApiKey = await Effect.runPromise(dep.accountToken())
+          if (!freshApiKey) throw new LoadAPIKeyError({ message: PAIDYNAMICS_LOGIN_REQUIRED_MESSAGE })
+          return sdk.chat(modelID)
+        },
+        options: {
+          apiKey: apiKey ?? "physicscode-login-required",
+        },
+      }
+    }),
+    "physicscode-anthropic": Effect.fnUntraced(function* (input: Info) {
+      const apiKey = yield* dep.accountToken()
+      return {
+        autoload: false,
+        async getModel(sdk: any, modelID: string) {
+          const freshApiKey = await Effect.runPromise(dep.accountToken())
+          if (!freshApiKey) throw new LoadAPIKeyError({ message: PAIDYNAMICS_LOGIN_REQUIRED_MESSAGE })
+          return sdk.languageModel(modelID)
+        },
+        options: {
+          apiKey: apiKey ?? "physicscode-login-required",
+          headers: {
+            "anthropic-beta": "interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
+          },
+        },
+      }
+    }),
     xai: () =>
       Effect.succeed({
         autoload: false,

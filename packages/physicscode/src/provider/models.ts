@@ -188,7 +188,17 @@ const curatedProvider = (
   } satisfies Provider
 }
 
-export const FRONTIER_PROVIDER_IDS = ["paidynamics", "openai", "anthropic"] as const
+// "physicscode-openai"/"physicscode-anthropic" (PHYSICSCODE_OPENAI_PROVIDER_ID
+// / PHYSICSCODE_ANTHROPIC_PROVIDER_ID below) are spelled out as literals here
+// rather than referencing those consts, which are declared later in this
+// file - this array is evaluated at module load, before that point.
+export const FRONTIER_PROVIDER_IDS = [
+  "paidynamics",
+  "openai",
+  "anthropic",
+  "physicscode-openai",
+  "physicscode-anthropic",
+] as const
 export const normalizeFrontierEnabledProviders = (enabled?: string[]) => {
   if (!enabled) return undefined
   if (enabled.length === 1 && enabled[0] === PAIDYNAMICS_PROVIDER_ID) return [...FRONTIER_PROVIDER_IDS]
@@ -358,6 +368,37 @@ function curatedAnthropic(provider: Provider | undefined) {
   })
 }
 
+// Lets a logged-in PhysicsCode user pay for real OpenAI/Anthropic usage out
+// of their PhysicsCode credit instead of bringing their own vendor key - the
+// Worker at PHYSICSCODE_*_BASE_URL debits their account and forwards to the
+// real API. Reuses the curated frontier model metadata (names/limits) so it
+// doesn't drift from the BYOK "openai"/"anthropic" providers; only the
+// provider id, auth, and upstream URL differ.
+export const PHYSICSCODE_OPENAI_PROVIDER_ID = "physicscode-openai"
+export const PHYSICSCODE_OPENAI_BASE_URL = "https://www.physicscode.ai/openai/v1"
+export const PHYSICSCODE_ANTHROPIC_PROVIDER_ID = "physicscode-anthropic"
+export const PHYSICSCODE_ANTHROPIC_BASE_URL = "https://www.physicscode.ai/anthropic"
+
+function rebrandFrontierProvider(
+  source: Provider,
+  opts: { id: string; name: string; baseURL: string; npm: string },
+): Provider {
+  return {
+    ...source,
+    id: opts.id,
+    name: opts.name,
+    api: opts.baseURL,
+    npm: opts.npm,
+    env: [],
+    models: Object.fromEntries(
+      Object.entries(source.models).map(([modelID, model]) => [
+        modelID,
+        { ...model, provider: { npm: opts.npm, api: opts.baseURL } },
+      ]),
+    ),
+  }
+}
+
 function url() {
   return Flag.PHYSICSCODE_MODELS_URL || "https://models.dev"
 }
@@ -403,11 +444,25 @@ export const Data = lazy(async () => {
 export async function get(): Promise<Record<string, Provider>> {
   const result = await Data()
   const providers = result as Record<string, Provider>
+  const curatedOpenAIProvider = curatedOpenAI(providers.openai)
+  const curatedAnthropicProvider = curatedAnthropic(providers.anthropic)
   return {
     ...providers,
     [PAIDYNAMICS_PROVIDER_ID]: PaidynamicsProvider,
-    openai: curatedOpenAI(providers.openai),
-    anthropic: curatedAnthropic(providers.anthropic),
+    openai: curatedOpenAIProvider,
+    anthropic: curatedAnthropicProvider,
+    [PHYSICSCODE_OPENAI_PROVIDER_ID]: rebrandFrontierProvider(curatedOpenAIProvider, {
+      id: PHYSICSCODE_OPENAI_PROVIDER_ID,
+      name: "PhysicsCode Credit (OpenAI)",
+      baseURL: PHYSICSCODE_OPENAI_BASE_URL,
+      npm: "@ai-sdk/openai-compatible",
+    }),
+    [PHYSICSCODE_ANTHROPIC_PROVIDER_ID]: rebrandFrontierProvider(curatedAnthropicProvider, {
+      id: PHYSICSCODE_ANTHROPIC_PROVIDER_ID,
+      name: "PhysicsCode Credit (Anthropic)",
+      baseURL: PHYSICSCODE_ANTHROPIC_BASE_URL,
+      npm: "@ai-sdk/anthropic",
+    }),
   }
 }
 

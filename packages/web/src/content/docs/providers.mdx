@@ -116,6 +116,31 @@ It works like any other provider in PhysicsCode and is completely optional to us
 
 ---
 
+## PhysicsCode Credit (OpenAI / Anthropic)
+
+If you're logged in to a PhysicsCode account, you can run real OpenAI and
+Anthropic models through PhysicsCode's proxy without bringing your own vendor
+API key — usage is billed against your PhysicsCode account credit at the
+vendor's real pricing instead.
+
+1. Log in with `physicscode account login` (or `/connect` in the TUI).
+2. Select `PhysicsCode Credit (OpenAI)` or `PhysicsCode Credit (Anthropic)` —
+   no separate API key to paste, it uses your logged-in account.
+3. Run `/models` to see what's available
+   (`physicscode-openai/gpt-5.6`, `physicscode-anthropic/claude-opus-4-8`,
+   etc).
+
+Requests stop once your credit balance reaches zero, and a single request
+estimated to cost more than the configured per-request limit is rejected
+before it's sent rather than after. Check your balance and usage history in
+the account portal's Billing tab.
+
+This depends on the server operator having configured real vendor API keys;
+until then, selecting one of these providers returns a
+`provider_not_configured` error.
+
+---
+
 ## Directory
 
 Let's look at some of the providers in detail. If you'd like to add a provider to the

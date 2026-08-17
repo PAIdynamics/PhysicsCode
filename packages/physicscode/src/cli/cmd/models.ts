@@ -43,7 +43,8 @@ export const ModelsCommand = cmd({
             const config = yield* cfg.get()
             const all = yield* Effect.promise(() => ModelsDev.get())
             const disabled = new Set(config.disabled_providers ?? [])
-            const enabled = config.enabled_providers ? new Set(config.enabled_providers) : undefined
+            const normalizedEnabled = ModelsDev.normalizeFrontierEnabledProviders(config.enabled_providers)
+            const enabled = normalizedEnabled ? new Set(normalizedEnabled) : undefined
             const providers: typeof all = {}
 
             for (const [providerID, provider] of Object.entries(all)) {

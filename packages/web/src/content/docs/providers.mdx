@@ -48,80 +48,28 @@ You can customize the base URL for any provider by setting the `baseURL` option.
 
 ---
 
-## PhysicsCode Zen
+## PAI Dynamics Hosted (Zen)
 
-PhysicsCode Zen is a list of models provided by the PhysicsCode team that have been
-tested and verified to work well with PhysicsCode. [Learn more](/docs/zen).
+PhysicsCode's default, no-setup model provider — log in and go, no separate
+API key or billing setup needed. [Learn more](/docs/zen).
 
 :::tip
-If you are new, we recommend starting with PhysicsCode Zen.
+If you are new, we recommend starting here.
 :::
 
-1. Run the `/connect` command in the TUI, select `PhysicsCode Zen`, and head to [physicscode.ai/auth](https://physicscode.ai/zen).
-
-   ```txt
-   /connect
-   ```
-
-2. Sign in, add your billing details, and copy your API key.
-
-3. Paste your API key.
-
-   ```txt
-   ┌ API key
-   │
-   │
-   └ enter
-   ```
-
-4. Run `/models` in the TUI to see the list of models we recommend.
-
-   ```txt
-   /models
-   ```
+1. Run `physicscode account login` (or `/connect` in the TUI and select **PAI
+   Dynamics Hosted**).
+2. Run `/models` to see what's currently being served.
 
 It works like any other provider in PhysicsCode and is completely optional to use.
 
 ---
 
-## PhysicsCode Go
+## PhysicsCode Credit for OpenAI/Anthropic (Go)
 
-PhysicsCode Go is a low cost subscription plan that provides reliable access to popular open coding models provided by the PhysicsCode team that have been
-tested and verified to work well with PhysicsCode.
-
-1. Run the `/connect` command in the TUI, select `PhysicsCode Go`, and head to [physicscode.ai/auth](https://physicscode.ai/zen).
-
-   ```txt
-   /connect
-   ```
-
-2. Sign in, add your billing details, and copy your API key.
-
-3. Paste your API key.
-
-   ```txt
-   ┌ API key
-   │
-   │
-   └ enter
-   ```
-
-4. Run `/models` in the TUI to see the list of models we recommend.
-
-   ```txt
-   /models
-   ```
-
-It works like any other provider in PhysicsCode and is completely optional to use.
-
----
-
-## PhysicsCode Credit (OpenAI / Anthropic)
-
-If you're logged in to a PhysicsCode account, you can run real OpenAI and
-Anthropic models through PhysicsCode's proxy without bringing your own vendor
-API key — usage is billed against your PhysicsCode account credit at the
-vendor's real pricing instead.
+Run real OpenAI and Anthropic models through PhysicsCode's proxy without
+bringing your own vendor API key — billed against your PhysicsCode account
+credit at the vendor's real pricing instead. [Learn more](/docs/go).
 
 1. Log in with `physicscode account login` (or `/connect` in the TUI).
 2. Select `PhysicsCode Credit (OpenAI)` or `PhysicsCode Credit (Anthropic)` —

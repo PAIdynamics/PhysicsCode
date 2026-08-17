@@ -232,6 +232,67 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
           apiKey: apiKey ?? "physicscode-login-required",
           ...(baseURL ? { baseURL } : {}),
         },
+        // The hosted/self-hosted endpoint may be serving a different model
+        // (or several) than whatever is hardcoded below as a fallback -
+        // ask it what's actually available via the standard OpenAI-style
+        // /models listing, same as the "openai" provider does above, so
+        // switching the served checkpoint on the server takes effect here
+        // without a physicscode release.
+        async discoverModels(): Promise<Record<string, Model>> {
+          if (!apiKey || !baseURL) return {}
+          try {
+            const response = await fetch(`${baseURL.replace(/\/$/, "")}/models`, {
+              headers: { Authorization: `Bearer ${apiKey}` },
+              signal: AbortSignal.timeout(10000),
+            })
+            if (!response.ok) return {}
+            const body = (await response.json()) as { data?: Array<{ id?: unknown }> }
+            const models: Record<string, Model> = {}
+            for (const item of body.data ?? []) {
+              const id = typeof item.id === "string" ? item.id : undefined
+              // /models has no task field, so drop the embedding/reranker
+              // checkpoints this server also happens to host by id pattern.
+              if (!id || /bge|rerank|embed/i.test(id)) continue
+              // Strip the provider prefix models.dev-style ids like
+              // "paidynamics/gpt-oss-120b-pai" already carry, so CLI
+              // addressing stays "paidynamics/gpt-oss-120b-pai" instead of
+              // doubling up as "paidynamics/paidynamics/gpt-oss-120b-pai".
+              const shortId = id.replace(/^paidynamics\//, "")
+              if (input.models[shortId]) continue
+              models[shortId] = {
+                id: ModelID.make(shortId),
+                providerID: ProviderID.make(ModelsDev.PAIDYNAMICS_PROVIDER_ID),
+                name: shortId.replace(/-pai$/, ""),
+                family: "pai",
+                api: {
+                  id,
+                  url: baseURL,
+                  npm: "@ai-sdk/openai-compatible",
+                },
+                status: "active",
+                headers: {},
+                options: {},
+                cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
+                limit: { context: 131072, output: 8192 },
+                capabilities: {
+                  temperature: true,
+                  reasoning: true,
+                  attachment: false,
+                  toolcall: true,
+                  input: { text: true, audio: false, image: false, video: false, pdf: false },
+                  output: { text: true, audio: false, image: false, video: false, pdf: false },
+                  interleaved: false,
+                },
+                release_date: "",
+                variants: {},
+              }
+            }
+            return models
+          } catch (e) {
+            log.warn("paidynamics model discovery failed", { error: e })
+            return {}
+          }
+        },
       }
     }),
     openai: Effect.fnUntraced(function* (input: Info) {
@@ -1481,18 +1542,19 @@ const layer: Layer.Layer<
           mergeProvider(providerID, partial)
         }
 
-        const gitlab = ProviderID.make("gitlab")
-        if (discoveryLoaders[gitlab] && providers[gitlab] && isProviderAllowed(gitlab)) {
+        for (const [id, loader] of Object.entries(discoveryLoaders)) {
+          const providerID = ProviderID.make(id)
+          if (!providers[providerID] || !isProviderAllowed(providerID)) continue
           yield* Effect.promise(async () => {
             try {
-              const discovered = await discoveryLoaders[gitlab]()
+              const discovered = await loader()
               for (const [modelID, model] of Object.entries(discovered)) {
-                if (!providers[gitlab].models[modelID]) {
-                  providers[gitlab].models[modelID] = model
+                if (!providers[providerID].models[modelID]) {
+                  providers[providerID].models[modelID] = model
                 }
               }
             } catch (e) {
-              log.warn("state discovery error", { id: "gitlab", error: e })
+              log.warn("state discovery error", { id, error: e })
             }
           })
         }

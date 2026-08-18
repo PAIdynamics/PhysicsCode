@@ -449,8 +449,6 @@ export async function get(): Promise<Record<string, Provider>> {
   return {
     ...providers,
     [PAIDYNAMICS_PROVIDER_ID]: PaidynamicsProvider,
-    openai: curatedOpenAIProvider,
-    anthropic: curatedAnthropicProvider,
     [PHYSICSCODE_OPENAI_PROVIDER_ID]: rebrandFrontierProvider(curatedOpenAIProvider, {
       id: PHYSICSCODE_OPENAI_PROVIDER_ID,
       name: "PhysicsCode Credit (OpenAI)",

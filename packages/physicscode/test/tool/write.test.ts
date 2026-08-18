@@ -181,11 +181,20 @@ describe("tool.write", () => {
       provideTmpdirInstance((dir) =>
         Effect.gen(function* () {
           const filepath = path.join(dir, "sensitive.json")
-          yield* run({ filePath: filepath, content: JSON.stringify({ secret: "data" }) })
+          // write doesn't chmod explicitly - the resulting mode is 0o666
+          // masked by the process umask. Pin a standard umask here so this
+          // assertion is deterministic instead of depending on the host's
+          // umask (e.g. permissive dev containers with umask 0002).
+          const previousUmask = process.platform !== "win32" ? process.umask(0o022) : undefined
+          try {
+            yield* run({ filePath: filepath, content: JSON.stringify({ secret: "data" }) })
 
-          if (process.platform !== "win32") {
-            const stats = yield* Effect.promise(() => fs.stat(filepath))
-            expect(stats.mode & 0o777).toBe(0o644)
+            if (process.platform !== "win32") {
+              const stats = yield* Effect.promise(() => fs.stat(filepath))
+              expect(stats.mode & 0o777).toBe(0o644)
+            }
+          } finally {
+            if (previousUmask !== undefined) process.umask(previousUmask)
           }
         }),
       ),

@@ -610,8 +610,15 @@ export const layer = Layer.effect(
           log.debug("loaded custom config from PHYSICSCODE_CONFIG_CONTENT")
         }
 
-        result.enabled_providers =
-          ModelsDev.normalizeFrontierEnabledProviders(result.enabled_providers) ?? [...ModelsDev.FRONTIER_PROVIDER_IDS]
+        // Only widen the "paidynamics"-only shorthand into the full frontier
+        // set; leave enabled_providers unset (no restriction) otherwise, so
+        // configuring a provider that isn't paidynamics/openai/anthropic
+        // doesn't silently disappear from the provider list. Delete rather
+        // than assign undefined so it's omitted from JSON responses instead
+        // of serializing as an explicit null.
+        const normalizedEnabledProviders = ModelsDev.normalizeFrontierEnabledProviders(result.enabled_providers)
+        if (normalizedEnabledProviders) result.enabled_providers = normalizedEnabledProviders
+        else delete result.enabled_providers
         result.model ??= "paidynamics/pai-120b"
         result.small_model ??= result.model
         result.default_agent ??= "science"

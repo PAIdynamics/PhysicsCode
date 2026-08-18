@@ -597,13 +597,17 @@ description: Permission skill.
   }
 })
 
-test("defaultAgent returns build when no default_agent config", async () => {
+test("defaultAgent returns science when no default_agent config", async () => {
+  // config.ts defaults default_agent to "science" (PhysicsCode's primary
+  // agent) when unset, so this is what physicscode actually resolves to
+  // out of the box - see the "no primary visible agent found" tests below
+  // for the underlying fallback-search behavior this shortcuts around.
   await using tmp = await tmpdir()
   await Instance.provide({
     directory: tmp.path,
     fn: async () => {
       const agent = await load(tmp.path, (svc) => svc.defaultAgent())
-      expect(agent).toBe("build")
+      expect(agent).toBe("science")
     },
   })
 })
@@ -690,7 +694,12 @@ test("defaultAgent throws when default_agent points to non-existent agent", asyn
 test("defaultAgent returns plan when build is disabled and default_agent not set", async () => {
   await using tmp = await tmpdir({
     config: {
+      // config.ts only fills in the "science" default via `??=`, which
+      // leaves an explicit "" alone - set it to force the same
+      // no-default-configured fallback search this test is after.
+      default_agent: "",
       agent: {
+        science: { disable: true },
         build: { disable: true },
       },
     },
@@ -699,7 +708,7 @@ test("defaultAgent returns plan when build is disabled and default_agent not set
     directory: tmp.path,
     fn: async () => {
       const agent = await load(tmp.path, (svc) => svc.defaultAgent())
-      // build is disabled, so it should return plan (next primary agent)
+      // science and build are disabled, so it should return plan (next primary agent)
       expect(agent).toBe("plan")
     },
   })
@@ -708,7 +717,9 @@ test("defaultAgent returns plan when build is disabled and default_agent not set
 test("defaultAgent throws when all primary agents are disabled", async () => {
   await using tmp = await tmpdir({
     config: {
+      default_agent: "",
       agent: {
+        science: { disable: true },
         build: { disable: true },
         plan: { disable: true },
       },
@@ -717,7 +728,7 @@ test("defaultAgent throws when all primary agents are disabled", async () => {
   await Instance.provide({
     directory: tmp.path,
     fn: async () => {
-      // build and plan are disabled, no primary-capable agents remain
+      // science, build, and plan are disabled, no primary-capable agents remain
       await expect(load(tmp.path, (svc) => svc.defaultAgent())).rejects.toThrow("no primary visible agent found")
     },
   })

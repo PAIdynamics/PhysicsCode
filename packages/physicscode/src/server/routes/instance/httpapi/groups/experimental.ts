@@ -35,6 +35,51 @@ export const ConsoleSwitchPayload = Schema.Struct({
   orgID: OrgID,
 })
 
+// Account.Login/PollResult carry Effect Duration/Defect fields that don't
+// round-trip through JSON well, so - matching the legacy Hono routes in
+// ../../experimental.ts - these use hand-rolled wire shapes (ms instead of
+// Duration, string instead of Defect) rather than the Effect Schema classes
+// directly.
+export const ConsoleLoginPayload = Schema.Struct({
+  url: Schema.String,
+})
+
+const ConsoleLoginStart = Schema.Struct({
+  code: Schema.String,
+  user: Schema.String,
+  url: Schema.String,
+  server: Schema.String,
+  expiryMs: Schema.Number,
+  intervalMs: Schema.Number,
+}).annotate({ identifier: "ConsoleLoginStart" })
+
+export const ConsoleLoginPollPayload = ConsoleLoginStart
+
+const ConsoleLoginPollResult = Schema.Union([
+  Schema.Struct({ status: Schema.Literal("success"), email: Schema.String }),
+  Schema.Struct({ status: Schema.Literal("pending") }),
+  Schema.Struct({ status: Schema.Literal("slow") }),
+  Schema.Struct({ status: Schema.Literal("expired") }),
+  Schema.Struct({ status: Schema.Literal("denied") }),
+  Schema.Struct({ status: Schema.Literal("error"), message: Schema.String }),
+]).annotate({ identifier: "ConsoleLoginPollResult" })
+
+export const ConsoleLoginApiKeyPayload = Schema.Struct({
+  url: Schema.String,
+  apiKey: Schema.String,
+})
+
+const ConsoleAccount = Schema.Struct({
+  id: Schema.String,
+  email: Schema.String,
+  url: Schema.String,
+  activeOrgID: Schema.NullOr(Schema.String),
+}).annotate({ identifier: "ConsoleAccount" })
+
+export const ConsoleLogoutPayload = Schema.Struct({
+  accountID: AccountID,
+})
+
 const ToolIDs = Schema.Array(Schema.String).annotate({ identifier: "ToolIDs" })
 const ToolListItem = Schema.Struct({
   id: Schema.String,
@@ -68,6 +113,10 @@ export const ExperimentalPaths = {
   console: "/experimental/console",
   consoleOrgs: "/experimental/console/orgs",
   consoleSwitch: "/experimental/console/switch",
+  consoleLogin: "/experimental/console/login",
+  consoleLoginPoll: "/experimental/console/login/poll",
+  consoleLoginApiKey: "/experimental/console/login/api-key",
+  consoleLogout: "/experimental/console/logout",
   tool: "/experimental/tool",
   toolIDs: "/experimental/tool/ids",
   worktree: "/experimental/worktree",
@@ -107,6 +156,52 @@ export const ExperimentalApi = HttpApi.make("experimental")
             identifier: "experimental.console.switchOrg",
             summary: "Switch active Console org",
             description: "Persist a new active Console account/org selection for the current local PhysicsCode state.",
+          }),
+        ),
+        HttpApiEndpoint.post("consoleLogin", ExperimentalPaths.consoleLogin, {
+          payload: ConsoleLoginPayload,
+          success: described(ConsoleLoginStart, "Device code login started"),
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "experimental.console.login",
+            summary: "Start Console device-code login",
+            description:
+              "Begin an OAuth device-code login against a Console server. Returns a URL and user code to present to " +
+              "the user, plus the poll interval/expiry (in ms) -- pass the returned object as-is to /console/login/poll.",
+          }),
+        ),
+        HttpApiEndpoint.post("consoleLoginPoll", ExperimentalPaths.consoleLoginPoll, {
+          payload: ConsoleLoginPollPayload,
+          success: described(ConsoleLoginPollResult, "Poll result"),
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "experimental.console.loginPoll",
+            summary: "Poll Console device-code login",
+            description:
+              "Poll the status of a device-code login started via /console/login. Pass the exact object returned by " +
+              "that endpoint. Call repeatedly (respecting `intervalMs`, and the longer interval on a `slow` result) " +
+              "until the status is no longer `pending`/`slow`.",
+          }),
+        ),
+        HttpApiEndpoint.post("consoleLoginApiKey", ExperimentalPaths.consoleLoginApiKey, {
+          payload: ConsoleLoginApiKeyPayload,
+          success: described(ConsoleAccount, "Logged in account"),
+          error: HttpApiError.BadRequest,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "experimental.console.loginApiKey",
+            summary: "Log in to Console with a personal API key",
+            description: "Log in to a Console server using a personal API key instead of the device-code flow.",
+          }),
+        ),
+        HttpApiEndpoint.post("consoleLogout", ExperimentalPaths.consoleLogout, {
+          payload: ConsoleLogoutPayload,
+          success: described(Schema.Boolean, "Logout success"),
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "experimental.console.logout",
+            summary: "Log out of a Console account",
+            description: "Remove a logged-in Console account.",
           }),
         ),
         HttpApiEndpoint.get("tool", ExperimentalPaths.tool, {

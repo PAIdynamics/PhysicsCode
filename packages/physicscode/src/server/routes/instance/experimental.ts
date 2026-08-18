@@ -50,7 +50,7 @@ const ConsoleLoginStart = z.object({
   intervalMs: z.number(),
 })
 
-function toWireLogin(login: Account.Login) {
+export function toWireLogin(login: Account.Login) {
   return {
     code: login.code,
     user: login.user,
@@ -61,7 +61,7 @@ function toWireLogin(login: Account.Login) {
   }
 }
 
-function fromWireLogin(body: z.infer<typeof ConsoleLoginStart>): Account.Login {
+export function fromWireLogin(body: z.infer<typeof ConsoleLoginStart>): Account.Login {
   return Account.Login.make({
     code: Account.DeviceCode.make(body.code),
     user: Account.UserCode.make(body.user),
@@ -81,7 +81,7 @@ const ConsoleLoginPollResult = z.discriminatedUnion("status", [
   z.object({ status: z.literal("error"), message: z.string() }),
 ])
 
-function toWirePollResult(result: Account.PollResult): z.infer<typeof ConsoleLoginPollResult> {
+export function toWirePollResult(result: Account.PollResult): z.infer<typeof ConsoleLoginPollResult> {
   switch (result._tag) {
     case "PollSuccess":
       return { status: "success", email: result.email }
@@ -105,7 +105,7 @@ const ConsoleAccount = z.object({
   activeOrgID: z.string().nullable(),
 })
 
-function toWireAccount(info: Account.Info): z.infer<typeof ConsoleAccount> {
+export function toWireAccount(info: Account.Info): z.infer<typeof ConsoleAccount> {
   return {
     id: info.id,
     email: info.email,

@@ -6,6 +6,7 @@ import { Config } from "@/config/config"
 import { Identifier } from "../../src/id/id"
 import { Process } from "@/util/process"
 import { Filesystem } from "@/util/filesystem"
+import fsPromises from "fs/promises"
 import path from "path"
 import { testEffect } from "../lib/effect"
 import { writeFileStringScoped } from "../lib/filesystem"
@@ -245,11 +246,15 @@ describe("Truncate", () => {
 
         yield* fs.makeDirectory(Truncate.DIR, { recursive: true })
 
-        const old = path.join(Truncate.DIR, Identifier.create("tool", "ascending", Date.now() - 10 * DAY_MS))
-        const recent = path.join(Truncate.DIR, Identifier.create("tool", "ascending", Date.now() - 3 * DAY_MS))
+        const old = path.join(Truncate.DIR, Identifier.create("tool", "ascending"))
+        const recent = path.join(Truncate.DIR, Identifier.create("tool", "ascending"))
 
         yield* writeFileStringScoped(old, "old content")
         yield* writeFileStringScoped(recent, "recent content")
+        // cleanup() ages files off by mtime, not by anything encoded in the
+        // filename, so backdate them directly.
+        yield* Effect.promise(() => fsPromises.utimes(old, new Date(Date.now() - 10 * DAY_MS), new Date(Date.now() - 10 * DAY_MS)))
+        yield* Effect.promise(() => fsPromises.utimes(recent, new Date(Date.now() - 3 * DAY_MS), new Date(Date.now() - 3 * DAY_MS)))
         yield* svc.cleanup()
 
         expect(yield* fs.exists(old)).toBe(false)

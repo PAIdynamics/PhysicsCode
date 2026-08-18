@@ -1913,9 +1913,17 @@ const layer: Layer.Layer<
     const getSmallModel = Effect.fn("Provider.getSmallModel")(function* (providerID: ProviderID) {
       const cfg = yield* config.get()
 
+      // small_model defaults to the main model (config.ts), so it's set for
+      // almost everyone - only take this shortcut when it actually names a
+      // model on the provider being asked about. Otherwise a global default
+      // pointed at one provider would hijack getSmallModel(providerID) calls
+      // for every other provider (e.g. title generation always routing
+      // through paidynamics regardless of which provider the session uses).
       if (cfg.small_model) {
         const parsed = parseModel(cfg.small_model)
-        return yield* getModel(parsed.providerID, parsed.modelID)
+        if (parsed.providerID === providerID) {
+          return yield* getModel(parsed.providerID, parsed.modelID)
+        }
       }
 
       const s = yield* InstanceState.get(state)
@@ -1968,9 +1976,22 @@ const layer: Layer.Layer<
 
     const defaultModel = Effect.fn("Provider.defaultModel")(function* () {
       const cfg = yield* config.get()
-      if (cfg.model) return parseModel(cfg.model)
-
       const s = yield* InstanceState.get(state)
+
+      // config.ts defaults `model` to paidynamics/pai-120b whenever the user
+      // hasn't set one, so cfg.model is set for almost everyone - only trust
+      // it when that provider/model is actually available, otherwise fall
+      // through to the recent-history/first-available-provider logic below
+      // (e.g. a config that only sets up a different provider shouldn't be
+      // silently overridden by the paidynamics default).
+      if (cfg.model) {
+        const parsed = parseModel(cfg.model)
+        if (s.providers[parsed.providerID]?.models[parsed.modelID]) {
+          const ids = yield* credentialed(s.providers)
+          if (ids.includes(parsed.providerID)) return parsed
+        }
+      }
+
       const recent = yield* fs.readJson(path.join(Global.Path.state, "model.json")).pipe(
         Effect.map((x): { providerID: ProviderID; modelID: ModelID }[] => {
           if (!isRecord(x) || !Array.isArray(x.recent)) return []

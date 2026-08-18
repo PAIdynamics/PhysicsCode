@@ -11,8 +11,17 @@ import { Worktree } from "@/worktree"
 import { Effect, Option } from "effect"
 import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse"
 import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi"
+import { toWireAccount, toWireLogin, toWirePollResult, fromWireLogin } from "../../experimental"
 import { InstanceHttpApi } from "../api"
-import { ConsoleSwitchPayload, SessionListQuery, ToolListQuery } from "../groups/experimental"
+import {
+  ConsoleSwitchPayload,
+  ConsoleLoginPayload,
+  ConsoleLoginPollPayload,
+  ConsoleLoginApiKeyPayload,
+  ConsoleLogoutPayload,
+  SessionListQuery,
+  ToolListQuery,
+} from "../groups/experimental"
 
 export const experimentalHandlers = HttpApiBuilder.group(InstanceHttpApi, "experimental", (handlers) =>
   Effect.gen(function* () {
@@ -66,6 +75,35 @@ export const experimentalHandlers = HttpApiBuilder.group(InstanceHttpApi, "exper
       yield* account
         .use(ctx.payload.accountID, Option.some(ctx.payload.orgID))
         .pipe(Effect.catch(() => Effect.fail(new HttpApiError.BadRequest({}))))
+      return true
+    })
+
+    const login = Effect.fn("ExperimentalHttpApi.consoleLogin")(function* (ctx: {
+      payload: typeof ConsoleLoginPayload.Type
+    }) {
+      return toWireLogin(yield* account.login(ctx.payload.url).pipe(Effect.orDie))
+    })
+
+    const loginPoll = Effect.fn("ExperimentalHttpApi.consoleLoginPoll")(function* (ctx: {
+      payload: typeof ConsoleLoginPollPayload.Type
+    }) {
+      return toWirePollResult(yield* account.poll(fromWireLogin(ctx.payload)).pipe(Effect.orDie))
+    })
+
+    const loginApiKey = Effect.fn("ExperimentalHttpApi.consoleLoginApiKey")(function* (ctx: {
+      payload: typeof ConsoleLoginApiKeyPayload.Type
+    }) {
+      return toWireAccount(
+        yield* account
+          .loginWithApiKey(ctx.payload.url, ctx.payload.apiKey)
+          .pipe(Effect.catch(() => Effect.fail(new HttpApiError.BadRequest({})))),
+      )
+    })
+
+    const logout = Effect.fn("ExperimentalHttpApi.consoleLogout")(function* (ctx: {
+      payload: typeof ConsoleLogoutPayload.Type
+    }) {
+      yield* account.remove(ctx.payload.accountID).pipe(Effect.orDie)
       return true
     })
 
@@ -143,6 +181,10 @@ export const experimentalHandlers = HttpApiBuilder.group(InstanceHttpApi, "exper
       .handle("console", getConsole)
       .handle("consoleOrgs", listConsoleOrgs)
       .handle("consoleSwitch", switchConsole)
+      .handle("consoleLogin", login)
+      .handle("consoleLoginPoll", loginPoll)
+      .handle("consoleLoginApiKey", loginApiKey)
+      .handle("consoleLogout", logout)
       .handle("tool", tool)
       .handle("toolIDs", toolIDs)
       .handle("worktree", worktree)

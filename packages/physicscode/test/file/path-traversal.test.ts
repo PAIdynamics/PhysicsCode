@@ -1,11 +1,18 @@
 import { test, expect, describe } from "bun:test"
 import { Effect } from "effect"
+import os from "os"
 import path from "path"
 import fs from "fs/promises"
 import { Filesystem } from "@/util/filesystem"
 import { File } from "../../src/file"
 import { Instance } from "../../src/project/instance"
 import { provideInstance, tmpdir } from "../fixture/fixture"
+
+// A path guaranteed to sit outside any given project, without assuming a
+// Unix-style filesystem root - os.tmpdir() is on whatever drive/volume the
+// test's own tmpdir() fixture uses, avoiding spurious cross-drive results
+// on Windows CI runners (see Filesystem.contains/overlaps).
+const outsidePath = (...parts: string[]) => path.join(os.tmpdir(), "physicscode-outside-project", ...parts)
 
 const run = <A, E>(eff: Effect.Effect<A, E, File.Service>) =>
   Effect.runPromise(provideInstance(Instance.directory)(eff.pipe(Effect.provide(File.defaultLayer))))
@@ -158,8 +165,8 @@ describe("Instance.containsPath", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: () => {
-        expect(Instance.containsPath("/etc/passwd")).toBe(false)
-        expect(Instance.containsPath("/tmp/other-project")).toBe(false)
+        expect(Instance.containsPath(outsidePath("etc", "passwd"))).toBe(false)
+        expect(Instance.containsPath(outsidePath("other-project"))).toBe(false)
       },
     })
   })
@@ -183,7 +190,7 @@ describe("Instance.containsPath", () => {
       fn: () => {
         expect(Instance.directory).toBe(Instance.worktree)
         expect(Instance.containsPath(path.join(tmp.path, "file.txt"))).toBe(true)
-        expect(Instance.containsPath("/etc/passwd")).toBe(false)
+        expect(Instance.containsPath(outsidePath("etc", "passwd"))).toBe(false)
       },
     })
   })
@@ -196,8 +203,8 @@ describe("Instance.containsPath", () => {
       fn: () => {
         // worktree is "/" for non-git projects, but containsPath should NOT allow all paths
         expect(Instance.containsPath(path.join(tmp.path, "file.txt"))).toBe(true)
-        expect(Instance.containsPath("/etc/passwd")).toBe(false)
-        expect(Instance.containsPath("/tmp/other")).toBe(false)
+        expect(Instance.containsPath(outsidePath("etc", "passwd"))).toBe(false)
+        expect(Instance.containsPath(outsidePath("other"))).toBe(false)
       },
     })
   })

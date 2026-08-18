@@ -15,7 +15,7 @@
     },
     "physicscode#test:ci": {
       "dependsOn": ["^build"],
-      "outputs": [".artifacts/unit/junit.xml"],
+      "outputs": [".artifacts/unit/junit.xml", ".artifacts/coverage/**"],
       "passThroughEnv": ["*"]
     },
     "@physicscode-ai/app#test": {

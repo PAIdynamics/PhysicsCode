@@ -25,7 +25,6 @@ Du kan indstille tilladelser globalt (med `*`) og tilsidesætte specifikke værk
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "*": "ask",
     "bash": "allow",
@@ -38,7 +37,6 @@ Du kan også indstille alle tilladelser på én gang:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": "allow"
 }
 ```
@@ -51,7 +49,6 @@ For de fleste tilladelser kan du bruge et objekt til at anvende forskellige hand
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "bash": {
       "*": "ask",
@@ -96,7 +93,6 @@ For eksempel giver dette adgang til alt under `~/projects/personal/`:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "external_directory": {
       "~/projects/personal/**": "allow"
@@ -109,7 +105,6 @@ Enhver mappe, der er tilladt her, arver de samme standarder som det aktuelle arb
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "external_directory": {
       "~/projects/personal/**": "allow"
@@ -189,7 +184,6 @@ Se afsnittet [Granular Rules (Object Syntax)](#granular-rules-object-syntax) ove
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "bash": {
       "*": "ask",

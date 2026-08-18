@@ -71,7 +71,6 @@ You can customize LSP servers through the `lsp` section in your physicscode conf
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {}
 }
 ```
@@ -94,9 +93,8 @@ Let's look at some examples.
 
 Use the `env` property to set environment variables when starting the LSP server:
 
-```json title="physicscode.json" {5-7}
+```json title="physicscode.json" {4-6}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "rust": {
       "env": {
@@ -113,9 +111,8 @@ Use the `env` property to set environment variables when starting the LSP server
 
 Use the `initialization` property to pass initialization options to the LSP server. These are server-specific settings sent during the LSP `initialize` request:
 
-```json title="physicscode.json" {5-9}
+```json title="physicscode.json" {4-8}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "typescript": {
       "initialization": {
@@ -138,18 +135,16 @@ Initialization options vary by LSP server. Check your LSP server's documentation
 
 To disable **all** LSP servers globally, set `lsp` to `false`:
 
-```json title="physicscode.json" {3}
+```json title="physicscode.json" {2}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": false
 }
 ```
 
 To disable a **specific** LSP server, set `disabled` to `true`:
 
-```json title="physicscode.json" {5}
+```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "typescript": {
       "disabled": true
@@ -164,9 +159,8 @@ To disable a **specific** LSP server, set `disabled` to `true`:
 
 You can add custom LSP servers by specifying the command and file extensions:
 
-```json title="physicscode.json" {4-7}
+```json title="physicscode.json" {3-6}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "custom-lsp": {
       "command": ["custom-lsp-server", "--stdio"],

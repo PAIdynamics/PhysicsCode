@@ -70,7 +70,6 @@ Du kan tilpasse LSP-servere gennem sektionen `lsp` i din physicscode-konfigurati
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {}
 }
 ```
@@ -95,7 +94,6 @@ Brug egenskaben `env` til at indstille miljøvariabler, når du starter LSP-serv
 
 ```json title="physicscode.json" {5-7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "rust": {
       "env": {
@@ -114,7 +112,6 @@ Brug egenskaben `initialization` til at videregive initialiseringsindstillinger 
 
 ```json title="physicscode.json" {5-9}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "typescript": {
       "initialization": {
@@ -139,7 +136,6 @@ For at deaktivere **alle** LSP-servere globalt, skal du indstille `lsp` til `fal
 
 ```json title="physicscode.json" {3}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": false
 }
 ```
@@ -148,7 +144,6 @@ For at deaktivere en **specifik** LSP-server skal du indstille `disabled` til `t
 
 ```json title="physicscode.json" {5}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "typescript": {
       "disabled": true
@@ -165,7 +160,6 @@ Du kan tilføje brugerdefinerede LSP-servere ved at angive kommandoen og filtype
 
 ```json title="physicscode.json" {4-7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "custom-lsp": {
       "command": ["custom-lsp-server", "--stdio"],

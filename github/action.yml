@@ -13,10 +13,6 @@ inputs:
     description: "Agent to use. Must be a primary agent. Falls back to default_agent from config or 'build' if not found."
     required: false
 
-  share:
-    description: "Share the physicscode session (defaults to true for public repos)"
-    required: false
-
   prompt:
     description: "Custom prompt to override the default prompt"
     required: false
@@ -45,7 +41,7 @@ runs:
       id: version
       shell: bash
       run: |
-        VERSION=$(curl -sf https://api.github.com/repos/anomalyco/physicscode/releases/latest | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4)
+        VERSION=$(curl -sf https://api.github.com/repos/PAIdynamics/PhysicsCode/releases/latest | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4)
         echo "version=${VERSION:-latest}" >> $GITHUB_OUTPUT
 
     - name: Cache physicscode
@@ -58,7 +54,7 @@ runs:
     - name: Install physicscode
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
-      run: curl -fsSL https://physicscode.ai/install | bash
+      run: curl -fsSL https://www.physicscode.ai/physicscode/install | bash
 
     - name: Add physicscode to PATH
       shell: bash
@@ -71,7 +67,6 @@ runs:
       env:
         MODEL: ${{ inputs.model }}
         AGENT: ${{ inputs.agent }}
-        SHARE: ${{ inputs.share }}
         PROMPT: ${{ inputs.prompt }}
         USE_GITHUB_TOKEN: ${{ inputs.use_github_token }}
         MENTIONS: ${{ inputs.mentions }}

@@ -13,7 +13,6 @@ PhysicsCode รองรับทั้งรูปแบบ **JSON** และ 
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "anthropic/claude-sonnet-4-5",
   "autoupdate": true,
   "server": {
@@ -165,7 +164,6 @@ physicscode run "Hello world"
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "scroll_speed": 3,
   "scroll_acceleration": {
     "enabled": true
@@ -188,7 +186,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "server": {
     "port": 4096,
     "hostname": "0.0.0.0",
@@ -217,7 +214,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tools": {
     "write": false,
     "bash": false
@@ -235,7 +231,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {},
   "model": "anthropic/claude-sonnet-4-5",
   "small_model": "anthropic/claude-haiku-4-5"
@@ -248,7 +243,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "anthropic": {
       "options": {
@@ -277,7 +271,6 @@ Amazon Bedrock รองรับ AWS-การกำหนดค่าเฉพ
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "amazon-bedrock": {
       "options": {
@@ -308,7 +301,6 @@ Bearer Token (`AWS_BEARER_TOKEN_BEDROCK` หรือ `/connect`) มีคว�
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "theme": "tokyonight"
 }
 ```
@@ -323,7 +315,6 @@ Bearer Token (`AWS_BEARER_TOKEN_BEDROCK` หรือ `/connect`) มีคว�
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "code-reviewer": {
       "description": "Reviews code for best practices and potential issues",
@@ -349,7 +340,6 @@ Bearer Token (`AWS_BEARER_TOKEN_BEDROCK` หรือ `/connect`) มีคว�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "default_agent": "plan"
 }
 ```
@@ -366,7 +356,6 @@ Bearer Token (`AWS_BEARER_TOKEN_BEDROCK` หรือ `/connect`) มีคว�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "share": "manual"
 }
 ```
@@ -387,7 +376,6 @@ Bearer Token (`AWS_BEARER_TOKEN_BEDROCK` หรือ `/connect`) มีคว�
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "command": {
     "test": {
       "template": "Run the full test suite with coverage report and show any failures.\nFocus on the failing tests and suggest fixes.",
@@ -413,7 +401,6 @@ Bearer Token (`AWS_BEARER_TOKEN_BEDROCK` หรือ `/connect`) มีคว�
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "keybinds": {}
 }
 ```
@@ -428,7 +415,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "autoupdate": false
 }
 ```
@@ -444,7 +430,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "disabled": true
@@ -472,7 +457,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "ask",
     "bash": "ask"
@@ -490,7 +474,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "compaction": {
     "auto": true,
     "prune": true,
@@ -511,7 +494,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "watcher": {
     "ignore": ["node_modules/**", "dist/**", ".git/**"]
   }
@@ -528,7 +510,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {}
 }
 ```
@@ -545,7 +526,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "plugin": ["physicscode-helicone-session", "@my-org/custom-plugin"]
 }
 ```
@@ -560,7 +540,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["CONTRIBUTING.md", "docs/guidelines.md", ".cursor/rules/*.md"]
 }
 ```
@@ -576,7 +555,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "disabled_providers": ["openai", "gemini"]
 }
 ```
@@ -599,7 +577,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "enabled_providers": ["anthropic", "openai"]
 }
 ```
@@ -620,7 +597,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "experimental": {}
 }
 ```
@@ -643,7 +619,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "{env:PHYSICSCODE_MODEL}",
   "provider": {
     "anthropic": {
@@ -666,7 +641,6 @@ PhysicsCode จะดาวน์โหลดการอัปเดตให�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["./custom-instructions.md"],
   "provider": {
     "openai": {

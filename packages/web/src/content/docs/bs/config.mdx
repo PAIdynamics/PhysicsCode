@@ -13,7 +13,6 @@ PhysicsCode podržava i **JSON** i **JSONC** (JSON sa komentarima) formate.
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "anthropic/claude-sonnet-4-5",
   "autoupdate": true,
   "server": {
@@ -161,7 +160,6 @@ Koristite namjenski `tui.json` (ili `tui.jsonc`) fajl za postavke specifične za
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "scroll_speed": 3,
   "scroll_acceleration": {
     "enabled": true
@@ -184,7 +182,6 @@ Možete konfigurirati postavke servera za naredbe `physicscode serve` i `physics
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "server": {
     "port": 4096,
     "hostname": "0.0.0.0",
@@ -213,7 +210,6 @@ Možete upravljati alatima koje LLM može koristiti putem opcije `tools`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tools": {
     "write": false,
     "bash": false
@@ -231,7 +227,6 @@ Možete konfigurirati dobavljače i modele koje želite koristiti u svojoj Physi
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {},
   "model": "anthropic/claude-sonnet-4-5",
   "small_model": "anthropic/claude-haiku-4-5"
@@ -244,7 +239,6 @@ Opcije provajdera mogu uključivati ​​`timeout` i `setCacheKey`:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "anthropic": {
       "options": {
@@ -273,7 +267,6 @@ Amazon Bedrock podržava konfiguraciju specifičnu za AWS:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "amazon-bedrock": {
       "options": {
@@ -304,7 +297,6 @@ Postavite vašu UI temu u `tui.json`.
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "theme": "tokyonight"
 }
 ```
@@ -319,7 +311,6 @@ Možete konfigurirati specijalizirane agente za određene zadatke putem opcije `
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "code-reviewer": {
       "description": "Reviews code for best practices and potential issues",
@@ -345,7 +336,6 @@ Možete postaviti zadanog agenta koristeći opciju `default_agent`. Ovo određuj
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "default_agent": "plan"
 }
 ```
@@ -362,7 +352,6 @@ Možete konfigurirati funkciju [share](/docs/share) putem opcije `share`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "share": "manual"
 }
 ```
@@ -383,7 +372,6 @@ Možete konfigurirati prilagođene naredbe za ponavljanje zadataka putem opcije 
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "command": {
     "test": {
       "template": "Run the full test suite with coverage report and show any failures.\nFocus on the failing tests and suggest fixes.",
@@ -409,7 +397,6 @@ Prilagodite prečice tipki u `tui.json`.
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "keybinds": {}
 }
 ```
@@ -424,7 +411,6 @@ PhysicsCode će automatski preuzeti sva nova ažuriranja kada se pokrene. Ovo mo
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "autoupdate": false
 }
 ```
@@ -440,7 +426,6 @@ Možete konfigurirati formatere koda putem opcije `formatter`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "disabled": true
@@ -468,7 +453,6 @@ Na primjer, da osigurate da alati `edit` i `bash` zahtijevaju odobrenje korisnik
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "ask",
     "bash": "ask"
@@ -486,7 +470,6 @@ Možete kontrolirati ponašanje sažimanja konteksta putem opcije `compaction`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "compaction": {
     "auto": true,
     "prune": true,
@@ -507,7 +490,6 @@ Možete konfigurirati obrasce ignoriranja promatrača datoteka putem opcije `wat
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "watcher": {
     "ignore": ["node_modules/**", "dist/**", ".git/**"]
   }
@@ -524,7 +506,6 @@ Možete konfigurirati MCP servere koje želite koristiti putem opcije `mcp`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {}
 }
 ```
@@ -541,7 +522,6 @@ Postavite datoteke dodataka u `.physicscode/plugins/` ili `~/.config/physicscode
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "plugin": ["physicscode-helicone-session", "@my-org/custom-plugin"]
 }
 ```
@@ -556,7 +536,6 @@ Možete konfigurirati upute za model koji koristite putem opcije `instructions`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["CONTRIBUTING.md", "docs/guidelines.md", ".cursor/rules/*.md"]
 }
 ```
@@ -571,7 +550,6 @@ Možete onemogućiti dobavljače koji se automatski učitavaju preko opcije `dis
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "disabled_providers": ["openai", "gemini"]
 }
 ```
@@ -594,7 +572,6 @@ Možete odrediti listu dozvoljenih dobavljača putem opcije `enabled_providers`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "enabled_providers": ["anthropic", "openai"]
 }
 ```
@@ -615,7 +592,6 @@ Ključ `experimental` sadrži opcije koje su u aktivnom razvoju.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "experimental": {}
 }
 ```
@@ -638,7 +614,6 @@ Koristite `{env:VARIABLE_NAME}` za zamjenu varijabli okruženja:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "{env:PHYSICSCODE_MODEL}",
   "provider": {
     "anthropic": {
@@ -661,7 +636,6 @@ Koristite `{file:path/to/file}` da zamijenite sadržaj fajla:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["./custom-instructions.md"],
   "provider": {
     "openai": {

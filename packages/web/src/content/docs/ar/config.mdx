@@ -13,7 +13,6 @@ description: استخدام ملف إعدادات PhysicsCode بصيغة JSON.
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   // إعدادات السمة
   "theme": "physicscode",
   "model": "anthropic/claude-sonnet-4-5",
@@ -157,7 +156,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tui": {
     "scroll_speed": 3,
     "scroll_acceleration": {
@@ -184,7 +182,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "server": {
     "port": 4096,
     "hostname": "0.0.0.0",
@@ -213,7 +210,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tools": {
     "write": false,
     "bash": false
@@ -231,7 +227,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {},
   "model": "anthropic/claude-sonnet-4-5",
   "small_model": "anthropic/claude-haiku-4-5"
@@ -244,7 +239,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "anthropic": {
       "options": {
@@ -273,7 +267,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "amazon-bedrock": {
       "options": {
@@ -304,7 +297,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "theme": ""
 }
 ```
@@ -319,7 +311,6 @@ physicscode run "Hello world"
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "code-reviewer": {
       "description": "Reviews code for best practices and potential issues",
@@ -345,7 +336,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "default_agent": "plan"
 }
 ```
@@ -362,7 +352,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "share": "manual"
 }
 ```
@@ -383,7 +372,6 @@ physicscode run "Hello world"
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "command": {
     "test": {
       "template": "Run the full test suite with coverage report and show any failures.\nFocus on the failing tests and suggest fixes.",
@@ -409,7 +397,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "keybinds": {}
 }
 ```
@@ -424,7 +411,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "autoupdate": false
 }
 ```
@@ -440,7 +426,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "disabled": true
@@ -468,7 +453,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "ask",
     "bash": "ask"
@@ -486,7 +470,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "compaction": {
     "auto": true,
     "prune": true
@@ -506,7 +489,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "watcher": {
     "ignore": ["node_modules/**", "dist/**", ".git/**"]
   }
@@ -523,7 +505,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {}
 }
 ```
@@ -540,7 +521,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "plugin": ["physicscode-helicone-session", "@my-org/custom-plugin"]
 }
 ```
@@ -555,7 +535,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["CONTRIBUTING.md", "docs/guidelines.md", ".cursor/rules/*.md"]
 }
 ```
@@ -571,7 +550,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "disabled_providers": ["openai", "gemini"]
 }
 ```
@@ -594,7 +572,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "enabled_providers": ["anthropic", "openai"]
 }
 ```
@@ -615,7 +592,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "experimental": {}
 }
 ```
@@ -638,7 +614,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "{env:PHYSICSCODE_MODEL}",
   "provider": {
     "anthropic": {
@@ -661,7 +636,6 @@ physicscode run "Hello world"
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["./custom-instructions.md"],
   "provider": {
     "openai": {

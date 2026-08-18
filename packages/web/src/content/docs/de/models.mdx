@@ -53,7 +53,6 @@ PhysicsCode config.
 
 ```json title="physicscode.json" {3}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "lmstudio/google/gemma-3n-e4b"
 }
 ```
@@ -70,7 +69,6 @@ Sie können die Optionen eines Modells global über die Konfiguration konfigurie
 
 ```jsonc title="physicscode.jsonc" {7-12,19-24}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "openai": {
       "models": {
@@ -109,7 +107,6 @@ Sie können auch benutzerdefinierte Varianten definieren, die integrierte Varian
 
 ```jsonc title="physicscode.jsonc" {6-21}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "physicscode": {
       "models": {
@@ -174,7 +171,6 @@ Sie können vorhandene Varianten überschreiben oder eigene hinzufügen:
 
 ```jsonc title="physicscode.jsonc" {7-18}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "openai": {
       "models": {
@@ -211,7 +207,6 @@ Wenn PhysicsCode startet, sucht es nach Modellen in der folgenden Prioritätsrei
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "model": "anthropic/claude-sonnet-4-20250514"
    }
    ```

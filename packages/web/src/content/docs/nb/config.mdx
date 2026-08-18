@@ -13,7 +13,6 @@ PhysicsCode støtter både **JSON** og **JSONC** (JSON med kommentarer) formater
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "anthropic/claude-sonnet-4-5",
   "autoupdate": true,
   "server": {
@@ -159,7 +158,6 @@ Du kan konfigurere TUI-spesifikke innstillinger gjennom alternativet `tui`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tui": {
     "scroll_speed": 3,
     "scroll_acceleration": {
@@ -186,7 +184,6 @@ Du kan konfigurere serverinnstillinger for kommandoene `physicscode serve` og `p
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "server": {
     "port": 4096,
     "hostname": "0.0.0.0",
@@ -215,7 +212,6 @@ Du kan administrere verktøyene en LLM kan bruke gjennom alternativet `tools`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tools": {
     "write": false,
     "bash": false
@@ -233,7 +229,6 @@ Du kan konfigurere leverandørene og modellene du vil bruke i PhysicsCode-konfig
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {},
   "model": "anthropic/claude-sonnet-4-5",
   "small_model": "anthropic/claude-haiku-4-5"
@@ -246,7 +241,6 @@ Leverandøralternativer kan inkludere `timeout` og `setCacheKey`:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "anthropic": {
       "options": {
@@ -275,7 +269,6 @@ Amazon Bedrock støtter AWS-spesifikk konfigurasjon:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "amazon-bedrock": {
       "options": {
@@ -306,7 +299,6 @@ Angi UI-temaet ditt i `tui.json`.
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "theme": "tokyonight"
 }
 ```
@@ -321,7 +313,6 @@ Du kan konfigurere spesialiserte agenter for spesifikke oppgaver gjennom alterna
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "code-reviewer": {
       "description": "Reviews code for best practices and potential issues",
@@ -347,7 +338,6 @@ Du kan angi standard agent ved å bruke alternativet `default_agent`. Dette best
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "default_agent": "plan"
 }
 ```
@@ -364,7 +354,6 @@ Du kan konfigurere [share](/docs/share)-funksjonen gjennom alternativet `share`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "share": "manual"
 }
 ```
@@ -385,7 +374,6 @@ Du kan konfigurere egendefinerte kommandoer for repeterende oppgaver gjennom alt
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "command": {
     "test": {
       "template": "Run the full test suite with coverage report and show any failures.\nFocus on the failing tests and suggest fixes.",
@@ -411,7 +399,6 @@ Tilpass tastebindinger i `tui.json`.
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "keybinds": {}
 }
 ```
@@ -426,7 +413,6 @@ PhysicsCode vil automatisk laste ned eventuelle nye oppdateringer når den start
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "autoupdate": false
 }
 ```
@@ -442,7 +428,6 @@ Du kan konfigurere kodeformatere gjennom alternativet `formatter`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "disabled": true
@@ -470,7 +455,6 @@ Slik sikrer du at verktøyene `edit` og `bash` krever brukergodkjenning:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "ask",
     "bash": "ask"
@@ -488,7 +472,6 @@ Du kan styre kontekstkomprimering gjennom alternativet `compaction`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "compaction": {
     "auto": true,
     "prune": true,
@@ -509,7 +492,6 @@ Du kan konfigurere ignoreringsmønstre for filovervåking gjennom alternativet `
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "watcher": {
     "ignore": ["node_modules/**", "dist/**", ".git/**"]
   }
@@ -526,7 +508,6 @@ Du kan konfigurere MCP-servere du vil bruke gjennom alternativet `mcp`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {}
 }
 ```
@@ -543,7 +524,6 @@ Plasser plugin-filer i `.physicscode/plugins/` eller `~/.config/physicscode/plug
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "plugin": ["physicscode-helicone-session", "@my-org/custom-plugin"]
 }
 ```
@@ -558,7 +538,6 @@ Du kan konfigurere instruksjoner for modellen du bruker gjennom alternativet `in
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["CONTRIBUTING.md", "docs/guidelines.md", ".cursor/rules/*.md"]
 }
 ```
@@ -574,7 +553,6 @@ Du kan deaktivere leverandører som lastes automatisk gjennom alternativet `disa
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "disabled_providers": ["openai", "gemini"]
 }
 ```
@@ -597,7 +575,6 @@ Du kan spesifisere en godkjenningsliste over leverandører gjennom alternativet 
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "enabled_providers": ["anthropic", "openai"]
 }
 ```
@@ -618,7 +595,6 @@ Hvis en leverandør vises i både `enabled_providers` og `disabled_providers`, h
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "experimental": {}
 }
 ```
@@ -641,7 +617,6 @@ Bruk `{env:VARIABLE_NAME}` for å erstatte miljøvariabler:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "{env:PHYSICSCODE_MODEL}",
   "provider": {
     "anthropic": {
@@ -664,7 +639,6 @@ Bruk `{file:path/to/file}` for å erstatte innholdet i en fil:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["./custom-instructions.md"],
   "provider": {
     "openai": {

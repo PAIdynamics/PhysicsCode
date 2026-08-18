@@ -13,7 +13,6 @@ PhysicsCode は、**JSON** と **JSONC** (コメント付きの JSON) 形式の�
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "anthropic/claude-sonnet-4-5",
   "autoupdate": true,
   "server": {
@@ -164,7 +163,6 @@ TUI 固有の設定には、専用の `tui.json` (または `tui.jsonc`) ファ�
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "scroll_speed": 3,
   "scroll_acceleration": {
     "enabled": true
@@ -187,7 +185,6 @@ TUI 固有の設定には、専用の `tui.json` (または `tui.jsonc`) ファ�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "server": {
     "port": 4096,
     "hostname": "0.0.0.0",
@@ -216,7 +213,6 @@ LLM が使用できるツールは、`tools` オプションを通じて管理�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tools": {
     "write": false,
     "bash": false
@@ -234,7 +230,6 @@ LLM が使用できるツールは、`tools` オプションを通じて管理�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {},
   "model": "anthropic/claude-sonnet-4-5",
   "small_model": "anthropic/claude-haiku-4-5"
@@ -247,7 +242,6 @@ LLM が使用できるツールは、`tools` オプションを通じて管理�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "anthropic": {
       "options": {
@@ -276,7 +270,6 @@ Amazon Bedrock は、AWS 固有の設定をサポートしています。
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "amazon-bedrock": {
       "options": {
@@ -307,7 +300,6 @@ UI テーマを `tui.json` で設定します。
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "theme": "tokyonight"
 }
 ```
@@ -322,7 +314,6 @@ UI テーマを `tui.json` で設定します。
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "code-reviewer": {
       "description": "Reviews code for best practices and potential issues",
@@ -348,7 +339,6 @@ UI テーマを `tui.json` で設定します。
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "default_agent": "plan"
 }
 ```
@@ -365,7 +355,6 @@ UI テーマを `tui.json` で設定します。
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "share": "manual"
 }
 ```
@@ -386,7 +375,6 @@ UI テーマを `tui.json` で設定します。
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "command": {
     "test": {
       "template": "Run the full test suite with coverage report and show any failures.\nFocus on the failing tests and suggest fixes.",
@@ -412,7 +400,6 @@ UI テーマを `tui.json` で設定します。
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "keybinds": {}
 }
 ```
@@ -427,7 +414,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "autoupdate": false
 }
 ```
@@ -443,7 +429,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "disabled": true
@@ -471,7 +456,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "ask",
     "bash": "ask"
@@ -489,7 +473,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "compaction": {
     "auto": true,
     "prune": true
@@ -508,7 +491,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "watcher": {
     "ignore": ["node_modules/**", "dist/**", ".git/**"]
   }
@@ -525,7 +507,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {}
 }
 ```
@@ -542,7 +523,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "plugin": ["physicscode-helicone-session", "@my-org/custom-plugin"]
 }
 ```
@@ -557,7 +537,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["CONTRIBUTING.md", "docs/guidelines.md", ".cursor/rules/*.md"]
 }
 ```
@@ -572,7 +551,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "disabled_providers": ["openai", "gemini"]
 }
 ```
@@ -594,7 +572,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "enabled_providers": ["anthropic", "openai"]
 }
 ```
@@ -614,7 +591,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "experimental": {}
 }
 ```
@@ -637,7 +613,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "{env:PHYSICSCODE_MODEL}",
   "provider": {
     "anthropic": {
@@ -660,7 +635,6 @@ PhysicsCode は起動時に新しいアップデートを自動的にダウン�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["./custom-instructions.md"],
   "provider": {
     "openai": {

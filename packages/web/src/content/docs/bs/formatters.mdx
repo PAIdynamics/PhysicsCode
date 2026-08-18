@@ -56,7 +56,6 @@ Možete prilagoditi formatere kroz `formatter` odjeljak u vašoj PhysicsCode kon
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {}
 }
 ```
@@ -78,7 +77,6 @@ Da onemogućite **sve** formatere globalno, postavite `formatter` na `false`:
 
 ```json title="physicscode.json" {3}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": false
 }
 ```
@@ -87,7 +85,6 @@ Da onemogućite **specifični** formater, postavite `disabled` na `true`:
 
 ```json title="physicscode.json" {5}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "disabled": true
@@ -104,7 +101,6 @@ Možete nadjačati ugrađene formatere ili dodati nove navođenjem naredbe, vari
 
 ```json title="physicscode.json" {4-14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "command": ["npx", "prettier", "--write", "$FILE"],

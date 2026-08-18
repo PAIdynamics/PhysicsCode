@@ -70,7 +70,6 @@ Você pode personalizar os servidores LSP através da seção `lsp` na sua confi
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {}
 }
 ```
@@ -95,7 +94,6 @@ Use a propriedade `env` para definir variáveis de ambiente ao iniciar o servido
 
 ```json title="physicscode.json" {5-7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "rust": {
       "env": {
@@ -114,7 +112,6 @@ Use a propriedade `initialization` para passar opções de inicialização ao se
 
 ```json title="physicscode.json" {5-9}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "typescript": {
       "initialization": {
@@ -139,7 +136,6 @@ Para desabilitar **todos** os servidores LSP globalmente, defina `lsp` como `fal
 
 ```json title="physicscode.json" {3}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": false
 }
 ```
@@ -148,7 +144,6 @@ Para desabilitar um servidor LSP **específico**, defina `disabled` como `true`:
 
 ```json title="physicscode.json" {5}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "typescript": {
       "disabled": true
@@ -165,7 +160,6 @@ Você pode adicionar servidores LSP personalizados especificando o comando e as 
 
 ```json title="physicscode.json" {4-7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "custom-lsp": {
       "command": ["custom-lsp-server", "--stdio"],

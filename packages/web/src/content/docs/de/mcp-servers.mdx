@@ -27,7 +27,6 @@ Sie können den MCP-Server in Ihrem [PhysicsCode Config](https://physicscode.ai/
 
 ```jsonc title="physicscode.jsonc" {6}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "name-of-mcp-server": {
       // ...
@@ -52,7 +51,6 @@ Um einen bestimmten Server aus der Remote-Konfiguration Ihrer Organisation zu ak
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "jira": {
       "type": "remote",
@@ -73,7 +71,6 @@ Fügen Sie lokale MCP-Server mit `type` bis `"local"` innerhalb des MCP-Objekts 
 
 ```jsonc title="physicscode.jsonc" {15}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-local-mcp-server": {
       "type": "local",
@@ -94,7 +91,6 @@ So können Sie beispielsweise den Testserver [`@modelcontextprotocol/server-ever
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "mcp_everything": {
       "type": "local",
@@ -132,7 +128,6 @@ Fügen Sie den Remote-MCP-Server hinzu, indem Sie `type` auf `"remote"` setzen.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-remote-mcp": {
       "type": "remote",
@@ -179,7 +174,6 @@ Für die meisten OAuth-fähigen MCP-Server ist keine spezielle Konfiguration erf
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-oauth-server": {
       "type": "remote",
@@ -199,7 +193,6 @@ Wenn Sie über Client-Anmeldeinformationen vom Serveranbieter MCP verfügen, kö
 
 ```json title="physicscode.json" {7-11}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-oauth-server": {
       "type": "remote",
@@ -248,7 +241,6 @@ Wenn Sie automatisches OAuth für einen Server deaktivieren möchten (e.g., für
 
 ```json title="physicscode.json" {7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-api-key-server": {
       "type": "remote",
@@ -301,7 +293,6 @@ Das bedeutet, dass Sie sie global aktivieren oder deaktivieren können.
 
 ```json title="physicscode.json" {14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-mcp-foo": {
       "type": "local",
@@ -322,7 +313,6 @@ Wir können auch ein Glob-Muster verwenden, um alle passenden MCPs zu deaktivier
 
 ```json title="physicscode.json" {14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-mcp-foo": {
       "type": "local",
@@ -352,7 +342,6 @@ Wenn Sie über eine große Anzahl von MCP-Servern verfügen, möchten Sie diese 
 
 ```json title="physicscode.json" {11, 14-18}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-mcp": {
       "type": "local",
@@ -406,7 +395,6 @@ Fügen Sie [Sentry MCP server](https://mcp.sentry.dev) hinzu, um mit Ihren Sentr
 
 ```json title="physicscode.json" {4-8}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "sentry": {
       "type": "remote",
@@ -439,7 +427,6 @@ Fügen Sie [Context7 MCP server](https://github.com/upstash/context7) hinzu, um 
 
 ```json title="physicscode.json" {4-7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "context7": {
       "type": "remote",
@@ -453,7 +440,6 @@ Wenn Sie sich für ein kostenloses Konto angemeldet haben, können Sie Ihren API
 
 ```json title="physicscode.json" {7-9}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "context7": {
       "type": "remote",
@@ -488,7 +474,6 @@ Fügen Sie den Server [Grep by Vercel](https://grep.app) MCP hinzu, um Codefragm
 
 ```json title="physicscode.json" {4-7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "gh_grep": {
       "type": "remote",

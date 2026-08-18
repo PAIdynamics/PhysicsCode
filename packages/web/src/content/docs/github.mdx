@@ -17,29 +17,11 @@ PhysicsCode integrates with your GitHub workflow. Mention `/physicscode` or `/oc
 
 ## Installation
 
-Run the following command in a project that is in a GitHub repo:
-
-```bash
-physicscode github install
-```
-
-This will walk you through installing the GitHub app, creating the workflow, and setting up secrets.
-
----
-
-### Manual Setup
-
-Or you can set it up manually.
-
-1. **Install the GitHub app**
-
-   Head over to [**github.com/apps/physicscode-agent**](https://github.com/apps/physicscode-agent). Make sure it's installed on the target repository.
-
-2. **Add the workflow**
+1. **Add the workflow**
 
    Add the following workflow file to `.github/workflows/physicscode.yml` in your repo. Make sure to set the appropriate `model` and required API keys in `env`.
 
-   ```yml title=".github/workflows/physicscode.yml" {24,26}
+   ```yml title=".github/workflows/physicscode.yml"
    name: physicscode
 
    on:
@@ -56,6 +38,9 @@ Or you can set it up manually.
        runs-on: ubuntu-latest
        permissions:
          id-token: write
+         contents: write
+         pull-requests: write
+         issues: write
        steps:
           - name: Checkout repository
             uses: actions/checkout@v6
@@ -64,16 +49,16 @@ Or you can set it up manually.
               persist-credentials: false
 
           - name: Run PhysicsCode
-           uses: PAIdynamics/PhysicsCode/github@main
-           env:
-             ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-           with:
-             model: anthropic/claude-sonnet-4-20250514
-             # share: true
-             # github_token: xxxx
+            uses: PAIdynamics/PhysicsCode/github@main
+            env:
+              ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            with:
+              model: anthropic/claude-sonnet-4-20250514
+              use_github_token: true
    ```
 
-3. **Store the API keys in secrets**
+2. **Store the API keys in secrets**
 
    In your organization or project **settings**, expand **Secrets and variables** on the left and select **Actions**. And add the required API keys.
 
@@ -83,21 +68,9 @@ Or you can set it up manually.
 
 - `model`: The model to use with PhysicsCode. Takes the format of `provider/model`. This is **required**.
 - `agent`: The agent to use. Must be a primary agent. Falls back to `default_agent` from config or `"build"` if not found.
-- `share`: Whether to share the PhysicsCode session. Defaults to **true** for public repositories.
 - `prompt`: Optional custom prompt to override the default behavior. Use this to customize how PhysicsCode processes requests.
-- `token`: Optional GitHub access token for performing operations such as creating comments, committing changes, and opening pull requests. By default, PhysicsCode uses the installation access token from the PhysicsCode GitHub App, so commits, comments, and pull requests appear as coming from the app.
-
-  Alternatively, you can use the GitHub Action runner's [built-in `GITHUB_TOKEN`](https://docs.github.com/en/actions/tutorials/authenticate-with-github_token) without installing the PhysicsCode GitHub App. Just make sure to grant the required permissions in your workflow:
-
-  ```yaml
-  permissions:
-    id-token: write
-    contents: write
-    pull-requests: write
-    issues: write
-  ```
-
-  You can also use a [personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)(PAT) if preferred.
+- `use_github_token`: Set to `true` to authenticate with the GitHub Action runner's [built-in `GITHUB_TOKEN`](https://docs.github.com/en/actions/tutorials/authenticate-with-github_token) — this is the standard way to run the action today. Commits, comments, and pull requests appear as `github-actions[bot]`. Grant the workflow the permissions shown above.
+- `token`: Optional GitHub [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) (PAT), if you'd rather operations appear under a specific account instead of `github-actions[bot]`.
 
 ---
 
@@ -143,8 +116,10 @@ jobs:
         uses: PAIdynamics/PhysicsCode/github@main
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: anthropic/claude-sonnet-4-20250514
+          use_github_token: true
           prompt: |
             Review the codebase for any TODO comments and create a summary.
             If you find issues worth addressing, open an issue to track them.
@@ -237,8 +212,10 @@ jobs:
         if: steps.check.outputs.result == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: anthropic/claude-sonnet-4-20250514
+          use_github_token: true
           prompt: |
             Review this issue. If there's a clear fix or relevant docs:
             - Provide documentation links
@@ -256,8 +233,12 @@ Override the default prompt to customize PhysicsCode's behavior for your workflo
 
 ```yaml title=".github/workflows/physicscode.yml"
 - uses: PAIdynamics/PhysicsCode/github@main
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
     model: anthropic/claude-sonnet-4-5
+    use_github_token: true
     prompt: |
       Review this pull request:
       - Check for code quality issues

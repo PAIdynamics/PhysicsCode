@@ -67,7 +67,6 @@ Možete prilagoditi LSP servere kroz `lsp` odjeljak u vašoj physicscode konfigu
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {}
 }
 ```
@@ -92,7 +91,6 @@ Koristite svojstvo `env` za postavljanje varijabli okruženja prilikom pokretanj
 
 ```json title="physicscode.json" {5-7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "rust": {
       "env": {
@@ -111,7 +109,6 @@ Koristite svojstvo `initialization` da prosledite opcije inicijalizacije na LSP 
 
 ```json title="physicscode.json" {5-9}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "typescript": {
       "initialization": {
@@ -136,7 +133,6 @@ Da biste onemogućili **sve** LSP servere globalno, postavite `lsp` na `false`:
 
 ```json title="physicscode.json" {3}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": false
 }
 ```
@@ -145,7 +141,6 @@ Da onemogućite **specifičan** LSP server, postavite `disabled` na `true`:
 
 ```json title="physicscode.json" {5}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "typescript": {
       "disabled": true
@@ -162,7 +157,6 @@ Možete dodati prilagođene LSP servere navodeći ekstenzije naredbe i datoteke:
 
 ```json title="physicscode.json" {4-7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "lsp": {
     "custom-lsp": {
       "command": ["custom-lsp-server", "--stdio"],

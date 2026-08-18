@@ -53,7 +53,6 @@ physicscode yapılandırması
 
 ```json title="physicscode.json" {3}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "lmstudio/google/gemma-3n-e4b"
 }
 ```
@@ -70,7 +69,6 @@ Bir modelin seçeneklerini genel olarak yapılandırma aracılığıyla yapılan
 
 ```jsonc title="physicscode.jsonc" {7-12,19-24}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "openai": {
       "models": {
@@ -109,7 +107,6 @@ Ayrıca yerleşik çeşitleri genişleten özel varyantlar da tanımlayabilirsin
 
 ```jsonc title="physicscode.jsonc" {6-21}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "physicscode": {
       "models": {
@@ -174,7 +171,6 @@ Mevcut varyantları geçersiz kılabilir veya kendinizinkini ekleyebilirsiniz:
 
 ```jsonc title="physicscode.jsonc" {7-18}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "openai": {
       "models": {
@@ -211,7 +207,6 @@ physicscode başlatıldığında modelleri aşağıdaki öncelik sırasına gör
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "model": "anthropic/claude-sonnet-4-20250514"
    }
    ```

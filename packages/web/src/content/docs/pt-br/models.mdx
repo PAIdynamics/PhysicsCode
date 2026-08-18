@@ -52,7 +52,6 @@ Para definir um desses como o modelo padrão, você pode definir a chave `model`
 
 ```json title="physicscode.json" {3}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "lmstudio/google/gemma-3n-e4b"
 }
 ```
@@ -69,7 +68,6 @@ Você pode configurar globalmente as opções de um modelo através da configura
 
 ```jsonc title="physicscode.jsonc" {7-12,19-24}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "openai": {
       "models": {
@@ -108,7 +106,6 @@ Você também pode definir variantes personalizadas que estendem as integradas. 
 
 ```jsonc title="physicscode.jsonc" {6-21}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "physicscode": {
       "models": {
@@ -173,7 +170,6 @@ Você pode substituir variantes existentes ou adicionar as suas:
 
 ```jsonc title="physicscode.jsonc" {7-18}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "openai": {
       "models": {
@@ -210,7 +206,6 @@ Quando o physicscode é iniciado, ele verifica modelos na seguinte ordem de prio
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "model": "anthropic/claude-sonnet-4-20250514"
    }
    ```

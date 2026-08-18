@@ -53,7 +53,6 @@ PhysicsCode konfig.
 
 ```json title="physicscode.json" {3}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "lmstudio/google/gemma-3n-e4b"
 }
 ```
@@ -70,7 +69,6 @@ Du kan konfigurere en models muligheder globalt gennem konfigurationen.
 
 ```jsonc title="physicscode.jsonc" {7-12,19-24}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "openai": {
       "models": {
@@ -109,7 +107,6 @@ Du kan også definere brugerdefinerede varianter, der udvider de indbyggede. Var
 
 ```jsonc title="physicscode.jsonc" {6-21}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "physicscode": {
       "models": {
@@ -174,7 +171,6 @@ Du kan tilsidesætte eksisterende varianter eller tilføje dine egne:
 
 ```jsonc title="physicscode.jsonc" {7-18}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "openai": {
       "models": {
@@ -211,7 +207,6 @@ Når PhysicsCode starter op, søger den efter modeller i følgende prioriterede 
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "model": "anthropic/claude-sonnet-4-20250514"
    }
    ```

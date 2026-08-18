@@ -35,7 +35,6 @@ Puoi personalizzare l'URL base per qualsiasi provider impostando l'opzione `base
 
 ```json title="physicscode.json" {6}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "anthropic": {
       "options": {
@@ -167,7 +166,6 @@ Per usare Amazon Bedrock con PhysicsCode:
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "amazon-bedrock": {
          "options": {
@@ -196,7 +194,6 @@ Per usare Amazon Bedrock con PhysicsCode:
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "amazon-bedrock": {
          "options": {
@@ -245,7 +242,6 @@ Per profili di inferenza personalizzati, usa il nome del modello e del provider 
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "amazon-bedrock": {
       // ...
@@ -305,7 +301,6 @@ Puoi configurare physicscode per utilizzare modelli locali tramite [Atomic Chat]
 
 ```json title="physicscode.json" "atomic-chat" {5, 6, 8, 10-14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "atomic-chat": {
       "npm": "@ai-sdk/openai-compatible",
@@ -533,7 +528,6 @@ Cloudflare AI Gateway ti permette di accedere a modelli di OpenAI, Anthropic, Wo
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "cloudflare-ai-gateway": {
          "models": {
@@ -739,7 +733,6 @@ file `physicscode.json`. Si raccomanda anche di disabilitare la condivisione ses
 
 ```json
 {
-  "$schema": "https://physicscode.ai/config.json",
   "small_model": "gitlab/duo-chat-haiku-4-5",
   "share": "disabled"
 }
@@ -801,7 +794,6 @@ Personalizza tramite `physicscode.json`:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "gitlab": {
       "options": {
@@ -818,7 +810,6 @@ Per accedere agli strumenti GitLab (merge requests, issues, pipelines, CI/CD, ec
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "plugin": ["physicscode-gitlab-plugin"]
 }
 ```
@@ -1000,7 +991,6 @@ Ecco la [Model Directory di Helicone](https://helicone.ai/models), ti servirà p
 
 ```jsonc title="~/.config/physicscode/physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "helicone": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1028,7 +1018,6 @@ Helicone supporta header personalizzati per funzionalità come caching, user tra
 
 ```jsonc title="~/.config/physicscode/physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "helicone": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1082,7 +1071,6 @@ Puoi configurare physicscode per usare modelli locali tramite l'utility llama-se
 
 ```json title="physicscode.json" "llama.cpp" {5, 6, 8, 10-15}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "llama.cpp": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1149,7 +1137,6 @@ Puoi configurare physicscode per usare modelli locali tramite LM Studio.
 
 ```json title="physicscode.json" "lmstudio" {5, 6, 8, 10-14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "lmstudio": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1270,7 +1257,6 @@ Ollama può auto-configurarsi per PhysicsCode. Vedi la [documentazione di integr
 
 ```json title="physicscode.json" "ollama" {5, 6, 8, 10-14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1432,7 +1418,6 @@ PhysicsCode Zen è una lista di modelli testati e verificati forniti dal team Ph
 
    ```json title="physicscode.json" {6}
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "openrouter": {
          "models": {
@@ -1447,7 +1432,6 @@ PhysicsCode Zen è una lista di modelli testati e verificati forniti dal team Ph
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "openrouter": {
          "models": {
@@ -1696,7 +1680,6 @@ Puoi anche personalizzare i modelli tramite la tua configurazione di physicscode
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "vercel": {
       "models": {
@@ -1806,7 +1789,6 @@ Alcune opzioni di routing utili:
 
    ```json title="physicscode.json" {6}
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "zenmux": {
          "models": {
@@ -1874,7 +1856,6 @@ Puoi usare qualsiasi provider OpenAI-compatible con physicscode. La maggior part
 
    ```json title="physicscode.json" ""myprovider"" {5-15}
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "myprovider": {
          "npm": "@ai-sdk/openai-compatible",
@@ -1912,7 +1893,6 @@ Ecco un esempio che imposta le opzioni `apiKey`, `headers` e `limit` del modello
 
 ```json title="physicscode.json" {9,11,17-20}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "myprovider": {
       "npm": "@ai-sdk/openai-compatible",

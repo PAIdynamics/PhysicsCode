@@ -15,7 +15,6 @@ Koristite polje `permission` za kontrolu ponasanja alata. Za svaki alat mozete p
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "deny",
     "bash": "ask",
@@ -28,7 +27,6 @@ Mozete koristiti i wildcard obrasce da kontrolisete vise alata odjednom. Na prim
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "mymcp_*": "ask"
   }
@@ -51,7 +49,6 @@ Izvrsava shell komande u okruzenju projekta.
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "bash": "allow"
   }
@@ -68,7 +65,6 @@ Mijenja postojece datoteke tacnim zamjenama stringova.
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "allow"
   }
@@ -85,7 +81,6 @@ Kreira nove datoteke ili prepisuje postojece.
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "allow"
   }
@@ -106,7 +101,6 @@ Cita sadrzaj datoteka iz vaseg koda.
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "read": "allow"
   }
@@ -123,7 +117,6 @@ Pretrazuje sadrzaj datoteka pomocu regularnih izraza.
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "grep": "allow"
   }
@@ -140,7 +133,6 @@ Pronalazi datoteke po obrascima.
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "glob": "allow"
   }
@@ -161,7 +153,6 @@ Ovaj alat je dostupan samo kada je `PHYSICSCODE_EXPERIMENTAL_LSP_TOOL=true` (ili
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "lsp": "allow"
   }
@@ -180,7 +171,6 @@ Primjenjuje zakrpe na datoteke.
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "allow"
   }
@@ -201,7 +191,6 @@ Ucitajte [skill](/docs/skills) (`SKILL.md` datoteku) i vratite njegov sadrzaj u 
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "skill": "allow"
   }
@@ -216,7 +205,6 @@ Upravlja todo listama tokom coding sesija.
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "todowrite": "allow"
   }
@@ -237,7 +225,6 @@ Preuzima web sadrzaj.
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "webfetch": "allow"
   }
@@ -265,7 +252,6 @@ PHYSICSCODE_ENABLE_EXA=1 physicscode
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "websearch": "allow"
   }
@@ -288,7 +274,6 @@ Postavlja korisniku pitanja tokom izvrsavanja.
 
 ```json title="physicscode.json" {4}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "question": "allow"
   }

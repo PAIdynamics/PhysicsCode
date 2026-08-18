@@ -32,27 +32,6 @@ PhysicsCode is open source and does not store any of your code or context data, 
 This means that as long as you are using a provider you trust, or an internal
 AI gateway, you can use PhysicsCode securely.
 
-The only caveat here is the optional `/share` feature.
-
----
-
-#### Sharing conversations
-
-If a user enables the `/share` feature, the conversation and the data associated with it are sent to the service we use to host these share pages at physicscode.ai.
-
-The data is currently served through our CDN's edge network, and is cached on the edge near your users.
-
-We recommend you disable this for your trial.
-
-```json title="physicscode.json"
-{
-  "$schema": "https://physicscode.ai/config.json",
-  "share": "disabled"
-}
-```
-
-[Learn more about sharing](/docs/share).
-
 ---
 
 ### Code ownership
@@ -96,15 +75,6 @@ This allows PhysicsCode to obtain credentials for your internal AI gateway throu
 With the central config, PhysicsCode can also be configured to use only your internal AI gateway.
 
 You can also disable all other AI providers, ensuring all requests go through your organization's approved infrastructure.
-
----
-
-### Self-hosting
-
-While we recommend disabling the share pages to ensure your data never leaves
-your organization, we can also help you self-host them on your infrastructure.
-
-This is currently on our roadmap. If you're interested, **<a href={email}>let us know</a>**.
 
 ---
 

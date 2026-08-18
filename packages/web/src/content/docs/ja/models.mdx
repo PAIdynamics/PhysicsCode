@@ -51,7 +51,6 @@ PhysicsCode は [AI SDK](https://ai-sdk.dev/) および [Models.dev](https://mod
 
 ```json title="physicscode.json" {3}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "lmstudio/google/gemma-3n-e4b"
 }
 ```
@@ -68,7 +67,6 @@ config を通じてモデルのオプションをグローバルに設定でき�
 
 ```jsonc title="physicscode.jsonc" {7-12,19-24}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "openai": {
       "models": {
@@ -107,7 +105,6 @@ config を通じてモデルのオプションをグローバルに設定でき�
 
 ```jsonc title="physicscode.jsonc" {6-21}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "physicscode": {
       "models": {
@@ -172,7 +169,6 @@ PhysicsCode には、多くのプロバイダーのデフォルトのバリア�
 
 ```jsonc title="physicscode.jsonc" {7-18}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "openai": {
       "models": {
@@ -209,7 +205,6 @@ PhysicsCode が起動すると、次の優先順位でモデルがチェック�
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "model": "anthropic/claude-sonnet-4-20250514"
    }
    ```

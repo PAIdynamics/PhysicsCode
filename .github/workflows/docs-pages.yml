@@ -33,11 +33,10 @@ jobs:
       - uses: ./.github/actions/setup-bun
 
       # GitHub Pages can only serve static files - drop the pages that need
-      # a live backend (session sharing, raw-markdown API route) rather than
-      # trying to prerender them.
+      # a live backend (raw-markdown API route) rather than trying to
+      # prerender them.
       - name: Remove server-only pages from the static build
         run: |
-          rm -rf packages/web/src/pages/s
           rm -f "packages/web/src/pages/[...slug].md.ts"
 
       - name: Build docs

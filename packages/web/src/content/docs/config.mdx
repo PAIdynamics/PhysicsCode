@@ -13,7 +13,6 @@ PhysicsCode supports both **JSON** and **JSONC** (JSON with Comments) formats.
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "anthropic/claude-sonnet-4-5",
   "autoupdate": true,
   "server": {
@@ -199,8 +198,6 @@ Use the `ai.physicscode.managed` PayloadType. The PhysicsCode config keys go dir
       <string>GENERATE-YOUR-OWN-UUID</string>
       <key>PayloadVersion</key>
       <integer>1</integer>
-      <key>share</key>
-      <string>disabled</string>
       <key>server</key>
       <dict>
         <key>hostname</key>
@@ -251,24 +248,12 @@ All managed preference keys appear in the resolved config and cannot be overridd
 
 ---
 
-## Schema
-
-Config examples throughout these docs reference a `$schema` field
-(`https://physicscode.ai/config.json` for the server/runtime config,
-`https://physicscode.ai/tui.json` for TUI config) for editor validation and
-autocomplete. Those schema endpoints aren't live yet on this fork, so editors
-won't be able to resolve them — the `$schema` field itself is otherwise
-harmless to leave in your config.
-
----
-
 ### TUI
 
 Use a dedicated `tui.json` (or `tui.jsonc`) file for TUI-specific settings.
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "scroll_speed": 3,
   "scroll_acceleration": {
     "enabled": true
@@ -290,7 +275,6 @@ You can configure server settings for the `physicscode serve` and `physicscode w
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "server": {
     "port": 4096,
     "hostname": "0.0.0.0",
@@ -319,7 +303,6 @@ You can configure the shell used for the interactive terminal using the `shell` 
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "shell": "pwsh"
 }
 ```
@@ -334,7 +317,6 @@ You can manage the tools an LLM can use through the `tools` option.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tools": {
     "write": false,
     "bash": false
@@ -352,7 +334,6 @@ You can configure the providers and models you want to use in your PhysicsCode c
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {},
   "model": "anthropic/claude-sonnet-4-5",
   "small_model": "anthropic/claude-haiku-4-5"
@@ -365,7 +346,6 @@ Provider options can include `timeout`, `chunkTimeout`, and `setCacheKey`:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "anthropic": {
       "options": {
@@ -396,7 +376,6 @@ Amazon Bedrock supports AWS-specific configuration:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "amazon-bedrock": {
       "options": {
@@ -427,7 +406,6 @@ Set your UI theme in `tui.json`.
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "theme": "tokyonight"
 }
 ```
@@ -442,7 +420,6 @@ You can configure specialized agents for specific tasks through the `agent` opti
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "code-reviewer": {
       "description": "Reviews code for best practices and potential issues",
@@ -468,7 +445,6 @@ You can set the default agent using the `default_agent` option. This determines 
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "default_agent": "plan"
 }
 ```
@@ -479,34 +455,12 @@ This setting applies across all interfaces: TUI, CLI (`physicscode run`), deskto
 
 ---
 
-### Sharing
-
-You can configure the [share](/docs/share) feature through the `share` option.
-
-```json title="physicscode.json"
-{
-  "$schema": "https://physicscode.ai/config.json",
-  "share": "manual"
-}
-```
-
-This takes:
-
-- `"manual"` - Allow manual sharing via commands (default)
-- `"auto"` - Automatically share new conversations
-- `"disabled"` - Disable sharing entirely
-
-By default, sharing is set to manual mode where you need to explicitly share conversations using the `/share` command.
-
----
-
 ### Commands
 
 You can configure custom commands for repetitive tasks through the `command` option.
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "command": {
     "test": {
       "template": "Run the full test suite with coverage report and show any failures.\nFocus on the failing tests and suggest fixes.",
@@ -532,7 +486,6 @@ Customize keybinds in `tui.json`.
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "keybinds": {}
 }
 ```
@@ -549,7 +502,6 @@ For large repositories or projects with many submodules, the snapshot system can
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "snapshot": false
 }
 ```
@@ -564,7 +516,6 @@ PhysicsCode will automatically download any new updates when it starts up. You c
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "autoupdate": false
 }
 ```
@@ -580,7 +531,6 @@ You can configure code formatters through the `formatter` option.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "disabled": true
@@ -608,7 +558,6 @@ For example, to ensure that the `edit` and `bash` tools require user approval:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "ask",
     "bash": "ask"
@@ -626,7 +575,6 @@ You can control context compaction behavior through the `compaction` option.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "compaction": {
     "auto": true,
     "prune": true,
@@ -647,7 +595,6 @@ You can configure file watcher ignore patterns through the `watcher` option.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "watcher": {
     "ignore": ["node_modules/**", "dist/**", ".git/**"]
   }
@@ -664,7 +611,6 @@ You can configure MCP servers you want to use through the `mcp` option.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {}
 }
 ```
@@ -681,7 +627,6 @@ Place plugin files in `.physicscode/plugins/` or `~/.config/physicscode/plugins/
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "plugin": ["physicscode-helicone-session", "@my-org/custom-plugin"]
 }
 ```
@@ -696,7 +641,6 @@ You can configure the instructions for the model you're using through the `instr
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["CONTRIBUTING.md", "docs/guidelines.md", ".cursor/rules/*.md"]
 }
 ```
@@ -712,7 +656,6 @@ You can disable providers that are loaded automatically through the `disabled_pr
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "disabled_providers": ["openai", "gemini"]
 }
 ```
@@ -735,7 +678,6 @@ You can specify an allowlist of providers through the `enabled_providers` option
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "enabled_providers": ["anthropic", "openai"]
 }
 ```
@@ -756,7 +698,6 @@ The `experimental` key contains options that are under active development.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "experimental": {}
 }
 ```
@@ -779,7 +720,6 @@ Use `{env:VARIABLE_NAME}` to substitute environment variables:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "{env:PHYSICSCODE_MODEL}",
   "provider": {
     "anthropic": {
@@ -802,7 +742,6 @@ Use `{file:path/to/file}` to substitute the contents of a file:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["./custom-instructions.md"],
   "provider": {
     "openai": {

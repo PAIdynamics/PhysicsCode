@@ -33,9 +33,8 @@ config.
 
 You can customize the base URL for any provider by setting the `baseURL` option. This is useful when using proxy services or custom endpoints.
 
-```json title="physicscode.json" {6}
+```json title="physicscode.json" {5}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "anthropic": {
       "options": {
@@ -172,7 +171,6 @@ To use Amazon Bedrock with PhysicsCode:
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "amazon-bedrock": {
          "options": {
@@ -201,7 +199,6 @@ To use Amazon Bedrock with PhysicsCode:
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "amazon-bedrock": {
          "options": {
@@ -250,7 +247,6 @@ For custom inference profiles, use the model and provider name in the key and se
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "amazon-bedrock": {
       // ...
@@ -311,9 +307,8 @@ the following subscriptions in PhysicsCode with zero setup:
 
 You can configure physicscode to use local models through [Atomic Chat](https://atomic.chat), a desktop application that runs local LLMs behind an OpenAI-compatible API server (default endpoint `http://127.0.0.1:1337/v1`).
 
-```json title="physicscode.json" "atomic-chat" {5, 6, 8, 10-14}
+```json title="physicscode.json" "atomic-chat" {4,5,7,9-13}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "atomic-chat": {
       "npm": "@ai-sdk/openai-compatible",
@@ -546,7 +541,6 @@ Cloudflare AI Gateway lets you access models from OpenAI, Anthropic, Workers AI,
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "cloudflare-ai-gateway": {
          "models": {
@@ -818,7 +812,6 @@ to only use your own GitLab-hosted instance, add the following to your
 
 ```json
 {
-  "$schema": "https://physicscode.ai/config.json",
   "small_model": "gitlab/duo-chat-haiku-4-5",
   "share": "disabled"
 }
@@ -882,7 +875,6 @@ Customize through `physicscode.json`:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "gitlab": {
       "options": {
@@ -913,7 +905,6 @@ To access GitLab tools (merge requests, issues, pipelines, CI/CD, etc.):
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "plugin": ["physicscode-gitlab-plugin"]
 }
 ```
@@ -1094,7 +1085,6 @@ Here's [Helicone's Model Directory](https://helicone.ai/models), you'll need thi
 
 ```jsonc title="~/.config/physicscode/physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "helicone": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1122,7 +1112,6 @@ Helicone supports custom headers for features like caching, user tracking, and s
 
 ```jsonc title="~/.config/physicscode/physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "helicone": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1174,9 +1163,8 @@ See the [Helicone Header Directory](https://docs.helicone.ai/helicone-headers/he
 
 You can configure physicscode to use local models through [llama.cpp's](https://github.com/ggml-org/llama.cpp) llama-server utility
 
-```json title="physicscode.json" "llama.cpp" {5, 6, 8, 10-15}
+```json title="physicscode.json" "llama.cpp" {4,5,7,9-14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "llama.cpp": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1241,9 +1229,8 @@ IO.NET offers 17 models optimized for various use cases:
 
 You can configure physicscode to use local models through LM Studio.
 
-```json title="physicscode.json" "lmstudio" {5, 6, 8, 10-14}
+```json title="physicscode.json" "lmstudio" {4,5,7,9-13}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "lmstudio": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1358,9 +1345,8 @@ NVIDIA provides access to Nemotron models and many other open models through [bu
 
 You can also use NVIDIA models locally via [NVIDIA NIM](https://docs.nvidia.com/nim/) by setting a custom base URL.
 
-```json title="physicscode.json" {6}
+```json title="physicscode.json" {5}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "nvidia": {
       "options": {
@@ -1420,9 +1406,8 @@ details. It hasn't been verified against this fork specifically, so the
 manual config below is the reliable path.
 :::
 
-```json title="physicscode.json" "ollama" {5, 6, 8, 10-14}
+```json title="physicscode.json" "ollama" {4,5,7,9-13}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1451,6 +1436,8 @@ In this example:
 :::tip
 If tool calls aren't working, try increasing `num_ctx` in Ollama. Start around 16k - 32k.
 :::
+
+To reach Ollama running on another machine (or a container) instead of locally, start it with `OLLAMA_HOST=0.0.0.0 ollama serve` on that machine, then point `options.baseURL` at its address, e.g. `http://192.168.1.50:11434/v1`.
 
 ---
 
@@ -1584,7 +1571,6 @@ PhysicsCode Zen is a list of tested and verified models provided by the PhysicsC
 
    ```json title="physicscode.json" {6}
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "openrouter": {
          "models": {
@@ -1599,7 +1585,6 @@ PhysicsCode Zen is a list of tested and verified models provided by the PhysicsC
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "openrouter": {
          "models": {
@@ -1648,7 +1633,6 @@ PhysicsCode Zen is a list of tested and verified models provided by the PhysicsC
 
    ```json title="physicscode.json" {6}
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "llmgateway": {
          "models": {
@@ -1663,7 +1647,6 @@ PhysicsCode Zen is a list of tested and verified models provided by the PhysicsC
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "llmgateway": {
          "models": {
@@ -1916,7 +1899,6 @@ You can also customize models through your physicscode config. Here's an example
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "vercel": {
       "models": {
@@ -1938,6 +1920,52 @@ Some useful routing options:
 | `order`             | Provider sequence to try                             |
 | `only`              | Restrict to specific providers                       |
 | `zeroDataRetention` | Only use providers with zero data retention policies |
+
+---
+
+### vLLM
+
+[vLLM](https://docs.vllm.ai) serves an OpenAI-compatible API, so it works the same way whether it's running on the machine you're using physicscode from or on another machine on your network (e.g. a GPU server).
+
+1. Start vLLM. By default it only binds to `localhost`; pass `--host 0.0.0.0` to make it reachable from other machines.
+
+   ```bash
+   vllm serve Qwen/Qwen2.5-Coder-32B-Instruct --host 0.0.0.0 --port 8000
+   ```
+
+2. Point physicscode at it. Use `127.0.0.1` if vLLM is on the same machine, or that machine's address otherwise.
+
+   ```json title="physicscode.json" "vllm" {4,5,7,9-13}
+   {
+     "provider": {
+       "vllm": {
+         "npm": "@ai-sdk/openai-compatible",
+         "name": "vLLM",
+         "options": {
+           "baseURL": "http://192.168.1.50:8000/v1"
+         },
+         "models": {
+           "Qwen/Qwen2.5-Coder-32B-Instruct": {
+             "name": "Qwen2.5 Coder 32B (vLLM)"
+           }
+         }
+       }
+     }
+   }
+   ```
+
+   - `models` keys must match the model ID vLLM was started with — run `curl http://192.168.1.50:8000/v1/models` to confirm.
+
+3. If vLLM (or a proxy in front of it) requires an API key, add it to `options`:
+
+   ```json title="physicscode.json" {4}
+   {
+     "options": {
+       "baseURL": "http://192.168.1.50:8000/v1",
+       "apiKey": "{env:VLLM_API_KEY}"
+     }
+   }
+   ```
 
 ---
 
@@ -2026,7 +2054,6 @@ Some useful routing options:
 
    ```json title="physicscode.json" {6}
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "zenmux": {
          "models": {
@@ -2094,7 +2121,6 @@ You can use any OpenAI-compatible provider with physicscode. Most modern AI prov
 
    ```json title="physicscode.json" ""myprovider"" {5-15}
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "myprovider": {
          "npm": "@ai-sdk/openai-compatible",
@@ -2130,9 +2156,8 @@ You can use any OpenAI-compatible provider with physicscode. Most modern AI prov
 
 Here's an example setting the `apiKey`, `headers`, and model `limit` options.
 
-```json title="physicscode.json" {9,11,17-20}
+```json title="physicscode.json" {8,10,16-19}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "myprovider": {
       "npm": "@ai-sdk/openai-compatible",

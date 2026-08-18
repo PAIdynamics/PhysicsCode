@@ -86,7 +86,6 @@ be set in `physicscode.json` — but never put a live API key in this file:
 
 ```json
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "anthropic": {
       "options": { "baseURL": "https://api.anthropic.com/v1" }

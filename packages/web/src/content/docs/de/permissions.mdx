@@ -25,7 +25,6 @@ Sie können Berechtigungen global festlegen (mit `*`) und bestimmte Tools übers
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "*": "ask",
     "bash": "allow",
@@ -38,7 +37,6 @@ Sie können auch alle Berechtigungen auf einmal festlegen:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": "allow"
 }
 ```
@@ -51,7 +49,6 @@ Bei den meisten Berechtigungen können Sie ein Objekt verwenden, um basierend au
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "bash": {
       "*": "ask",
@@ -96,7 +93,6 @@ Dies ermöglicht beispielsweise den Zugriff auf alles unter `~/projects/personal
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "external_directory": {
       "~/projects/personal/**": "allow"
@@ -109,7 +105,6 @@ Jedes hier zulässige Verzeichnis erbt dieselben Standardeinstellungen wie der a
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "external_directory": {
       "~/projects/personal/**": "allow"
@@ -189,7 +184,6 @@ Ausführlichere Mustervergleichsbeispiele finden Sie oben im Abschnitt [Granular
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "bash": {
       "*": "ask",

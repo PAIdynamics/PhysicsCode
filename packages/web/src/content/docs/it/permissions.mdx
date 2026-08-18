@@ -25,7 +25,6 @@ Puoi impostare i permessi globalmente (con `*`) e sovrascrivere quelli di strume
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "*": "ask",
     "bash": "allow",
@@ -38,7 +37,6 @@ Puoi anche impostare tutti i permessi in una sola volta:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": "allow"
 }
 ```
@@ -51,7 +49,6 @@ Per la maggior parte dei permessi, puoi usare un oggetto per applicare azioni di
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "bash": {
       "*": "ask",
@@ -96,7 +93,6 @@ Per esempio, questo consente l'accesso a tutto sotto `~/projects/personal/`:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "external_directory": {
       "~/projects/personal/**": "allow"
@@ -109,7 +105,6 @@ Qualsiasi directory consentita qui eredita gli stessi default della workspace co
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "external_directory": {
       "~/projects/personal/**": "allow"
@@ -189,7 +184,6 @@ Fai riferimento alla sezione [Regole granulari (sintassi a oggetto)](#granular-r
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "bash": {
       "*": "ask",

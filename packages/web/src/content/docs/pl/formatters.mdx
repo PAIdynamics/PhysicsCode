@@ -61,7 +61,6 @@ Możesz dostosować formatery za pomocą sekcji `formatter` w konfiguracji Physi
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {}
 }
 ```
@@ -85,7 +84,6 @@ Aby globalnie wyłączyć **wszystkie** formatery, ustaw `formatter` na `false`:
 
 ```json title="physicscode.json" {3}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": false
 }
 ```
@@ -94,7 +92,6 @@ Aby wyłączyć **określony** formater, ustaw `disabled` na `true`:
 
 ```json title="physicscode.json" {5}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "disabled": true
@@ -111,7 +108,6 @@ Możesz dodać niestandardowe formatery, podając polecenie, zmienne środowisko
 
 ```json title="physicscode.json" {4-14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "command": ["npx", "prettier", "--write", "$FILE"],

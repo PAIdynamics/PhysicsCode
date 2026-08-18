@@ -25,7 +25,6 @@ Você pode definir permissões globalmente (com `*`), e substituir ferramentas e
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "*": "ask",
     "bash": "allow",
@@ -38,7 +37,6 @@ Você também pode definir todas as permissões de uma vez:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": "allow"
 }
 ```
@@ -51,7 +49,6 @@ Para a maioria das permissões, você pode usar um objeto para aplicar diferente
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "bash": {
       "*": "ask",
@@ -96,7 +93,6 @@ Por exemplo, isso permite acesso a tudo sob `~/projects/personal/`:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "external_directory": {
       "~/projects/personal/**": "allow"
@@ -109,7 +105,6 @@ Qualquer diretório permitido aqui herda os mesmos padrões do espaço de trabal
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "external_directory": {
       "~/projects/personal/**": "allow"
@@ -189,7 +184,6 @@ Consulte a seção [Regras Granulares (Sintaxe de Objeto)](#granular-rules-objec
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "bash": {
       "*": "ask",

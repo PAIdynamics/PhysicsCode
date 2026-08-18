@@ -35,7 +35,6 @@ config.
 
 ```json title="physicscode.json" {6}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "anthropic": {
       "options": {
@@ -197,7 +196,6 @@ PhysicsCode で Amazon Bedrock を使用するには:
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "amazon-bedrock": {
          "options": {
@@ -226,7 +224,6 @@ PhysicsCode で Amazon Bedrock を使用するには:
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "amazon-bedrock": {
          "options": {
@@ -275,7 +272,6 @@ PhysicsCode で Amazon Bedrock を使用するには:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "amazon-bedrock": {
       // ...
@@ -335,7 +331,6 @@ physicscode は、OpenAI 互換の API サーバーの背後でローカル LLM 
 
 ```json title="physicscode.json" "atomic-chat" {5, 6, 8, 10-14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "atomic-chat": {
       "npm": "@ai-sdk/openai-compatible",
@@ -563,7 +558,6 @@ PhysicsCode 設定を通じてモデルを追加することもできます。
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "cloudflare-ai-gateway": {
       "models": {
@@ -865,7 +859,6 @@ export GITLAB_OAUTH_CLIENT_ID=your_application_id_here
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "gitlab": {
       "options": {
@@ -882,7 +875,6 @@ GitLab ツール (マージリクエスト、問題、パイプライン、CI/CD
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "plugin": ["physicscode-gitlab-plugin"]
 }
 ```
@@ -1066,7 +1058,6 @@ PhysicsCode を通じて自動的に構成されていない Helicone の機能�
 
 ```jsonc title="~/.config/physicscode/physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "helicone": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1094,7 +1085,6 @@ Helicone は、キャッシュ、ユーザー追跡、セッション管理な�
 
 ```jsonc title="~/.config/physicscode/physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "helicone": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1148,7 +1138,6 @@ npm install -g physicscode-helicone-session
 
 ```json title="physicscode.json" "llama.cpp" {5, 6, 8, 10-15}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "llama.cpp": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1215,7 +1204,6 @@ LM Studio を通じてローカルモデルを使用するように physicscode 
 
 ```json title="physicscode.json" "lmstudio" {5, 6, 8, 10-14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "lmstudio": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1336,7 +1324,6 @@ Ollama は PhysicsCode 用に自動的に構成できます。詳細について
 
 ```json title="physicscode.json" "ollama" {5, 6, 8, 10-14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -1498,7 +1485,6 @@ PhysicsCode 設定を通じて追加のモデルを追加することもでき�
 
 ```json title="physicscode.json" {6}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "openrouter": {
       "models": {
@@ -1513,7 +1499,6 @@ PhysicsCode 設定を通じて追加のモデルを追加することもでき�
 
    ```json title="physicscode.json"
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "openrouter": {
          "models": {
@@ -1729,7 +1714,6 @@ PhysicsCode 設定を通じてモデルをカスタマイズすることもで�
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "vercel": {
       "models": {
@@ -1839,7 +1823,6 @@ PhysicsCode 設定を通じて追加のモデルを追加することもでき�
 
 ```json title="physicscode.json" {6}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "zenmux": {
       "models": {
@@ -1907,7 +1890,6 @@ OpenAI と互換性のある任意のプロバイダーを PhysicsCode で使用
 
    ```json title="physicscode.json" ""myprovider"" {5-15}
    {
-     "$schema": "https://physicscode.ai/config.json",
      "provider": {
        "myprovider": {
          "npm": "@ai-sdk/openai-compatible",
@@ -1946,7 +1928,6 @@ OpenAI と互換性のある任意のプロバイダーを PhysicsCode で使用
 
 ```json title="physicscode.json" {9,11,17-20}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "myprovider": {
       "npm": "@ai-sdk/openai-compatible",

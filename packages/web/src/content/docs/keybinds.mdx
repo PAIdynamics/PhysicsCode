@@ -7,7 +7,6 @@ PhysicsCode has a list of keybinds that you can customize through `tui.json`.
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "keybinds": {
     "leader": "ctrl+x",
     "app_exit": "ctrl+c,ctrl+d,<leader>q",
@@ -24,8 +23,6 @@ PhysicsCode has a list of keybinds that you can customize through `tui.json`.
     "session_timeline": "<leader>g",
     "session_fork": "none",
     "session_rename": "ctrl+r",
-    "session_share": "none",
-    "session_unshare": "none",
     "session_interrupt": "escape",
     "session_compact": "<leader>c",
     "session_child_first": "<leader>down",
@@ -132,7 +129,6 @@ You can disable a keybind by adding the key to `tui.json` with a value of "none"
 
 ```json title="tui.json"
 {
-  "$schema": "https://physicscode.ai/tui.json",
   "keybinds": {
     "session_compact": "none"
   }

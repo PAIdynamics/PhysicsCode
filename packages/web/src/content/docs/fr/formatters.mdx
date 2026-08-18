@@ -61,7 +61,6 @@ Vous pouvez personnaliser les formateurs via la section `formatter` de votre con
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {}
 }
 ```
@@ -85,7 +84,6 @@ Pour désactiver **tous** les formateurs globalement, définissez `formatter` su
 
 ```json title="physicscode.json" {3}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": false
 }
 ```
@@ -94,7 +92,6 @@ Pour désactiver un formateur **spécifique**, définissez `disabled` sur `true`
 
 ```json title="physicscode.json" {5}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "disabled": true
@@ -111,7 +108,6 @@ Vous pouvez remplacer les formateurs intégrés ou en ajouter de nouveaux en sp�
 
 ```json title="physicscode.json" {4-14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "command": ["npx", "prettier", "--write", "$FILE"],

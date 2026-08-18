@@ -139,7 +139,6 @@ Agent'ları `physicscode.json` yapılandırma dosyanızda yapılandırın:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "build": {
       "mode": "primary",
@@ -368,7 +367,6 @@ physicscode yapılandırmanızdaki model kimliği `provider/model-id` biçimini 
 
 ```json title="physicscode.json" {3-6,9-12}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tools": {
     "write": true,
     "bash": true
@@ -392,7 +390,6 @@ Aynı anda birden fazla aracı kontrol etmek için joker karakterleri de kullana
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "readonly": {
       "tools": {
@@ -419,7 +416,6 @@ Bir agent'ın gerçekleştirebileceği eylemleri yönetmek için izinleri yapıl
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "deny"
   }
@@ -430,7 +426,6 @@ Bu izinleri agent başına geçersiz kılabilirsiniz.
 
 ```json title="physicscode.json" {3-5,8-10}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "deny"
   },
@@ -467,7 +462,6 @@ Belirli bash komutları için izinleri ayarlayabilirsiniz.
 
 ```json title="physicscode.json" {7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "build": {
       "permission": {
@@ -485,7 +479,6 @@ Bu küresel bir desen alabilir.
 
 ```json title="physicscode.json" {7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "build": {
       "permission": {
@@ -503,7 +496,6 @@ Son eşleşen kural öncelikli olduğundan, `*` joker karakterini ilk sıraya ve
 
 ```json title="physicscode.json" {8}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "build": {
       "permission": {

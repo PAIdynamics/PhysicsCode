@@ -23,7 +23,6 @@ Možete definirati MCP servere u vašoj [PhysicsCode Config](https://physicscode
 
 ```jsonc title="physicscode.jsonc" {6}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "name-of-mcp-server": {
       // ...
@@ -45,7 +44,6 @@ Da omogućite određeni server iz udaljene konfiguracije vaše organizacije, dod
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "jira": {
       "type": "remote",
@@ -64,7 +62,6 @@ Dodajte lokalne MCP servere koristeći `type` u `"local"` unutar MCP objekta.
 
 ```jsonc title="physicscode.jsonc" {15}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-local-mcp-server": {
       "type": "local",
@@ -84,7 +81,6 @@ Na primjer, evo kako možete dodati testni [`@modelcontextprotocol/server-everyt
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "mcp_everything": {
       "type": "local",
@@ -121,7 +117,6 @@ Dodajte udaljene MCP servere postavljanjem `type` na `"remote"`.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-remote-mcp": {
       "type": "remote",
@@ -166,7 +161,6 @@ Za većinu MCP servera sa omogućenim OAuthom nije potrebna posebna konfiguracij
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-oauth-server": {
       "type": "remote",
@@ -184,7 +178,6 @@ Ako imate klijentske vjerodajnice od dobavljača MCP servera, možete ih konfigu
 
 ```json title="physicscode.json" {7-11}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-oauth-server": {
       "type": "remote",
@@ -230,7 +223,6 @@ Ako želite onemogućiti automatski OAuth za server (npr. za servere koji umjest
 
 ```json title="physicscode.json" {7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-api-key-server": {
       "type": "remote",
@@ -279,7 +271,6 @@ To znači da ih možete omogućiti ili onemogućiti globalno.
 
 ```json title="physicscode.json" {14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-mcp-foo": {
       "type": "local",
@@ -300,7 +291,6 @@ Također možemo koristiti glob obrazac da onemogućimo sve odgovarajuće MCP-ov
 
 ```json title="physicscode.json" {14}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-mcp-foo": {
       "type": "local",
@@ -328,7 +318,6 @@ Ako imate veliki broj MCP servera, možda ćete želeti da ih omogućite samo po
 
 ```json title="physicscode.json" {11, 14-18}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "my-mcp": {
       "type": "local",
@@ -379,7 +368,6 @@ Dodajte [Sentry MCP server](https://mcp.sentry.dev) za interakciju sa vašim Sen
 
 ```json title="physicscode.json" {4-8}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "sentry": {
       "type": "remote",
@@ -411,7 +399,6 @@ Dodajte [Context7 MCP server](https://github.com/upstash/context7) za pretraživ
 
 ```json title="physicscode.json" {4-7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "context7": {
       "type": "remote",
@@ -425,7 +412,6 @@ Ako ste se prijavili za besplatni račun, možete koristiti svoj API ključ i do
 
 ```json title="physicscode.json" {7-9}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "context7": {
       "type": "remote",
@@ -459,7 +445,6 @@ Dodajte [Grep by Vercel](https://grep.app) MCP server za pretraživanje isječak
 
 ```json title="physicscode.json" {4-7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {
     "gh_grep": {
       "type": "remote",

@@ -13,7 +13,6 @@ PhysicsCode unterstützt die Formate **JSON** und **JSONC** (JSON mit Kommentare
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   // Theme configuration
   "theme": "physicscode",
   "model": "anthropic/claude-sonnet-4-5",
@@ -158,7 +157,6 @@ Sie können TUI-spezifische Einstellungen über die Option `tui` konfigurieren.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tui": {
     "scroll_speed": 3,
     "scroll_acceleration": {
@@ -185,7 +183,6 @@ Sie können Servereinstellungen für die Befehle `physicscode serve` und `physic
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "server": {
     "port": 4096,
     "hostname": "0.0.0.0",
@@ -214,7 +211,6 @@ Sie können die Tools, die ein LLM verwenden kann, über die Option `tools` verw
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tools": {
     "write": false,
     "bash": false
@@ -232,7 +228,6 @@ Sie können die Anbieter und Modelle, die Sie in Ihrer PhysicsCode-Konfiguration
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {},
   "model": "anthropic/claude-sonnet-4-5",
   "small_model": "anthropic/claude-haiku-4-5"
@@ -245,7 +240,6 @@ Zu den Anbieteroptionen können `timeout` und `setCacheKey` gehören:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "anthropic": {
       "options": {
@@ -274,7 +268,6 @@ Amazon Bedrock unterstützt AWS-spezifische Konfigurationen:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "provider": {
     "amazon-bedrock": {
       "options": {
@@ -305,7 +298,6 @@ Sie können das Thema, das Sie in Ihrer PhysicsCode-Konfiguration verwenden möc
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "theme": ""
 }
 ```
@@ -320,7 +312,6 @@ Sie können das Thema, das Sie in Ihrer PhysicsCode-Konfiguration verwenden möc
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "code-reviewer": {
       "description": "Reviews code for best practices and potential issues",
@@ -346,7 +337,6 @@ Sie können den Standardagenten mit der Option `default_agent` festlegen. Dadurc
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "default_agent": "plan"
 }
 ```
@@ -363,7 +353,6 @@ Sie können die Funktion [share](/docs/share) über die Option `share` konfiguri
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "share": "manual"
 }
 ```
@@ -384,7 +373,6 @@ Sie können benutzerdefinierte Befehle für sich wiederholende Aufgaben über di
 
 ```jsonc title="physicscode.jsonc"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "command": {
     "test": {
       "template": "Run the full test suite with coverage report and show any failures.\nFocus on the failing tests and suggest fixes.",
@@ -410,7 +398,6 @@ Sie können Ihre Tastenkombinationen über die Option `keybinds` anpassen.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "keybinds": {}
 }
 ```
@@ -425,7 +412,6 @@ PhysicsCode lädt beim Start automatisch alle neuen Updates herunter. Sie könne
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "autoupdate": false
 }
 ```
@@ -441,7 +427,6 @@ Sie können Codeformatierer über die Option `formatter` konfigurieren.
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "formatter": {
     "prettier": {
       "disabled": true
@@ -469,7 +454,6 @@ Um beispielsweise sicherzustellen, dass die Tools `edit` und `bash` eine Benutze
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "ask",
     "bash": "ask"
@@ -487,7 +471,6 @@ Sie können das Verhalten der Kontextkomprimierung über die Option `compaction`
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "compaction": {
     "auto": true,
     "prune": true
@@ -506,7 +489,6 @@ Sie können Datei-Watcher-Ignoriermuster über die Option `watcher` konfiguriere
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "watcher": {
     "ignore": ["node_modules/**", "dist/**", ".git/**"]
   }
@@ -523,7 +505,6 @@ Sie können den MCP-Server, den Sie verwenden möchten, über die Option `mcp` k
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "mcp": {}
 }
 ```
@@ -540,7 +521,6 @@ Platzieren Sie Ihre Plugin-Dateien in `.physicscode/plugins/` oder `~/.config/ph
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "plugin": ["physicscode-helicone-session", "@my-org/custom-plugin"]
 }
 ```
@@ -555,7 +535,6 @@ Sie können die Anweisungen für das von Ihnen verwendete Modell über die Optio
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["CONTRIBUTING.md", "docs/guidelines.md", ".cursor/rules/*.md"]
 }
 ```
@@ -570,7 +549,6 @@ Sie können Anbieter, die automatisch geladen werden, über die Option `disabled
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "disabled_providers": ["openai", "gemini"]
 }
 ```
@@ -593,7 +571,6 @@ Sie können über die Option `enabled_providers` eine Zulassungsliste für Anbie
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "enabled_providers": ["anthropic", "openai"]
 }
 ```
@@ -614,7 +591,6 @@ Der Schlüssel `experimental` enthält Optionen, die sich in der aktiven Entwick
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "experimental": {}
 }
 ```
@@ -637,7 +613,6 @@ Verwenden Sie `{env:VARIABLE_NAME}`, um Umgebungsvariablen zu ersetzen:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "model": "{env:PHYSICSCODE_MODEL}",
   "provider": {
     "anthropic": {
@@ -660,7 +635,6 @@ Verwenden Sie `{file:path/to/file}`, um den Inhalt einer Datei zu ersetzen:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "instructions": ["./custom-instructions.md"],
   "provider": {
     "openai": {

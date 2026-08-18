@@ -126,7 +126,6 @@ Konfigurieren Sie Agenten in Ihrer `physicscode.json`-Konfigurationsdatei:
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "build": {
       "mode": "primary",
@@ -355,7 +354,6 @@ Steuern Sie mit der `tools`-Konfiguration, welche Tools in diesem Agent verfügb
 
 ```json title="physicscode.json" {3-6,9-12}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "tools": {
     "write": true,
     "bash": true
@@ -379,7 +377,6 @@ Sie können Platzhalter auch verwenden, um mehrere Werkzeuge gleichzeitig zu ste
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "readonly": {
       "tools": {
@@ -406,7 +403,6 @@ Sie können Berechtigungen konfigurieren, um zu verwalten, welche Aktionen ein A
 
 ```json title="physicscode.json"
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "deny"
   }
@@ -417,7 +413,6 @@ Sie können diese Berechtigungen pro Agent überschreiben.
 
 ```json title="physicscode.json" {3-5,8-10}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "permission": {
     "edit": "deny"
   },
@@ -454,7 +449,6 @@ Sie können Berechtigungen für bestimmte Bash-Befehle festlegen.
 
 ```json title="physicscode.json" {7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "build": {
       "permission": {
@@ -472,7 +466,6 @@ Dies kann ein Glob-Muster annehmen.
 
 ```json title="physicscode.json" {7}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "build": {
       "permission": {
@@ -490,7 +483,6 @@ Da die letzte übereinstimmende Regel Vorrang hat, setzen Sie zuerst den Platzha
 
 ```json title="physicscode.json" {8}
 {
-  "$schema": "https://physicscode.ai/config.json",
   "agent": {
     "build": {
       "permission": {

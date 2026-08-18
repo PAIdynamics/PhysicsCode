@@ -50,18 +50,7 @@ This allows for more targeted requests without needing to specify file paths or 
 
 ## Installation
 
-Run the following command in the terminal from your GitHub repo:
-
-```bash
-physicscode github install
-```
-
-This will walk you through installing the GitHub app, creating the workflow, and setting up secrets.
-
-### Manual Setup
-
-1. Install the GitHub app https://github.com/apps/physicscode-agent. Make sure it is installed on the target repository.
-2. Add the following workflow file to `.github/workflows/physicscode.yml` in your repo. Set the appropriate `model` and required API keys in `env`.
+1. Add the following workflow file to `.github/workflows/physicscode.yml` in your repo. Set the appropriate `model` and required API keys in `env`.
 
    ```yml
    name: physicscode
@@ -80,6 +69,9 @@ This will walk you through installing the GitHub app, creating the workflow, and
        runs-on: ubuntu-latest
        permissions:
          id-token: write
+         contents: read
+         pull-requests: read
+         issues: read
        steps:
           - name: Checkout repository
             uses: actions/checkout@v6
@@ -88,20 +80,20 @@ This will walk you through installing the GitHub app, creating the workflow, and
               persist-credentials: false
 
           - name: Run physicscode
-           uses: anomalyco/physicscode/github@latest
-           env:
-             ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-           with:
-             model: anthropic/claude-sonnet-4-20250514
-             use_github_token: true
+            uses: PAIdynamics/PhysicsCode/github@main
+            env:
+              ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            with:
+              model: anthropic/claude-sonnet-4-20250514
+              use_github_token: true
    ```
 
-3. Store the API keys in secrets. In your organization or project **settings**, expand **Secrets and variables** on the left and select **Actions**. Add the required API keys.
+2. Store the API keys in secrets. In your organization or project **settings**, expand **Secrets and variables** on the left and select **Actions**. Add the required API keys.
 
 ## Support
 
-This is an early release. If you encounter issues or have feedback, please create an issue at https://github.com/anomalyco/physicscode/issues.
+This is an early release. If you encounter issues or have feedback, please create an issue at https://github.com/PAIdynamics/PhysicsCode/issues.
 
 ## Development
 

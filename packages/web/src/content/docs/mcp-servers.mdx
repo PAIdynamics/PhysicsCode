@@ -23,7 +23,7 @@ Certain MCP servers, like the GitHub MCP server, tend to add a lot of tokens and
 
 ## Enable
 
-You can define MCP servers in your [PhysicsCode Config](https://physicscode.ai/docs/config/) under `mcp`. Add each MCP with a unique name. You can refer to that MCP by name when prompting the LLM.
+You can define MCP servers in your [PhysicsCode Config](/docs/config/) under `mcp`. Add each MCP with a unique name. You can refer to that MCP by name when prompting the LLM.
 
 ```jsonc title="physicscode.jsonc" {6}
 {
@@ -413,7 +413,9 @@ entry needed in your `mcp` config.
 
 **In Claude Code or Codex**, add it manually, authenticated with a PhysicsCode
 API key (create one from the account portal's Profile tab, or run
-`physicscode account login` and reuse that session's token):
+`physicscode account login` and reuse that session's token). This is the
+hosted endpoint, so it works from any machine with the key — no local server
+or install required:
 
 ```bash
 claude mcp add --transport http physicscode-science https://www.physicscode.ai/mcp \

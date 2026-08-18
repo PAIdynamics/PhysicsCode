@@ -253,11 +253,12 @@ All managed preference keys appear in the resolved config and cannot be overridd
 
 ## Schema
 
-The server/runtime config schema is defined in [**`physicscode.ai/config.json`**](https://physicscode.ai/config.json).
-
-TUI config uses [**`physicscode.ai/tui.json`**](https://physicscode.ai/tui.json).
-
-Your editor should be able to validate and autocomplete based on the schema.
+Config examples throughout these docs reference a `$schema` field
+(`https://physicscode.ai/config.json` for the server/runtime config,
+`https://physicscode.ai/tui.json` for TUI config) for editor validation and
+autocomplete. Those schema endpoints aren't live yet on this fork, so editors
+won't be able to resolve them — the `$schema` field itself is otherwise
+harmless to leave in your config.
 
 ---
 

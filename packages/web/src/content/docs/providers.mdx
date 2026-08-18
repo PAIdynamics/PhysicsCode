@@ -1141,17 +1141,17 @@ Helicone supports custom headers for features like caching, user tracking, and s
 
 ##### Session tracking
 
-Helicone's [Sessions](https://docs.helicone.ai/features/sessions) feature lets you group related LLM requests together. Use the [physicscode-helicone-session](https://github.com/H2Shami/physicscode-helicone-session) plugin to automatically log each PhysicsCode conversation as a session in Helicone.
+Helicone's [Sessions](https://docs.helicone.ai/features/sessions) feature lets you group related LLM requests together. Use the [opencode-helicone-session](https://github.com/H2Shami/opencode-helicone-session) plugin to automatically log each PhysicsCode conversation as a session in Helicone.
 
 ```bash
-npm install -g physicscode-helicone-session
+npm install -g opencode-helicone-session
 ```
 
 Add it to your config.
 
 ```json title="physicscode.json"
 {
-  "plugin": ["physicscode-helicone-session"]
+  "plugin": ["opencode-helicone-session"]
 }
 ```
 
@@ -1413,7 +1413,11 @@ export NVIDIA_API_KEY=nvapi-your-key-here
 You can configure physicscode to use local models through Ollama.
 
 :::tip
-Ollama can automatically configure itself for PhysicsCode. See the [Ollama integration docs](https://docs.ollama.com/integrations/physicscode) for details.
+Ollama has an auto-configuration integration for opencode (the upstream
+project PhysicsCode is forked from) — see the
+[Ollama integration docs](https://docs.ollama.com/integrations/opencode) for
+details. It hasn't been verified against this fork specifically, so the
+manual config below is the reliable path.
 :::
 
 ```json title="physicscode.json" "ollama" {5, 6, 8, 10-14}

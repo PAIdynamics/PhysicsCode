@@ -95,7 +95,18 @@ be set in `physicscode.json` — but never put a live API key in this file:
 }
 ```
 
-Full reference: [physicscode.ai/docs/providers](https://physicscode.ai/docs/providers).
+Full reference: [Providers docs](https://paidynamics.github.io/PhysicsCode/providers).
+
+## Science MCP
+
+`physicscode-science` (provenance-aware retrieval for scientific software) is
+already wired into physicscode itself once you're logged in — no setup
+needed. To use it from **Claude Code or Codex** instead — on this machine or
+any other — see
+[`physicscode-science/docs/mcp-clients.md`](physicscode-science/docs/mcp-clients.md)
+for the exact `claude mcp add` / `codex mcp add` commands, covering both the
+hosted endpoint (works from any machine with a PhysicsCode API key) and
+running your own local index.
 
 ## VS Code Extension
 

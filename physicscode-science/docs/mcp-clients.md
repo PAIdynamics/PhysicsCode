@@ -80,14 +80,18 @@ codex mcp add physicscode-science \
 Codex's HTTP/Streamable MCP support depends on your installed version; if
 `--url` isn't recognized, fall back to Option A.
 
-## Option C — Hosted, via your PhysicsCode account
+## Option C — Hosted, via your PhysicsCode account (works from any machine)
 
-No local index or server to run. `https://www.physicscode.ai/mcp` proxies to
-the production science origin, authenticated with your PhysicsCode account
-bearer token (the same one `physicscode account login` stores, or an API key
-minted from the account portal — see the main
-[physicscode-integration.md](physicscode-integration.md) doc for how the
-`physicscode` CLI itself receives this via account config).
+No local index or server to run, and no dependency on this machine
+specifically — this is the option to use on a laptop, a CI runner, or any
+other machine that isn't running its own science index.
+`https://www.physicscode.ai/mcp` proxies to the production science origin,
+authenticated with a PhysicsCode API key (generate one at
+`https://www.physicscode.ai/account` → Profile → **Generate new key**; email
+verification is required) or the bearer token `physicscode account login`
+stores — see the main [physicscode-integration.md](physicscode-integration.md)
+doc for how the `physicscode` CLI itself receives this via account config.
+The same key works across as many machines as you want.
 
 Claude Code:
 
@@ -104,6 +108,17 @@ codex mcp add physicscode-science \
   --url https://www.physicscode.ai/mcp \
   --bearer-token-env-var PHYSICSCODE_TOKEN
 ```
+
+### Using Codex from VS Code
+
+The Codex VS Code extension bundles the same `codex` CLI and reads the same
+`~/.codex/config.toml` (same `CODEX_HOME` resolution) — anything registered
+with `codex mcp add` in a terminal is picked up automatically, no separate
+setup in VS Code. The one gotcha: `--bearer-token-env-var` only stores the
+variable *name*; the value must be present in the environment VS Code itself
+launches with, not just your terminal at registration time. Add the `export`
+line to your shell profile (`~/.bashrc`/`~/.zshrc`) and fully restart VS Code
+(env vars set after it's already running don't apply retroactively).
 
 ## Tools exposed
 

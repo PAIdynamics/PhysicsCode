@@ -653,4 +653,99 @@ describe("filesystem", () => {
       expect(Filesystem.normalizePathPattern(path.join(root, "*"))).toBe(path.join(root, "*"))
     })
   })
+
+  describe("contains()", () => {
+    test("returns true for a child path under the parent", () => {
+      expect(Filesystem.contains("/project", "/project/src/file.ts")).toBe(true)
+    })
+
+    test("returns true for the parent path itself", () => {
+      expect(Filesystem.contains("/project", "/project")).toBe(true)
+    })
+
+    test("returns false for a path outside the parent", () => {
+      expect(Filesystem.contains("/project", "/other")).toBe(false)
+    })
+
+    test("returns false for a path that escapes via ..", () => {
+      expect(Filesystem.contains("/project", "/project/../etc")).toBe(false)
+    })
+  })
+
+  describe("overlaps()", () => {
+    test("returns true when either path contains the other", () => {
+      expect(Filesystem.overlaps("/project", "/project/src")).toBe(true)
+      expect(Filesystem.overlaps("/project/src", "/project")).toBe(true)
+    })
+
+    test("returns true for identical paths", () => {
+      expect(Filesystem.overlaps("/project", "/project")).toBe(true)
+    })
+
+    test("returns false for unrelated paths", () => {
+      expect(Filesystem.overlaps("/project", "/other")).toBe(false)
+    })
+  })
+
+  describe("up()", () => {
+    test("yields matches walking up from start to stop, including repeats at each level", async () => {
+      await using tmp = await tmpdir()
+      const nested = path.join(tmp.path, "a", "b")
+      await fs.mkdir(nested, { recursive: true })
+      await fs.writeFile(path.join(tmp.path, "a", "marker.txt"), "x")
+      await fs.writeFile(path.join(tmp.path, "marker.txt"), "x")
+
+      const found: string[] = []
+      for await (const hit of Filesystem.up({ targets: ["marker.txt"], start: nested, stop: tmp.path })) {
+        found.push(hit)
+      }
+
+      expect(found).toEqual([path.join(tmp.path, "a", "marker.txt"), path.join(tmp.path, "marker.txt")])
+    })
+
+    test("yields nothing when no target exists anywhere in range", async () => {
+      await using tmp = await tmpdir()
+      const nested = path.join(tmp.path, "a", "b")
+      await fs.mkdir(nested, { recursive: true })
+
+      const found: string[] = []
+      for await (const hit of Filesystem.up({ targets: ["missing.txt"], start: nested, stop: tmp.path })) {
+        found.push(hit)
+      }
+
+      expect(found).toEqual([])
+    })
+
+    test("checks multiple targets at each directory level", async () => {
+      await using tmp = await tmpdir()
+      await fs.writeFile(path.join(tmp.path, "a.txt"), "x")
+      await fs.writeFile(path.join(tmp.path, "b.txt"), "x")
+
+      const found: string[] = []
+      for await (const hit of Filesystem.up({ targets: ["a.txt", "b.txt"], start: tmp.path, stop: tmp.path })) {
+        found.push(hit)
+      }
+
+      expect(found.sort()).toEqual([path.join(tmp.path, "a.txt"), path.join(tmp.path, "b.txt")])
+    })
+  })
+
+  describe("globUp()", () => {
+    test("finds glob matches walking up from start to stop", async () => {
+      await using tmp = await tmpdir()
+      const nested = path.join(tmp.path, "a", "b")
+      await fs.mkdir(nested, { recursive: true })
+      await fs.writeFile(path.join(tmp.path, "a", "config.json"), "{}")
+
+      const found = await Filesystem.globUp("*.json", nested, tmp.path)
+
+      expect(found).toContain(path.join(tmp.path, "a", "config.json"))
+    })
+
+    test("returns an empty array when nothing matches", async () => {
+      await using tmp = await tmpdir()
+      const found = await Filesystem.globUp("*.nonexistent-ext", tmp.path, tmp.path)
+      expect(found).toEqual([])
+    })
+  })
 })

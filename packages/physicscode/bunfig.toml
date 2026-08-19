@@ -9,4 +9,9 @@ preload = ["@opentui/solid/preload", "./test/preload.ts"]
 # test harness to cover meaningfully, not plain unit tests - tracked as a
 # separate effort. Excluded here so the coverage number reflects the
 # business-logic target we're actually driving toward.
-coveragePathIgnorePatterns = ["src/cli/cmd/tui/**", "**/physicscode-test-*/**"]
+#
+# packages/sdk/js is a separate package's fully auto-generated OpenAPI
+# client (no hand-written logic, no test infra of its own anywhere in the
+# monorepo) that gets instrumented only because it's imported transitively
+# - excluded for the same reason as the TUI layer.
+coveragePathIgnorePatterns = ["src/cli/cmd/tui/**", "**/physicscode-test-*/**", "**/sdk/js/**"]

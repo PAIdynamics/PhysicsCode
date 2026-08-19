@@ -1,6 +1,7 @@
 import { test, expect } from "bun:test"
 import { mkdir, unlink } from "fs/promises"
 import path from "path"
+import { LoadAPIKeyError } from "ai"
 
 import { tmpdir } from "../fixture/fixture"
 import { Global } from "@physicscode-ai/core/global"
@@ -495,6 +496,69 @@ test("getModel throws ModelNotFoundError for invalid provider", async () => {
     directory: tmp.path,
     fn: async () => {
       expect(getModel(ProviderID.make("nonexistent-provider"), ModelID.make("some-model"))).rejects.toThrow()
+    },
+  })
+})
+
+test("getLanguage rejects with a login-required LoadAPIKeyError when Anthropic has no credential", async () => {
+  await using tmp = await tmpdir({
+    init: async (dir) => {
+      await Bun.write(
+        path.join(dir, "physicscode.json"),
+        JSON.stringify({
+          $schema: "https://physicscode.ai/config.json",
+        }),
+      )
+    },
+  })
+  await Instance.provide({
+    directory: tmp.path,
+    // Deliberately no ANTHROPIC_API_KEY, no config apiKey, no stored auth -
+    // getModel() itself (metadata resolution) should still succeed; only
+    // getLanguage() (which actually needs a usable SDK client) should fail.
+    fn: async () => {
+      const model = await getModel(ProviderID.anthropic, ModelID.make("claude-sonnet-4-20250514"))
+      expect(model).toBeDefined()
+
+      let caught: unknown
+      try {
+        await getLanguage(model)
+        expect.unreachable()
+      } catch (e) {
+        caught = e
+      }
+      expect(caught).toBeInstanceOf(LoadAPIKeyError)
+      expect(String((caught as LoadAPIKeyError).message)).toContain("Add an Anthropic API key")
+    },
+  })
+})
+
+test("getLanguage rejects with a login-required LoadAPIKeyError when OpenAI has no credential", async () => {
+  await using tmp = await tmpdir({
+    init: async (dir) => {
+      await Bun.write(
+        path.join(dir, "physicscode.json"),
+        JSON.stringify({
+          $schema: "https://physicscode.ai/config.json",
+        }),
+      )
+    },
+  })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const model = await getModel(ProviderID.openai, ModelID.make("gpt-5"))
+      expect(model).toBeDefined()
+
+      let caught: unknown
+      try {
+        await getLanguage(model)
+        expect.unreachable()
+      } catch (e) {
+        caught = e
+      }
+      expect(caught).toBeInstanceOf(LoadAPIKeyError)
+      expect(String((caught as LoadAPIKeyError).message)).toContain("Add an OpenAI API key")
     },
   })
 })

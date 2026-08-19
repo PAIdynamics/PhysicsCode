@@ -338,3 +338,168 @@ describe("plugin.codex headless (device-code) OAuth flow", () => {
     }
   })
 })
+
+// The auth.loader().fetch wrapper is what every actual OpenAI request goes
+// through once a user is connected via OAuth - it injects the bearer
+// token, refreshes it when expired, and rewrites the URL to the Codex
+// backend. This is the piece that keeps a browser/device login "just
+// working" across a session, so its refresh behavior (including failure)
+// is worth covering directly rather than trusting it as untested glue.
+describe("plugin.codex OAuth loader (per-request auth wrapper)", () => {
+  function fakeJwt(claims: Record<string, unknown>) {
+    const header = Buffer.from(JSON.stringify({ alg: "none" })).toString("base64url")
+    const body = Buffer.from(JSON.stringify(claims)).toString("base64url")
+    return `${header}.${body}.sig`
+  }
+
+  function fakeClient(onSet: (body: unknown) => void) {
+    return {
+      auth: {
+        set: async (args: { path: { id: string }; body: unknown }) => {
+          onSet(args.body)
+        },
+      },
+    } as unknown as PluginInput["client"]
+  }
+
+  test("loader returns an empty hook when the stored auth isn't oauth", async () => {
+    const hooks = await CodexAuthPlugin(fakeInput)
+    const result = await hooks.auth!.loader!(async () => ({ type: "api", key: "sk-x" }) as any, {} as any)
+    expect(result).toEqual({})
+  })
+
+  test("fetch() uses the current access token without refreshing when it isn't expired", async () => {
+    const originalFetch = globalThis.fetch
+    let capturedRequest: { url: string; headers: Record<string, string> } | undefined
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      capturedRequest = {
+        url: typeof input === "string" ? input : input.toString(),
+        headers: init?.headers instanceof Headers ? Object.fromEntries(init.headers.entries()) : {},
+      }
+      return new Response("ok")
+    }) as typeof fetch
+
+    try {
+      const hooks = await CodexAuthPlugin({ ...fakeInput, client: fakeClient(() => {}) })
+      const currentAuth = {
+        type: "oauth" as const,
+        refresh: "refresh-current",
+        access: "access-current",
+        expires: Date.now() + 3600_000,
+        accountId: "acc-current",
+      }
+      const loaded = await hooks.auth!.loader!(async () => currentAuth as any, {} as any)
+      expect(loaded.apiKey).toBeTruthy()
+
+      await loaded.fetch("https://api.openai.com/v1/responses", { method: "POST" })
+
+      expect(capturedRequest?.url).toBe("https://chatgpt.com/backend-api/codex/responses")
+      expect(capturedRequest?.headers.authorization).toBe("Bearer access-current")
+      expect(capturedRequest?.headers["chatgpt-account-id"]).toBe("acc-current")
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  test("fetch() passes through unrelated URLs without rewriting them to the Codex endpoint", async () => {
+    const originalFetch = globalThis.fetch
+    let capturedUrl: string | undefined
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      capturedUrl = typeof input === "string" ? input : input.toString()
+      return new Response("ok")
+    }) as typeof fetch
+
+    try {
+      const hooks = await CodexAuthPlugin({ ...fakeInput, client: fakeClient(() => {}) })
+      const currentAuth = {
+        type: "oauth" as const,
+        refresh: "refresh-current",
+        access: "access-current",
+        expires: Date.now() + 3600_000,
+      }
+      const loaded = await hooks.auth!.loader!(async () => currentAuth as any, {} as any)
+      await loaded.fetch("https://api.openai.com/v1/models", { method: "GET" })
+      expect(capturedUrl).toBe("https://api.openai.com/v1/models")
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  test("fetch() refreshes an expired token, persists it, and uses the new access token", async () => {
+    const originalFetch = globalThis.fetch
+    const idToken = fakeJwt({ chatgpt_account_id: "acc-refreshed" })
+    let capturedRequest: { url: string; headers: Record<string, string> } | undefined
+    let persisted: any
+
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString()
+      if (url === "https://auth.openai.com/oauth/token") {
+        return Response.json({
+          id_token: idToken,
+          access_token: "access-refreshed",
+          refresh_token: "refresh-refreshed",
+          expires_in: 3600,
+        })
+      }
+      capturedRequest = {
+        url,
+        headers: init?.headers instanceof Headers ? Object.fromEntries(init.headers.entries()) : {},
+      }
+      return new Response("ok")
+    }) as typeof fetch
+
+    try {
+      const hooks = await CodexAuthPlugin({
+        ...fakeInput,
+        client: fakeClient((body) => {
+          persisted = body
+        }),
+      })
+      const currentAuth = {
+        type: "oauth" as const,
+        refresh: "refresh-old",
+        access: "access-old",
+        expires: Date.now() - 1000, // already expired
+      }
+      const loaded = await hooks.auth!.loader!(async () => currentAuth as any, {} as any)
+      await loaded.fetch("https://api.openai.com/v1/responses", { method: "POST" })
+
+      expect(capturedRequest?.headers.authorization).toBe("Bearer access-refreshed")
+      expect(persisted).toMatchObject({
+        type: "oauth",
+        refresh: "refresh-refreshed",
+        access: "access-refreshed",
+        accountId: "acc-refreshed",
+      })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  test("fetch() rejects when the token-refresh request itself fails", async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString()
+      if (url === "https://auth.openai.com/oauth/token") {
+        return new Response("server error", { status: 500 })
+      }
+      throw new Error(`unexpected fetch in test: ${url}`)
+    }) as typeof fetch
+
+    try {
+      const hooks = await CodexAuthPlugin({ ...fakeInput, client: fakeClient(() => {}) })
+      const currentAuth = {
+        type: "oauth" as const,
+        refresh: "refresh-old",
+        access: "access-old",
+        expires: Date.now() - 1000,
+      }
+      const loaded = await hooks.auth!.loader!(async () => currentAuth as any, {} as any)
+      await expect(loaded.fetch("https://api.openai.com/v1/responses", { method: "POST" })).rejects.toThrow(
+        "Token refresh failed",
+      )
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+})

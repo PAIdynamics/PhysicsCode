@@ -349,27 +349,42 @@ export const layer: Layer.Layer<
 
     function cleanDirectory(target: string) {
       return Effect.promise(async () => {
+        // Release any resources still cached for this directory first (in
+        // particular the native file-watcher handle from InstanceBootstrap,
+        // if this worktree was ever booted) - on Windows an open watch
+        // handle blocks directory deletion outright (EBUSY), unlike POSIX
+        // where a directory can be unlinked out from under an open handle.
+        // Instance.provide() keys its cache by AppFileSystem.resolve(directory)
+        // (realpath-resolved), which may not match `target` verbatim (e.g.
+        // entry.path from `git worktree list` or canonical()'s lowercased
+        // form on Windows), so resolve the same way before disposing.
+        //
+        // InstanceBootstrap forks each service's init() *detached* (fire and
+        // forget), so a worktree's create() can return before FileWatcher/LSP/
+        // etc. have finished initializing (and, e.g., subscribed a watch
+        // handle) - a single dispose-then-rm pass can race that in-flight
+        // init and miss the resource entirely. Retry both across a short
+        // window so a late-arriving handle still gets released and cleared.
+        let resolved = target
         try {
-          // Release any resources still cached for this directory first (in
-          // particular the native file-watcher handle from InstanceBootstrap,
-          // if this worktree was ever booted) - on Windows an open watch
-          // handle blocks directory deletion outright (EBUSY), unlike POSIX
-          // where a directory can be unlinked out from under an open handle.
-          // Instance.provide() keys its cache by AppFileSystem.resolve(directory)
-          // (realpath-resolved), which may not match `target` verbatim (e.g.
-          // entry.path from `git worktree list` or canonical()'s lowercased
-          // form on Windows), so resolve the same way before disposing.
-          let resolved = target
-          try {
-            resolved = AppFileSystem.resolve(target)
-          } catch {}
+          resolved = AppFileSystem.resolve(target)
+        } catch {}
+
+        const fsp = await import("fs/promises")
+        const attempts = 15
+        let lastError: unknown
+        for (let attempt = 0; attempt < attempts; attempt++) {
           await disposeInstance(resolved)
-          const fsp = await import("fs/promises")
-          await fsp.rm(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
-        } catch (error) {
-          const message = errorMessage(error)
-          throw new RemoveFailedError({ message: message || "Failed to remove git worktree directory" })
+          try {
+            await fsp.rm(target, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
+            return
+          } catch (error) {
+            lastError = error
+            if (attempt < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 250))
+          }
         }
+        const message = errorMessage(lastError)
+        throw new RemoveFailedError({ message: message || "Failed to remove git worktree directory" })
       })
     }
 

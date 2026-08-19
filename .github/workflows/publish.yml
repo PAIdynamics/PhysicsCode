@@ -33,7 +33,13 @@ permissions:
 
 jobs:
   version:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # blacksmith-* runners require the Blacksmith GitHub App, which isn't
+    # installed on this org (checked via the API - only cloudflare-workers-
+    # and-pages is) - jobs on that label queue forever with no runner ever
+    # picking them up. test.yml already proves ubuntu-latest/windows-latest
+    # work fine here, so the lean auto-release jobs (this one, build-cli,
+    # sign-cli-windows, publish-cli) use those instead.
+    runs-on: ubuntu-latest
     if: github.repository == 'PAIdynamics/PhysicsCode'
     steps:
       - uses: actions/checkout@v3
@@ -72,7 +78,7 @@ jobs:
 
   build-cli:
     needs: version
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     if: github.repository == 'PAIdynamics/PhysicsCode'
     steps:
       - uses: actions/checkout@v3
@@ -109,7 +115,7 @@ jobs:
     needs:
       - build-cli
       - version
-    runs-on: blacksmith-4vcpu-windows-2025
+    runs-on: windows-latest
     if: github.repository == 'PAIdynamics/PhysicsCode'
     # Azure Trusted Signing secrets aren't provisioned yet - don't block the
     # release on this. build-cli already uploaded unsigned Windows archives
@@ -655,7 +661,7 @@ jobs:
       - build-cli
       - sign-cli-windows
     if: github.ref_name == 'main' && github.event_name == 'push' && needs.version.outputs.release != ''
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 

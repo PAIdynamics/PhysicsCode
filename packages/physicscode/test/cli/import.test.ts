@@ -31,6 +31,10 @@ test("only attaches share auth headers for same-origin URLs", () => {
   expect(shouldAttachShareAuthHeaders("not-a-url", "https://control.example.com")).toBe(false)
 })
 
+test("treats an invalid account base URL as non-matching", () => {
+  expect(shouldAttachShareAuthHeaders("https://control.example.com/share/abc", "not-a-url")).toBe(false)
+})
+
 // transformShareData tests
 test("transforms share data to storage format", () => {
   const data: ShareData[] = [
@@ -51,4 +55,41 @@ test("returns null for invalid share data", () => {
   expect(transformShareData([])).toBeNull()
   expect(transformShareData([{ type: "message", data: {} as any }])).toBeNull()
   expect(transformShareData([{ type: "session", data: { id: "s" } as any }])).toBeNull() // no messages
+})
+
+test("drops parts whose messageID has no matching message", () => {
+  const data: ShareData[] = [
+    { type: "session", data: { id: "sess-1" } as any },
+    { type: "message", data: { id: "msg-1", sessionID: "sess-1" } as any },
+    { type: "part", data: { id: "orphan-part", messageID: "msg-missing" } as any },
+  ]
+
+  const result = transformShareData(data)!
+
+  expect(result.messages).toHaveLength(1)
+  expect(result.messages[0].parts).toEqual([])
+})
+
+test("gives a message with no parts an empty parts array", () => {
+  const data: ShareData[] = [
+    { type: "session", data: { id: "sess-1" } as any },
+    { type: "message", data: { id: "msg-1", sessionID: "sess-1" } as any },
+  ]
+
+  const result = transformShareData(data)!
+
+  expect(result.messages).toEqual([{ info: { id: "msg-1", sessionID: "sess-1" }, parts: [] }] as any)
+})
+
+test("ignores unrelated item types like session_diff and model", () => {
+  const data: ShareData[] = [
+    { type: "session", data: { id: "sess-1" } as any },
+    { type: "message", data: { id: "msg-1", sessionID: "sess-1" } as any },
+    { type: "session_diff", data: { some: "diff" } },
+    { type: "model", data: { some: "model" } },
+  ]
+
+  const result = transformShareData(data)!
+
+  expect(result.messages).toHaveLength(1)
 })

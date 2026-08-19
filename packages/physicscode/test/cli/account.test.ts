@@ -23,4 +23,12 @@ describe("console account display", () => {
       ),
     ).toBe("  ● One  one@example.com  https://one.example.com  org-1")
   })
+
+  test("uses a blank marker instead of a dot for a non-active org row", () => {
+    expect(
+      stripAnsi(
+        formatOrgLine({ email: "one@example.com", url: "https://one.example.com" }, { id: "org-1", name: "One" }, false),
+      ),
+    ).toBe("    One  one@example.com  https://one.example.com  org-1")
+  })
 })

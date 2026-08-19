@@ -322,6 +322,18 @@ async function startOAuthServer(): Promise<{ port: number; redirectUri: string }
 }
 
 export function stopOAuthServer() {
+  // If a callback was never delivered (caller aborted between authorize()
+  // and callback(), or the server is being torn down for any other reason),
+  // the pending promise from waitForOAuthCallback() would otherwise just
+  // sit on its 5-minute timer with nothing listening - it can't ever be
+  // satisfied once the server that would receive the redirect is gone.
+  // Reject it now so callers waiting on .callback() fail fast instead of
+  // hanging, and so the timer doesn't fire later against a promise nobody
+  // is still holding a reference to.
+  if (pendingOAuth) {
+    pendingOAuth.reject(new Error("OAuth server stopped"))
+    pendingOAuth = undefined
+  }
   if (oauthServer) {
     oauthServer.close(() => {
       log.info("codex oauth server stopped")

@@ -175,6 +175,10 @@ describe("plugin.codex browser OAuth flow", () => {
     const hooks = await CodexAuthPlugin(fakeInput)
     const method = hooks.auth!.methods[0] as OAuthMethod
     const result = await method.authorize()
+    // Not asserted on here, but authorize() already started a real 5-minute
+    // callback timer - consume it (afterEach's stopOAuthServer() rejects it)
+    // so that rejection doesn't surface as unhandled.
+    autoCallback(result)
 
     expect(result.method).toBe("auto")
     expect(result.url.startsWith("https://auth.openai.com/oauth/authorize?")).toBe(true)
@@ -235,7 +239,9 @@ describe("plugin.codex browser OAuth flow", () => {
   test("returns 404 for unrelated paths on the local callback server", async () => {
     const hooks = await CodexAuthPlugin(fakeInput)
     const method = hooks.auth!.methods[0] as OAuthMethod
-    await method.authorize()
+    const result = await method.authorize()
+    // See comment on the first test above - same leaked-timer concern.
+    autoCallback(result)
 
     const res = await fetch("http://localhost:1455/some/other/path")
     expect(res.status).toBe(404)

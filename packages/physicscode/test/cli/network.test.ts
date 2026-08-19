@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import { resolveNetworkOptionsNoConfig, type NetworkOptions } from "@/cli/network"
+import yargs from "yargs"
+import { resolveNetworkOptions, resolveNetworkOptionsNoConfig, withNetworkOptions, type NetworkOptions } from "@/cli/network"
 
 const originalArgv = process.argv
 
@@ -83,5 +84,25 @@ describe("cli.network.resolveNetworkOptionsNoConfig", () => {
     process.argv = ["node", "physicscode"]
     const result = resolveNetworkOptionsNoConfig(args())
     expect(result).toEqual({ hostname: "127.0.0.1", port: 0, mdns: false, mdnsDomain: "physicscode.local", cors: [] })
+  })
+})
+
+describe("cli.network.withNetworkOptions", () => {
+  test("registers the network flags on a yargs instance", () => {
+    const parsed = withNetworkOptions(yargs()).parseSync(["--port", "1234", "--hostname", "0.0.0.0"])
+    expect(parsed.port).toBe(1234)
+    expect(parsed.hostname).toBe("0.0.0.0")
+    expect(parsed.mdns).toBe(false)
+    expect(parsed["mdns-domain"]).toBe("physicscode.local")
+  })
+})
+
+describe("cli.network.resolveNetworkOptions", () => {
+  test("resolves against the real global config without throwing", async () => {
+    process.argv = ["node", "physicscode"]
+    const result = await resolveNetworkOptions(args())
+    expect(typeof result.hostname).toBe("string")
+    expect(typeof result.port).toBe("number")
+    expect(Array.isArray(result.cors)).toBe(true)
   })
 })

@@ -165,4 +165,84 @@ describe("installation", () => {
       expect(result).toBe("2.1.0")
     })
   })
+
+  describe("method", () => {
+    test("detects npm install", async () => {
+      const layer = testLayer(
+        () => jsonResponse({}),
+        (cmd) => (cmd === "npm" ? "physicscode-ai@1.0.0" : ""),
+      )
+      const result = await Effect.runPromise(Installation.Service.use((svc) => svc.method()).pipe(Effect.provide(layer)))
+      expect(result).toBe("npm")
+    })
+
+    test("detects brew install", async () => {
+      const layer = testLayer(
+        () => jsonResponse({}),
+        (cmd) => (cmd === "brew" ? "physicscode" : ""),
+      )
+      const result = await Effect.runPromise(Installation.Service.use((svc) => svc.method()).pipe(Effect.provide(layer)))
+      expect(result).toBe("brew")
+    })
+
+    test("returns unknown when nothing matches", async () => {
+      const layer = testLayer(() => jsonResponse({}))
+      const result = await Effect.runPromise(Installation.Service.use((svc) => svc.method()).pipe(Effect.provide(layer)))
+      expect(result).toBe("unknown")
+    })
+  })
+
+  describe("upgrade", () => {
+    test("succeeds for npm and logs the new version", async () => {
+      const layer = testLayer(() => jsonResponse({}))
+      await Effect.runPromise(
+        Installation.Service.use((svc) => svc.upgrade("npm", "1.2.3")).pipe(Effect.provide(layer)),
+      )
+    })
+
+    test("fails with UpgradeFailedError for an unknown method", async () => {
+      const layer = testLayer(() => jsonResponse({}))
+      const exit = await Effect.runPromiseExit(
+        Installation.Service.use((svc) => svc.upgrade("unknown" as any, "1.2.3")).pipe(Effect.provide(layer)),
+      )
+      expect(exit._tag).toBe("Failure")
+    })
+  })
+
+  describe("info", () => {
+    test("combines the running version with the latest release", async () => {
+      const layer = testLayer(() => jsonResponse({ tag_name: "v9.9.9" }))
+      const result = await Effect.runPromise(Installation.Service.use((svc) => svc.info()).pipe(Effect.provide(layer)))
+      expect(result.latest).toBe("9.9.9")
+      expect(typeof result.version).toBe("string")
+    })
+  })
+})
+
+describe("installation.getReleaseType", () => {
+  test("returns major when the major version increases", () => {
+    expect(Installation.getReleaseType("1.2.3", "2.0.0")).toBe("major")
+  })
+
+  test("returns minor when only the minor version increases", () => {
+    expect(Installation.getReleaseType("1.2.3", "1.3.0")).toBe("minor")
+  })
+
+  test("returns patch when only the patch version increases", () => {
+    expect(Installation.getReleaseType("1.2.3", "1.2.4")).toBe("patch")
+  })
+
+  test("returns patch when versions are equal", () => {
+    expect(Installation.getReleaseType("1.2.3", "1.2.3")).toBe("patch")
+  })
+})
+
+describe("installation.isPreview / isLocal", () => {
+  test("isPreview is true when the channel isn't 'latest'", () => {
+    expect(Installation.isPreview()).toBe(InstallationChannel !== "latest")
+  })
+
+  test("isLocal is true only for the 'local' channel", () => {
+    expect(Installation.isLocal()).toBe(InstallationChannel === "local")
+  })
 })

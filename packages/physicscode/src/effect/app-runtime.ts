@@ -118,8 +118,8 @@ export const AppRuntime: Runtime = {
   runFork(effect) {
     return rt.runFork(wrap(effect))
   },
-  runCallback(effect) {
-    return rt.runCallback(wrap(effect))
+  runCallback(effect, options) {
+    return rt.runCallback(wrap(effect), options)
   },
   dispose: () => rt.dispose(),
 }

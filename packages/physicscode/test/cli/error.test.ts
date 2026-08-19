@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { AccountTransportError } from "@/account/schema"
 import { FormatError, FormatUnknownError } from "@/cli/error"
 
 describe("cli.FormatError", () => {
@@ -17,6 +18,19 @@ describe("cli.FormatError", () => {
   test("formats AccountTransportError using its message", () => {
     const result = FormatError({ _tag: "AccountTransportError", message: "network unreachable" })
     expect(result).toBe("network unreachable")
+  })
+
+  test("formats a real AccountTransportError instance with its actual message", () => {
+    const error = new AccountTransportError({
+      method: "POST",
+      url: "https://console.physicscode.ai/auth/device/code",
+    })
+
+    const formatted = FormatError(error)
+
+    expect(formatted).toContain("Could not reach POST https://console.physicscode.ai/auth/device/code.")
+    expect(formatted).toContain("This failed before the server returned an HTTP response.")
+    expect(formatted).toContain("Check your network, proxy, or VPN configuration and try again.")
   })
 
   test("falls back to empty string when a tagged account error has no message", () => {

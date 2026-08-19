@@ -348,20 +348,29 @@ export const layer: Layer.Layer<
     }
 
     function cleanDirectory(target: string) {
-      return Effect.promise(() =>
-        // Release any resources still cached for this directory first (in
-        // particular the native file-watcher handle from InstanceBootstrap,
-        // if this worktree was ever booted) - on Windows an open watch
-        // handle blocks directory deletion outright (EBUSY), unlike POSIX
-        // where a directory can be unlinked out from under an open handle.
-        disposeInstance(target)
-          .then(() => import("fs/promises"))
-          .then((fsp) => fsp.rm(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }))
-          .catch((error) => {
-            const message = errorMessage(error)
-            throw new RemoveFailedError({ message: message || "Failed to remove git worktree directory" })
-          }),
-      )
+      return Effect.promise(async () => {
+        try {
+          // Release any resources still cached for this directory first (in
+          // particular the native file-watcher handle from InstanceBootstrap,
+          // if this worktree was ever booted) - on Windows an open watch
+          // handle blocks directory deletion outright (EBUSY), unlike POSIX
+          // where a directory can be unlinked out from under an open handle.
+          // Instance.provide() keys its cache by AppFileSystem.resolve(directory)
+          // (realpath-resolved), which may not match `target` verbatim (e.g.
+          // entry.path from `git worktree list` or canonical()'s lowercased
+          // form on Windows), so resolve the same way before disposing.
+          let resolved = target
+          try {
+            resolved = AppFileSystem.resolve(target)
+          } catch {}
+          await disposeInstance(resolved)
+          const fsp = await import("fs/promises")
+          await fsp.rm(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
+        } catch (error) {
+          const message = errorMessage(error)
+          throw new RemoveFailedError({ message: message || "Failed to remove git worktree directory" })
+        }
+      })
     }
 
     const remove = Effect.fn("Worktree.remove")(function* (input: RemoveInput) {

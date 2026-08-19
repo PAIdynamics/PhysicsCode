@@ -687,6 +687,13 @@ jobs:
           path: packages/physicscode/dist
 
       - name: Publish CLI to npm
+        # Optional distribution channel (npm install -g physicscode-ai), not
+        # required for the physicscode.ai website - that serves downloads
+        # straight from this job's GitHub Release assets. Soft-fail so a
+        # missing/absent NPM_TOKEN never blocks the release itself; set the
+        # NPM_TOKEN secret (an npm "Automation" access token) whenever npm
+        # distribution is wanted and this will start publishing for real.
+        continue-on-error: true
         run: bun ./packages/physicscode/script/publish.ts
         env:
           PHYSICSCODE_VERSION: ${{ needs.version.outputs.version }}

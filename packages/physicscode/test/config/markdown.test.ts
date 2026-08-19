@@ -226,3 +226,17 @@ describe("ConfigMarkdown: frontmatter has weird model id", async () => {
     expect(result.content.trim()).toBe("Strictly follow da rules")
   })
 })
+
+describe("ConfigMarkdown.fallbackSanitization", () => {
+  test("leaves lines that don't look like key: value pairs unchanged", () => {
+    const content = ["---", "- a bare list item", "title: ok", "---", "body"].join("\n")
+    const result = ConfigMarkdown.fallbackSanitization(content)
+    expect(result).toBe(content)
+  })
+
+  test("returns the content unchanged when there is no frontmatter block", () => {
+    const content = "# Just a heading\n\nSome body text."
+    expect(ConfigMarkdown.fallbackSanitization(content)).toBe(content)
+  })
+})
+

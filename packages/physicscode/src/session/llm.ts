@@ -471,7 +471,7 @@ export const defaultLayer = Layer.suspend(() =>
   ),
 )
 
-function resolveTools(input: Pick<StreamInput, "tools" | "agent" | "permission" | "user">) {
+export function resolveTools(input: Pick<StreamInput, "tools" | "agent" | "permission" | "user">) {
   const disabled = Permission.disabled(
     Object.keys(input.tools),
     Permission.merge(input.agent.permission, input.permission ?? []),

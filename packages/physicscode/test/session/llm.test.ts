@@ -119,6 +119,51 @@ describe("session.llm.hasToolCalls", () => {
   })
 })
 
+describe("session.llm.resolveTools", () => {
+  const fakeTool = tool({
+    description: "a fake tool",
+    inputSchema: z.object({}),
+    execute: async () => ({}),
+  })
+
+  function input(overrides: Partial<Pick<LLM.StreamInput, "tools" | "agent" | "permission" | "user">> = {}) {
+    return {
+      tools: { bash: fakeTool, edit: fakeTool },
+      agent: { permission: [] } as unknown as Agent.Info,
+      permission: undefined,
+      user: {} as MessageV2.User,
+      ...overrides,
+    }
+  }
+
+  test("returns all tools unchanged when nothing is restricted", () => {
+    const result = LLM.resolveTools(input())
+    expect(Object.keys(result).sort()).toEqual(["bash", "edit"])
+  })
+
+  test("excludes a tool explicitly disabled on the user message", () => {
+    const result = LLM.resolveTools(input({ user: { tools: { bash: false } } as unknown as MessageV2.User }))
+    expect(Object.keys(result)).toEqual(["edit"])
+  })
+
+  test("excludes a tool denied by a wildcard agent permission rule", () => {
+    const result = LLM.resolveTools(
+      input({ agent: { permission: [{ permission: "edit", pattern: "*", action: "deny" }] } as unknown as Agent.Info }),
+    )
+    expect(Object.keys(result)).toEqual(["bash"])
+  })
+
+  test("merges agent and request-level permission rulesets", () => {
+    const result = LLM.resolveTools(
+      input({
+        agent: { permission: [] } as unknown as Agent.Info,
+        permission: [{ permission: "bash", pattern: "*", action: "deny" }],
+      }),
+    )
+    expect(Object.keys(result)).toEqual(["edit"])
+  })
+})
+
 type Capture = {
   url: URL
   headers: Headers

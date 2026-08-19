@@ -106,6 +106,42 @@ describe("cli.UI.logo", () => {
   })
 })
 
+describe("cli.UI.logo TTY branch", () => {
+  test("renders the styled glyph art when stdout is a TTY", () => {
+    const originalStdoutTTY = process.stdout.isTTY
+    const originalStderrTTY = process.stderr.isTTY
+    try {
+      Object.defineProperty(process.stdout, "isTTY", { value: true, configurable: true })
+      Object.defineProperty(process.stderr, "isTTY", { value: false, configurable: true })
+      const result = UI.logo()
+      // Distinct from the plain-text wordmark path, and contains ANSI codes.
+      expect(result).not.toBe("PhysicsCode")
+      expect(result).toContain("\x1b[")
+    } finally {
+      Object.defineProperty(process.stdout, "isTTY", { value: originalStdoutTTY, configurable: true })
+      Object.defineProperty(process.stderr, "isTTY", { value: originalStderrTTY, configurable: true })
+    }
+  })
+
+  test("prefixes each glyph row with the given pad when TTY", () => {
+    const originalStdoutTTY = process.stdout.isTTY
+    try {
+      Object.defineProperty(process.stdout, "isTTY", { value: true, configurable: true })
+      const result = UI.logo(">>")
+      expect(result.startsWith(">>")).toBe(true)
+    } finally {
+      Object.defineProperty(process.stdout, "isTTY", { value: originalStdoutTTY, configurable: true })
+    }
+  })
+})
+
+describe("cli.UI.CancelledError", () => {
+  test("carries the expected error name", () => {
+    const error = new UI.CancelledError(undefined)
+    expect(error.name).toBe("UICancelledError")
+  })
+})
+
 describe("cli.UI.markdown", () => {
   test("returns the input text unchanged", () => {
     expect(UI.markdown("# Title\n\nSome **bold** text")).toBe("# Title\n\nSome **bold** text")

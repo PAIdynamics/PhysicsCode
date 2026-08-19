@@ -138,6 +138,15 @@ type CustomDep = {
   config: () => Effect.Effect<Config.Info>
   env: () => Effect.Effect<Record<string, string | undefined>>
   get: (key: string) => Effect.Effect<string | undefined>
+  // Deferred async callbacks (getModel, etc.) run later, detached from the
+  // Effect fiber/AsyncLocalStorage scope that was active when the provider
+  // list was built - a plain Effect.runPromise() here starts a fresh,
+  // context-less execution and InstanceRef-dependent effects (like
+  // Config.Service.get()) fail with "No context found for instance" in
+  // httpapi mode, which doesn't keep an ambient ALS scope alive the way the
+  // legacy server does. Route through the captured EffectBridge instead, so
+  // the instance/workspace context is restored before running.
+  promise: <A, E, R>(effect: Effect.Effect<A, E, R>) => Promise<A>
 }
 
 function useLanguageModel(sdk: any) {
@@ -146,16 +155,16 @@ function useLanguageModel(sdk: any) {
 
 function custom(dep: CustomDep): Record<string, CustomLoader> {
   const hasProviderCredential = async (provider: Info) => {
-    const auth = await Effect.runPromise(dep.auth(provider.id))
+    const auth = await dep.promise(dep.auth(provider.id))
     if (auth?.type === "oauth") return true
     return Boolean(await providerCredential(provider))
   }
 
   const providerCredential = async (provider: Info) => {
     const [env, cfg, auth] = await Promise.all([
-      Effect.runPromise(dep.env()),
-      Effect.runPromise(dep.config()),
-      Effect.runPromise(dep.auth(provider.id)),
+      dep.promise(dep.env()),
+      dep.promise(dep.config()),
+      dep.promise(dep.auth(provider.id)),
     ])
     return (
       provider.env.map((item) => env[item]).find(Boolean) ??
@@ -216,9 +225,9 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
       return {
         autoload: true,
         async getModel(sdk: any, modelID: string) {
-          const freshAccountToken = await Effect.runPromise(dep.accountToken())
-          const freshEnv = await Effect.runPromise(dep.env())
-          const freshConfig = await Effect.runPromise(dep.config())
+          const freshAccountToken = await dep.promise(dep.accountToken())
+          const freshEnv = await dep.promise(dep.env())
+          const freshConfig = await dep.promise(dep.config())
           const freshProviderConfig = freshConfig.provider?.[ModelsDev.PAIDYNAMICS_PROVIDER_ID]
           const freshApiKey =
             input.env.map((item) => freshEnv[item]).find(Boolean) ??
@@ -343,7 +352,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         // user is logged in.
         autoload: false,
         async getModel(sdk: any, modelID: string) {
-          const freshApiKey = await Effect.runPromise(dep.accountToken())
+          const freshApiKey = await dep.promise(dep.accountToken())
           if (!freshApiKey) throw new LoadAPIKeyError({ message: PAIDYNAMICS_LOGIN_REQUIRED_MESSAGE })
           return sdk.chat(modelID)
         },
@@ -357,7 +366,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
       return {
         autoload: false,
         async getModel(sdk: any, modelID: string) {
-          const freshApiKey = await Effect.runPromise(dep.accountToken())
+          const freshApiKey = await dep.promise(dep.accountToken())
           if (!freshApiKey) throw new LoadAPIKeyError({ message: PAIDYNAMICS_LOGIN_REQUIRED_MESSAGE })
           return sdk.languageModel(modelID)
         },
@@ -1150,6 +1159,11 @@ interface State {
   sdk: Map<string, BundledSDK>
   modelLoaders: Record<string, CustomModelLoader>
   varsLoaders: Record<string, CustomVarsLoader>
+  // Captured when this (per-directory) state was built, so deferred async
+  // callbacks elsewhere (resolveSDK's paidynamicsRuntimeApiKey, etc.) can
+  // bridge back into Effect/instance context correctly instead of using a
+  // context-less Effect.runPromise - see CustomDep.promise above.
+  bridge: EffectBridge.Shape
 }
 
 export class Service extends Context.Service<Service, Interface>()("@physicscode/Provider") {}
@@ -1348,6 +1362,7 @@ const layer: Layer.Layer<
           config: () => config.get(),
           env: () => env.all(),
           get: (key: string) => env.get(key),
+          promise: bridge.promise,
         }
 
         log.info("init")
@@ -1646,6 +1661,7 @@ const layer: Layer.Layer<
           sdk,
           modelLoaders,
           varsLoaders,
+          bridge,
         }
       }),
     )
@@ -1716,9 +1732,9 @@ const layer: Layer.Layer<
 
         const paidynamicsRuntimeApiKey = async () => {
           if (model.providerID !== ModelsDev.PAIDYNAMICS_PROVIDER_ID) return undefined
-          const freshEnv = await Effect.runPromise(env.all())
-          const freshConfig = await Effect.runPromise(config.get())
-          const active = await Effect.runPromise(accountToken())
+          const freshEnv = await s.bridge.promise(env.all())
+          const freshConfig = await s.bridge.promise(config.get())
+          const active = await s.bridge.promise(accountToken())
           const freshProviderConfig = freshConfig.provider?.[ModelsDev.PAIDYNAMICS_PROVIDER_ID]
           return (
             provider.env.map((item) => freshEnv[item]).find(Boolean) ??

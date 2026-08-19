@@ -321,7 +321,7 @@ async function startOAuthServer(): Promise<{ port: number; redirectUri: string }
   return { port: OAUTH_PORT, redirectUri: `http://localhost:${OAUTH_PORT}/auth/callback` }
 }
 
-function stopOAuthServer() {
+export function stopOAuthServer() {
   if (oauthServer) {
     oauthServer.close(() => {
       log.info("codex oauth server stopped")

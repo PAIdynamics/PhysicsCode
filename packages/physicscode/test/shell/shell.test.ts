@@ -40,6 +40,72 @@ describe("shell", () => {
     expect(Shell.posix("C:/tools/pwsh.exe")).toBe(false)
   })
 
+  test("detects PowerShell shells via ps()", () => {
+    expect(Shell.ps("/usr/local/bin/pwsh")).toBe(true)
+    expect(Shell.ps("/usr/local/bin/powershell")).toBe(true)
+    if (process.platform === "win32") {
+      expect(Shell.ps("C:/tools/powershell.exe")).toBe(true)
+    }
+    expect(Shell.ps("/bin/bash")).toBe(false)
+  })
+
+  describe("args()", () => {
+    test("passes the command through as-is for nu and fish", () => {
+      expect(Shell.args("/usr/bin/nu", "echo hi", "/work")).toEqual(["-c", "echo hi"])
+      expect(Shell.args("/usr/bin/fish", "echo hi", "/work")).toEqual(["-c", "echo hi"])
+    })
+
+    test("builds a login zsh invocation that sources rc files and cds into the workdir", () => {
+      const result = Shell.args("/bin/zsh", "echo hi", "/work/dir")
+      expect(result[0]).toBe("-l")
+      expect(result[1]).toBe("-c")
+      expect(result[2]).toContain(".zshrc")
+      expect(result[2]).toContain(JSON.stringify("echo hi"))
+      expect(result[3]).toBe("physicscode")
+      expect(result[4]).toBe("/work/dir")
+    })
+
+    test("builds a login bash invocation that sources .bashrc and cds into the workdir", () => {
+      const result = Shell.args("/bin/bash", "echo hi", "/work/dir")
+      expect(result[0]).toBe("-l")
+      expect(result[1]).toBe("-c")
+      expect(result[2]).toContain(".bashrc")
+      expect(result[2]).toContain("shopt -s expand_aliases")
+      expect(result[2]).toContain(JSON.stringify("echo hi"))
+      expect(result[3]).toBe("physicscode")
+      expect(result[4]).toBe("/work/dir")
+    })
+
+    test("uses /c for cmd", () => {
+      // name() only strips the .exe extension via path.win32.parse on real
+      // Windows - on other platforms the basename (incl. extension) is used
+      // as-is, so only an extensionless name matches the "cmd" check there.
+      expect(Shell.args("cmd", "dir", "/work")).toEqual(["/c", "dir"])
+      if (process.platform === "win32") {
+        expect(Shell.args("cmd.exe", "dir", "/work")).toEqual(["/c", "dir"])
+        expect(Shell.args("C:/Windows/System32/cmd.exe", "dir", "/work")).toEqual(["/c", "dir"])
+      }
+    })
+
+    test("uses -NoProfile -Command for PowerShell variants", () => {
+      expect(Shell.args("pwsh", "Get-Item .", "/work")).toEqual(["-NoProfile", "-Command", "Get-Item ."])
+      expect(Shell.args("powershell", "Get-Item .", "/work")).toEqual(["-NoProfile", "-Command", "Get-Item ."])
+      if (process.platform === "win32") {
+        expect(Shell.args("powershell.exe", "Get-Item .", "/work")).toEqual(["-NoProfile", "-Command", "Get-Item ."])
+      }
+    })
+
+    test("falls back to a plain -c invocation for unrecognized shells", () => {
+      expect(Shell.args("/bin/dash", "echo hi", "/work")).toEqual(["-c", "echo hi"])
+    })
+
+    test("safely embeds a command containing quotes and special characters", () => {
+      const command = `echo "hello 'world'" && $(rm -rf /)`
+      const result = Shell.args("/bin/bash", command, "/work")
+      expect(result[2]).toContain(JSON.stringify(command))
+    })
+  })
+
   test("falls back when configured shell cannot be resolved", async () => {
     await withShell(undefined, async () => {
       const preferred = Shell.preferred()

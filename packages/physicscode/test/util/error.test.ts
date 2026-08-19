@@ -35,4 +35,49 @@ describe("util.error", () => {
     expect(data.message).toBe("ResolveMessage: Cannot resolve module")
     expect(String(data.formatted)).toContain("ResolveMessage")
   })
+
+  test("errorFormat falls back for unserializable (circular) objects", () => {
+    const circular: Record<string, unknown> = {}
+    circular.self = circular
+    expect(errorFormat(circular)).toBe("Unexpected error (unserializable)")
+  })
+
+  test("errorFormat stringifies primitives directly", () => {
+    expect(errorFormat("just a string")).toBe("just a string")
+    expect(errorFormat(42)).toBe("42")
+    expect(errorFormat(null)).toBe("null")
+  })
+
+  test("errorMessage falls back to the Error's name when message is empty", () => {
+    const err = new Error("")
+    err.name = "EmptyMessageError"
+    expect(errorMessage(err)).toBe("EmptyMessageError")
+  })
+
+  test("errorMessage extracts a nested data.message", () => {
+    const err = { data: { message: "nested failure" } }
+    expect(errorMessage(err)).toBe("nested failure")
+  })
+
+  test("errorMessage falls back to 'unknown error' for a plain object with nothing usable", () => {
+    expect(errorMessage({})).toBe("unknown error")
+  })
+
+  test("errorData handles a thrown primitive (not an Error, not a record)", () => {
+    const data = errorData("just a string reason")
+    expect(data.type).toBe("string")
+    expect(data.message).toBe("just a string reason")
+  })
+
+  test("errorData includes the cause when an Error has one", () => {
+    const cause = new Error("root cause")
+    const err = new Error("wrapper", { cause })
+    const data = errorData(err)
+    expect(String(data.cause)).toContain("root cause")
+  })
+
+  test("errorData omits cause when the Error has none", () => {
+    const data = errorData(new Error("standalone"))
+    expect(data.cause).toBeUndefined()
+  })
 })

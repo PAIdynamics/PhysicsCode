@@ -126,8 +126,15 @@ describe("tool.assertExternalDirectory", () => {
       await using tmp = await tmpdir({ git: true })
 
       const target = path.join(outerTmp.path, "outside.txt")
+      // Simulate a git-bash-style path variant (e.g. "/c/users/...") - this
+      // is the format windowsPath() actually recognizes and reconstructs a
+      // drive letter from. A bare "/users/..." with no drive indicator at
+      // all isn't a real variant of anything: Windows treats a driveless
+      // leading slash as relative to the current drive, so on a runner
+      // where the checkout and TEMP live on different drives (as on this
+      // CI), that string would legitimately resolve to a different file.
       const alt = target
-        .replace(/^[A-Za-z]:/, "")
+        .replace(/^([A-Za-z]):/, "/$1")
         .replaceAll("\\", "/")
         .toLowerCase()
 

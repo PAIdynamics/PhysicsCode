@@ -11,6 +11,7 @@ import * as Log from "@physicscode-ai/core/util/log"
 import { createOpencodeClient } from "@physicscode-ai/sdk"
 import { Flag } from "@physicscode-ai/core/flag/flag"
 import { CodexAuthPlugin } from "./codex"
+import { AnthropicAuthPlugin } from "./anthropic"
 import { Session } from "@/session/session"
 import { NamedError } from "@physicscode-ai/core/util/error"
 import { CopilotAuthPlugin } from "./github-copilot/copilot"
@@ -57,6 +58,7 @@ export class Service extends Context.Service<Service, Interface>()("@physicscode
 // Built-in plugins that are directly imported (not installed from npm)
 const INTERNAL_PLUGINS: PluginInstance[] = [
   CodexAuthPlugin,
+  AnthropicAuthPlugin,
   CopilotAuthPlugin,
   GitlabAuthPlugin,
   PoeAuthPlugin,

@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from "bun:test"
 import { Effect, Option } from "effect"
+import * as realPrompts from "@clack/prompts"
 
 const calls: Array<{ fn: string; args: unknown[] }> = []
 let selectResult: unknown = "picked"
@@ -7,10 +8,18 @@ let spinnerCalls: Array<{ fn: string; args: unknown[] }> = []
 
 const CANCEL = Symbol("cancel")
 
+// mock.module patches bun's shared module registry for the entire test
+// process (not just this file), so every export not explicitly overridden
+// here MUST pass through to the real module - otherwise any other test
+// file that exercises an un-stubbed clack/prompts function (log.error,
+// password, text, ...) breaks with "is not a function" once this file has
+// loaded, regardless of test order.
 void mock.module("@clack/prompts", () => ({
+  ...realPrompts,
   intro: (...args: unknown[]) => calls.push({ fn: "intro", args }),
   outro: (...args: unknown[]) => calls.push({ fn: "outro", args }),
   log: {
+    ...realPrompts.log,
     info: (...args: unknown[]) => calls.push({ fn: "log.info", args }),
   },
   select: async (...args: unknown[]) => {

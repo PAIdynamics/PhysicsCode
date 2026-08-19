@@ -26,7 +26,11 @@ const put = (key: string, info: Auth.Info) =>
     }),
   )
 
-async function handlePluginAuth(plugin: { auth: PluginAuth }, provider: string, methodName?: string): Promise<boolean> {
+export async function handlePluginAuth(
+  plugin: { auth: PluginAuth },
+  provider: string,
+  methodName?: string,
+): Promise<boolean> {
   let index = 0
   if (methodName) {
     const match = plugin.auth.methods.findIndex((x) => x.label.toLowerCase() === methodName.toLowerCase())

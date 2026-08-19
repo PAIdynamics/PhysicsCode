@@ -1,8 +1,9 @@
 import { NodeHttpServer, NodeServices } from "@effect/platform-node"
 import Http from "node:http"
-import { describe, expect } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { Effect, Layer } from "effect"
 import { HttpServer, HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
+import type { UpgradeWebSocket } from "hono/ws"
 import { ServerProxy } from "../../src/server/proxy"
 import { Workspace } from "../../src/control-plane/workspace"
 import type { WorkspaceID } from "../../src/control-plane/schema"
@@ -108,4 +109,74 @@ describe("ServerProxy.httpEffect", () => {
       expect(response.status).toBe(500)
     }),
   )
+})
+
+describe("ServerProxy.http", () => {
+  notSyncing.live("resolves through AppRuntime and returns the same result as httpEffect", () =>
+    Effect.gen(function* () {
+      const req = new Request("http://proxy.local/anything")
+      const response = yield* Effect.promise(() =>
+        ServerProxy.http("http://127.0.0.1:1/unused", undefined, req, "ws_1" as WorkspaceID),
+      )
+      expect(response.status).toBe(503)
+    }),
+  )
+})
+
+describe("ServerProxy.send", () => {
+  test("sends non-Blob data directly", () => {
+    const sent: unknown[] = []
+    const ws = { send: (data: unknown) => sent.push(data) }
+    ServerProxy.send(ws, "hello")
+    expect(sent).toEqual(["hello"])
+  })
+
+  test("converts a Blob to an ArrayBuffer before sending", async () => {
+    const sent: unknown[] = []
+    const ws = { send: (data: unknown) => sent.push(data) }
+    const blob = new Blob(["hi"])
+    await ServerProxy.send(ws, blob)
+    expect(sent.length).toBe(1)
+    expect(sent[0]).toBeInstanceOf(ArrayBuffer)
+  })
+})
+
+describe("ServerProxy.websocket", () => {
+  // Captures the Request the internal Hono app receives, without ever
+  // invoking createEvents (which would construct a real `new WebSocket(...)`
+  // once onOpen fires) - this only needs to observe header forwarding.
+  function fakeUpgrade() {
+    let capturedRequest: Request | undefined
+    const upgrade = ((_createEvents: (c: any) => any) => {
+      return async (c: { req: { raw: Request } }) => {
+        capturedRequest = c.req.raw
+        return new Response(null, { status: 101 })
+      }
+    }) as unknown as UpgradeWebSocket
+    return { upgrade, getRequest: () => capturedRequest }
+  }
+
+  test("converts the http(s) target to a ws(s) URL in the proxy header", async () => {
+    const { upgrade, getRequest } = fakeUpgrade()
+    const req = new Request("http://proxy.local/__workspace_ws")
+    await ServerProxy.websocket(upgrade, "https://upstream.example/socket", undefined, req, {})
+    expect(getRequest()?.headers.get("x-physicscode-proxy-url")).toBe("wss://upstream.example/socket")
+  })
+
+  test("merges extra headers onto the forwarded request", async () => {
+    const { upgrade, getRequest } = fakeUpgrade()
+    const req = new Request("http://proxy.local/__workspace_ws")
+    await ServerProxy.websocket(upgrade, "http://upstream.example/socket", { "x-extra": "1" }, req, {})
+    expect(getRequest()?.headers.get("x-extra")).toBe("1")
+    expect(getRequest()?.headers.get("x-physicscode-proxy-url")).toBe("ws://upstream.example/socket")
+  })
+
+  test("rewrites the request path to /__workspace_ws and drops the query string", async () => {
+    const { upgrade, getRequest } = fakeUpgrade()
+    const req = new Request("http://proxy.local/original/path?foo=bar")
+    await ServerProxy.websocket(upgrade, "http://upstream.example/socket", undefined, req, {})
+    const url = new URL(getRequest()!.url)
+    expect(url.pathname).toBe("/__workspace_ws")
+    expect(url.search).toBe("")
+  })
 })

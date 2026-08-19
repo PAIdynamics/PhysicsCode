@@ -11,7 +11,7 @@ import { FetchHttpClient, HttpBody, HttpClient, HttpClientRequest } from "effect
 
 type Msg = string | ArrayBuffer | Uint8Array
 
-function send(ws: { send(data: string | ArrayBuffer | Uint8Array): void }, data: any) {
+export function send(ws: { send(data: string | ArrayBuffer | Uint8Array): void }, data: any) {
   if (data instanceof Blob) {
     return data.arrayBuffer().then((x) => ws.send(x))
   }

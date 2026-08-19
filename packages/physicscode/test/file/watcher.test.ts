@@ -145,6 +145,38 @@ function ready(directory: string) {
 // Tests
 // ---------------------------------------------------------------------------
 
+describe("FileWatcher (no native binding required)", () => {
+  afterEach(async () => {
+    await Instance.disposeAll()
+  })
+
+  test("init() no-ops when PHYSICSCODE_EXPERIMENTAL_DISABLE_FILEWATCHER is set", async () => {
+    await using tmp = await tmpdir({ git: true })
+
+    const disabledConfigLayer = ConfigProvider.layer(
+      ConfigProvider.fromUnknown({ PHYSICSCODE_EXPERIMENTAL_DISABLE_FILEWATCHER: "true" }),
+    )
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const layer: Layer.Layer<FileWatcher.Service, never, never> = FileWatcher.layer.pipe(
+          Layer.provide(Config.defaultLayer),
+          Layer.provide(Git.defaultLayer),
+          Layer.provide(disabledConfigLayer),
+        )
+        const rt = ManagedRuntime.make(layer)
+        try {
+          // Should resolve without ever touching the native watcher binding.
+          await rt.runPromise(FileWatcher.Service.use((s) => s.init()))
+        } finally {
+          await rt.dispose()
+        }
+      },
+    })
+  })
+})
+
 describeWatcher("FileWatcher", () => {
   afterEach(async () => {
     await Instance.disposeAll()

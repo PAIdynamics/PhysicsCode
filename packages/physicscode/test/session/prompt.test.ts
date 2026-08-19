@@ -1248,7 +1248,11 @@ it.live(
       }),
       { git: true, config: providerCfg },
     ),
-  3_000,
+  // Waits on a real "sleep 0.2" child process (pwsh on Windows), whose
+  // spawn/teardown overhead on Windows CI runners can eat well past a
+  // few-hundred-ms budget - see the 30s timeout on the similar
+  // "shell updates running metadata before process exit" test above.
+  30_000,
 )
 
 it.live(
@@ -1288,7 +1292,10 @@ it.live(
       }),
       { git: true, config: providerCfg },
     ),
-  3_000,
+  // See the matching comment on "loop waits while shell runs and starts
+  // after shell exits" above - real subprocess spawn/teardown overhead on
+  // Windows CI needs more headroom than 3s.
+  30_000,
 )
 
 unix(

@@ -31,15 +31,34 @@ const CHANNEL = await (async () => {
 })()
 const IS_PREVIEW = CHANNEL !== "latest"
 
+// Latest published npm version is the normal baseline to bump from. If the
+// package has never been published (404 - e.g. the very first release
+// through this pipeline), fall back to the latest GitHub release tag, so
+// numbering continues from what's already visible to users instead of
+// restarting from scratch. If neither source has anything yet, 0.0.0 is the
+// baseline (so a patch bump produces 0.0.1).
+async function latestNpmVersion(): Promise<string | undefined> {
+  const res = await fetch("https://registry.npmjs.org/physicscode-ai/latest")
+  if (!res.ok) return undefined
+  const data = (await res.json()) as { version?: string }
+  return data.version
+}
+
+async function latestGithubReleaseVersion(): Promise<string | undefined> {
+  const repo = process.env["GH_REPO"]
+  if (!repo) return undefined
+  const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+    headers: { Accept: "application/vnd.github+json" },
+  })
+  if (!res.ok) return undefined
+  const data = (await res.json()) as { tag_name?: string }
+  return data.tag_name?.replace(/^v/, "")
+}
+
 const VERSION = await (async () => {
   if (env.PHYSICSCODE_VERSION) return env.PHYSICSCODE_VERSION
   if (IS_PREVIEW) return `0.0.0-${CHANNEL}-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}`
-  const version = await fetch("https://registry.npmjs.org/physicscode-ai/latest")
-    .then((res) => {
-      if (!res.ok) throw new Error(res.statusText)
-      return res.json()
-    })
-    .then((data: any) => data.version)
+  const version = (await latestNpmVersion()) ?? (await latestGithubReleaseVersion()) ?? "0.0.0"
   const [major, minor, patch] = version.split(".").map((x: string) => Number(x) || 0)
   const t = env.PHYSICSCODE_BUMP?.toLowerCase()
   if (t === "major") return `${major + 1}.0.0`

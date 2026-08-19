@@ -18,7 +18,7 @@ const activeSuffix = (isActive: boolean) => (isActive ? dim(" (active)") : "")
 export const formatAccountLabel = (account: { email: string; url: string }, isActive: boolean) =>
   `${account.email} ${dim(account.url)}${activeSuffix(isActive)}`
 
-const formatOrgChoiceLabel = (account: { email: string }, org: { name: string }, isActive: boolean) =>
+export const formatOrgChoiceLabel = (account: { email: string }, org: { name: string }, isActive: boolean) =>
   `${org.name} (${account.email})${activeSuffix(isActive)}`
 
 export const formatOrgLine = (
@@ -31,12 +31,12 @@ export const formatOrgLine = (
   return `  ${dot} ${name}  ${dim(account.email)}  ${dim(account.url)}  ${dim(org.id)}`
 }
 
-const isActiveOrgChoice = (
+export const isActiveOrgChoice = (
   active: Option.Option<{ id: AccountID; active_org_id: OrgID | null }>,
   choice: { accountID: AccountID; orgID: OrgID },
 ) => Option.isSome(active) && active.value.id === choice.accountID && active.value.active_org_id === choice.orgID
 
-const loginWithApiKeyEffect = Effect.fn("loginWithApiKey")(function* (url: string, apiKey: string) {
+export const loginWithApiKeyEffect = Effect.fn("loginWithApiKey")(function* (url: string, apiKey: string) {
   const service = yield* Account.Service
 
   yield* Prompt.intro("Log in")
@@ -85,7 +85,7 @@ const loginEffect = Effect.fn("login")(function* (url: string) {
   })
 })
 
-const logoutEffect = Effect.fn("logout")(function* (email?: string) {
+export const logoutEffect = Effect.fn("logout")(function* (email?: string) {
   const service = yield* Account.Service
   const accounts = yield* service.list()
   if (accounts.length === 0) return yield* println("Not logged in")
@@ -153,7 +153,7 @@ const switchEffect = Effect.fn("switch")(function* () {
   yield* Prompt.outro("Switched to " + choice.label)
 })
 
-const orgsEffect = Effect.fn("orgs")(function* () {
+export const orgsEffect = Effect.fn("orgs")(function* () {
   const service = yield* Account.Service
 
   const groups = yield* service.orgsByAccount()
@@ -180,7 +180,7 @@ const openEffect = Effect.fn("open")(function* () {
   yield* Prompt.outro("Opened " + url)
 })
 
-const statusEffect = Effect.fn("status")(function* (json: boolean) {
+export const statusEffect = Effect.fn("status")(function* (json: boolean) {
   const service = yield* Account.Service
   const active = yield* service.active()
   if (Option.isNone(active)) {

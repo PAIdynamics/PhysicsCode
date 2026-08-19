@@ -5,3 +5,8 @@ preload = ["@opentui/solid/preload", "./test/preload.ts"]
 # timeout is not actually parsed from bunfig.toml (see src/bunfig.zig in oven-sh/bun)
 # using --timeout in package.json scripts instead
 # https://github.com/oven-sh/bun/issues/7789
+# The TUI layer (OpenTUI/JSX terminal components) needs a component-render
+# test harness to cover meaningfully, not plain unit tests - tracked as a
+# separate effort. Excluded here so the coverage number reflects the
+# business-logic target we're actually driving toward.
+coveragePathIgnorePatterns = ["src/cli/cmd/tui/**", "**/physicscode-test-*/**"]

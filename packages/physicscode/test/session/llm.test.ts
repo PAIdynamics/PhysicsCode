@@ -1217,6 +1217,220 @@ describe("session.llm.stream", () => {
     })
   })
 
+  // The CLI is expected to swap the active model between the self-hosted
+  // "paidynamics" model and OpenAI/Anthropic transparently, with the same
+  // resolveTools() output reaching the wire in each case (just re-shaped
+  // for that provider's own wire format by the `ai` SDK). These three
+  // tests exercise the identical tool/agent/permission input against a
+  // generic OpenAI-compatible provider (the same wire shape paidynamics
+  // itself uses), OpenAI's real Responses API, and Anthropic's Messages
+  // API, and assert the tool actually reaches each request body.
+  describe("cross-provider tool declaration parity", () => {
+    const buildInput = (resolved: Provider.Model, providerID: string, sessionID: ReturnType<typeof SessionID.make>) => {
+      const agent = {
+        name: "test",
+        mode: "primary",
+        options: {},
+        permission: [{ permission: "*", pattern: "*", action: "allow" }],
+      } satisfies Agent.Info
+      const user = {
+        id: MessageID.make("user-cross-provider"),
+        sessionID,
+        role: "user",
+        time: { created: Date.now() },
+        agent: agent.name,
+        model: { providerID: ProviderID.make(providerID), modelID: resolved.id },
+      } satisfies MessageV2.User
+      return {
+        user,
+        sessionID,
+        model: resolved,
+        agent,
+        system: ["You are a helpful assistant."],
+        messages: [{ role: "user", content: "Are there any PDFs in my home directory?" }] as ModelMessage[],
+        tools: {
+          glob: tool({
+            description: "Find files matching a pattern",
+            inputSchema: z.object({ pattern: z.string() }),
+            execute: async () => ({ output: "" }),
+          }),
+        },
+      }
+    }
+
+    test("declares the tool on an openai-compatible provider (paidynamics' own wire shape)", async () => {
+      const server = state.server
+      if (!server) throw new Error("Server not initialized")
+
+      const providerID = "alibaba"
+      const fixture = await loadFixture(providerID, "qwen-plus")
+      const request = waitRequest(
+        "/chat/completions",
+        new Response(createChatStream("no PDFs found"), {
+          status: 200,
+          headers: { "Content-Type": "text/event-stream" },
+        }),
+      )
+
+      await using tmp = await tmpdir({
+        init: async (dir) => {
+          await Bun.write(
+            path.join(dir, "physicscode.json"),
+            JSON.stringify({
+              $schema: "https://physicscode.ai/config.json",
+              enabled_providers: [providerID],
+              provider: {
+                [providerID]: {
+                  options: { apiKey: "test-key", baseURL: `${server.url.origin}/v1` },
+                },
+              },
+            }),
+          )
+        },
+      })
+
+      await Instance.provide({
+        directory: tmp.path,
+        fn: async () => {
+          const resolved = await getModel(ProviderID.make(providerID), ModelID.make(fixture.model.id))
+          const sessionID = SessionID.make("session-cross-provider-compat")
+          await drain(buildInput(resolved, providerID, sessionID))
+
+          const tools = (await request).body.tools as Array<{ function?: { name?: string } }> | undefined
+          expect(tools?.some((item) => item.function?.name === "glob")).toBe(true)
+        },
+      })
+    })
+
+    test("declares the tool on OpenAI's Responses API", async () => {
+      const server = state.server
+      if (!server) throw new Error("Server not initialized")
+
+      const source = await loadFixture("openai", "gpt-5.2")
+      const model = source.model
+      const request = waitRequest(
+        "/responses",
+        createEventResponse(
+          [
+            {
+              type: "response.output_text.delta",
+              item_id: "item-1",
+              delta: "no PDFs found",
+              logprobs: null,
+            },
+            {
+              type: "response.completed",
+              response: {
+                incomplete_details: null,
+                usage: { input_tokens: 1, input_tokens_details: null, output_tokens: 1, output_tokens_details: null },
+                service_tier: null,
+              },
+            },
+          ],
+          true,
+        ),
+      )
+
+      await using tmp = await tmpdir({
+        init: async (dir) => {
+          await Bun.write(
+            path.join(dir, "physicscode.json"),
+            JSON.stringify({
+              $schema: "https://physicscode.ai/config.json",
+              enabled_providers: ["openai"],
+              provider: {
+                openai: {
+                  name: "OpenAI",
+                  env: ["OPENAI_API_KEY"],
+                  npm: "@ai-sdk/openai",
+                  api: "https://api.openai.com/v1",
+                  models: { [model.id]: model },
+                  options: { apiKey: "test-openai-key", baseURL: `${server.url.origin}/v1` },
+                },
+              },
+            }),
+          )
+        },
+      })
+
+      await Instance.provide({
+        directory: tmp.path,
+        fn: async () => {
+          const resolved = await getModel(ProviderID.openai, ModelID.make(model.id))
+          const sessionID = SessionID.make("session-cross-provider-openai")
+          await drain(buildInput(resolved, "openai", sessionID))
+
+          const tools = (await request).body.tools as Array<{ name?: string; type?: string }> | undefined
+          expect(tools?.some((item) => item.name === "glob")).toBe(true)
+        },
+      })
+    })
+
+    test("declares the tool on Anthropic's Messages API", async () => {
+      const server = state.server
+      if (!server) throw new Error("Server not initialized")
+
+      const source = await loadFixture("anthropic", "claude-opus-4-6")
+      const model = source.model
+      const request = waitRequest(
+        "/messages",
+        createEventResponse([
+          {
+            type: "message_start",
+            message: {
+              id: "msg-cross-provider",
+              model: model.id,
+              usage: { input_tokens: 3, cache_creation_input_tokens: null, cache_read_input_tokens: null },
+            },
+          },
+          { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+          { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "no PDFs found" } },
+          { type: "content_block_stop", index: 0 },
+          {
+            type: "message_delta",
+            delta: { stop_reason: "end_turn", stop_sequence: null, container: null },
+            usage: { input_tokens: 3, output_tokens: 2, cache_creation_input_tokens: null, cache_read_input_tokens: null },
+          },
+          { type: "message_stop" },
+        ]),
+      )
+
+      await using tmp = await tmpdir({
+        init: async (dir) => {
+          await Bun.write(
+            path.join(dir, "physicscode.json"),
+            JSON.stringify({
+              $schema: "https://physicscode.ai/config.json",
+              enabled_providers: ["anthropic"],
+              provider: {
+                anthropic: {
+                  name: "Anthropic",
+                  env: ["ANTHROPIC_API_KEY"],
+                  npm: "@ai-sdk/anthropic",
+                  api: "https://api.anthropic.com/v1",
+                  models: { [model.id]: model },
+                  options: { apiKey: "test-anthropic-key", baseURL: `${server.url.origin}/v1` },
+                },
+              },
+            }),
+          )
+        },
+      })
+
+      await Instance.provide({
+        directory: tmp.path,
+        fn: async () => {
+          const resolved = await getModel(ProviderID.make("anthropic"), ModelID.make(model.id))
+          const sessionID = SessionID.make("session-cross-provider-anthropic")
+          await drain(buildInput(resolved, "anthropic", sessionID))
+
+          const tools = (await request).body.tools as Array<{ name?: string }> | undefined
+          expect(tools?.some((item) => item.name === "glob")).toBe(true)
+        },
+      })
+    })
+  })
+
   test("sends Google API payload for Gemini models", async () => {
     const server = state.server
     if (!server) {

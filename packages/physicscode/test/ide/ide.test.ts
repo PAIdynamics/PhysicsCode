@@ -79,4 +79,8 @@ describe("ide", () => {
 
     expect(Ide.alreadyInstalled()).toBe(false)
   })
+
+  test("install() rejects an IDE name outside the supported list", async () => {
+    await expect(Ide.install("Not A Real IDE" as any)).rejects.toThrow("Unknown IDE")
+  })
 })

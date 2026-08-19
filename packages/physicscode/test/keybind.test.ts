@@ -175,6 +175,45 @@ describe("Keybind.match", () => {
   })
 })
 
+describe("Keybind.fromParsedKey", () => {
+  function parsedKey(overrides: Partial<{ name: string; ctrl: boolean; meta: boolean; shift: boolean; super: boolean }> = {}) {
+    return {
+      name: "a",
+      ctrl: false,
+      meta: false,
+      shift: false,
+      super: false,
+      ...overrides,
+    } as any
+  }
+
+  test("converts a plain ParsedKey to Keybind.Info", () => {
+    expect(Keybind.fromParsedKey(parsedKey({ name: "x", ctrl: true }))).toEqual({
+      name: "x",
+      ctrl: true,
+      meta: false,
+      shift: false,
+      super: false,
+      leader: false,
+    })
+  })
+
+  test("renames a space key to 'space'", () => {
+    expect(Keybind.fromParsedKey(parsedKey({ name: " " })).name).toBe("space")
+  })
+
+  test("defaults super to false when undefined on the source key", () => {
+    const key = parsedKey()
+    delete (key as any).super
+    expect(Keybind.fromParsedKey(key).super).toBe(false)
+  })
+
+  test("passes through the leader flag", () => {
+    expect(Keybind.fromParsedKey(parsedKey(), true).leader).toBe(true)
+    expect(Keybind.fromParsedKey(parsedKey()).leader).toBe(false)
+  })
+})
+
 describe("Keybind.parse", () => {
   test("should parse simple key", () => {
     const result = Keybind.parse("f")

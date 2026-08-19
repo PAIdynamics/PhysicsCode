@@ -61,6 +61,11 @@ const tasks = Object.entries(binaries).map(async ([name]) => {
 await Promise.all(tasks)
 await publish(`./dist/${pkg.name}`, `${pkg.name}-ai`, version)
 
+// The lean push-to-main pipeline (publish.yml's publish-cli job) only wants
+// the npm publish above - it has no Docker buildx, AUR SSH key, or Homebrew
+// tap credentials set up, unlike the full desktop-release publish job.
+if (process.env.PHYSICSCODE_LEAN === "true") process.exit(0)
+
 const image = "ghcr.io/anomalyco/physicscode"
 const platforms = "linux/amd64,linux/arm64"
 const tags = [`${image}:${version}`, `${image}:${Script.channel}`]

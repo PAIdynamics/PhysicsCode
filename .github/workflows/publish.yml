@@ -692,6 +692,16 @@ jobs:
           PHYSICSCODE_VERSION: ${{ needs.version.outputs.version }}
           PHYSICSCODE_RELEASE: ${{ needs.version.outputs.release }}
           NPM_CONFIG_PROVENANCE: false
+          # OIDC "trusted publishing" only works for packages that already
+          # exist on npm (you configure trust from an existing package's
+          # settings page). None of these per-platform packages have ever
+          # been published, so the very first publish of each one needs a
+          # real token - registry-url above wires setup-node's .npmrc to
+          # read auth from this env var.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # publish.ts also does Docker/AUR/Homebrew publishing when not
+          # set - this job only has npm publish permissions/artifacts.
+          PHYSICSCODE_LEAN: "true"
 
       - name: Publish the GitHub release
         env:

@@ -17,32 +17,33 @@ import { testEffect } from "../lib/effect"
 
 const it = testEffect(Layer.mergeAll(CrossSpawnSpawner.defaultLayer, NodeFileSystem.layer))
 
-const configLayer = Layer.succeed(
-  Config.Service,
-  Config.Service.of({
-    get: () => Effect.succeed({}),
-    getGlobal: () => Effect.succeed({}),
-    getConsoleState: () => Effect.succeed(emptyConsoleState),
-    update: () => Effect.void,
-    updateGlobal: (config) => Effect.succeed(config),
-    invalidate: () => Effect.void,
-    directories: () => Effect.succeed([]),
-    waitForDependencies: () => Effect.void,
-  }),
-)
+const configLayer = (config: Record<string, unknown> = {}) =>
+  Layer.succeed(
+    Config.Service,
+    Config.Service.of({
+      get: () => Effect.succeed(config as any),
+      getGlobal: () => Effect.succeed({}),
+      getConsoleState: () => Effect.succeed(emptyConsoleState),
+      update: () => Effect.void,
+      updateGlobal: (config) => Effect.succeed(config),
+      invalidate: () => Effect.void,
+      directories: () => Effect.succeed([]),
+      waitForDependencies: () => Effect.void,
+    }),
+  )
 
-const instructionLayer = (global: Partial<Global.Interface>) =>
+const instructionLayer = (global: Partial<Global.Interface>, config: Record<string, unknown> = {}) =>
   Instruction.layer.pipe(
-    Layer.provide(configLayer),
+    Layer.provide(configLayer(config)),
     Layer.provide(AppFileSystem.defaultLayer),
     Layer.provide(FetchHttpClient.layer),
     Layer.provide(Global.layerWith(global)),
   )
 
 const provideInstruction =
-  (global: Partial<Global.Interface>) =>
+  (global: Partial<Global.Interface>, config: Record<string, unknown> = {}) =>
   <A, E, R>(self: Effect.Effect<A, E, R>) =>
-    self.pipe(Effect.provide(instructionLayer(global)))
+    self.pipe(Effect.provide(instructionLayer(global, config)))
 
 const write = (filepath: string, content: string) =>
   Effect.gen(function* () {
@@ -205,8 +206,6 @@ describe("Instruction.resolve", () => {
       }),
     ),
   )
-
-  test.todo("fetches remote instructions from config URLs via HttpClient", () => {})
 })
 
 describe("Instruction.system", () => {
@@ -226,6 +225,51 @@ describe("Instruction.system", () => {
         expect(rules[0]).toBe(`Instructions from: ${path.join(globalTmp, "AGENTS.md")}\n# Global Instructions`)
         expect(rules[1]).toBe(`Instructions from: ${path.join(projectTmp, "AGENTS.md")}\n# Project Instructions`)
       }).pipe(provideInstance(projectTmp), provideInstruction({ home: globalTmp, config: globalTmp }))
+    }),
+  )
+
+  it.live("fetches remote instructions from config URLs via HttpClient", () =>
+    Effect.gen(function* () {
+      const server = Bun.serve({
+        port: 0,
+        fetch: () => new Response("# Remote Instructions"),
+      })
+      const projectTmp = yield* tmpdirScoped()
+
+      try {
+        yield* Effect.gen(function* () {
+          const svc = yield* Instruction.Service
+          const rules = yield* svc.system()
+          expect(rules).toEqual([`Instructions from: http://127.0.0.1:${server.port}/agents.md\n# Remote Instructions`])
+        }).pipe(
+          provideInstance(projectTmp),
+          provideInstruction(
+            { home: projectTmp, config: projectTmp },
+            { instructions: [`http://127.0.0.1:${server.port}/agents.md`] },
+          ),
+        )
+      } finally {
+        server.stop(true)
+      }
+    }),
+  )
+
+  it.live("treats an unreachable remote instruction URL as empty rather than failing", () =>
+    Effect.gen(function* () {
+      const projectTmp = yield* tmpdirScoped()
+
+      yield* Effect.gen(function* () {
+        const svc = yield* Instruction.Service
+        const rules = yield* svc.system()
+        expect(rules).toEqual([])
+      }).pipe(
+        provideInstance(projectTmp),
+        provideInstruction(
+          { home: projectTmp, config: projectTmp },
+          // Port 1 is a reserved/unroutable TCP port, so this fails fast.
+          { instructions: ["http://127.0.0.1:1/agents.md"] },
+        ),
+      )
     }),
   )
 })

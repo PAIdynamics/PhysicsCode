@@ -4,6 +4,7 @@ run-name: "${{ format('release {0}', inputs.bump) }}"
 on:
   push:
     branches:
+      - main
       - ci
       - dev
       - beta
@@ -33,20 +34,13 @@ permissions:
 jobs:
   version:
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    if: github.repository == 'anomalyco/physicscode'
+    if: github.repository == 'PAIdynamics/PhysicsCode'
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup-bun
-
-      - name: Setup git committer
-        id: committer
-        uses: ./.github/actions/setup-git-committer
-        with:
-          physicscode-app-id: ${{ vars.PHYSICSCODE_APP_ID }}
-          physicscode-app-secret: ${{ secrets.PHYSICSCODE_APP_SECRET }}
 
       - name: Install PhysicsCode
         if: inputs.bump || inputs.version
@@ -56,8 +50,17 @@ jobs:
         run: |
           ./script/version.ts
         env:
-          GH_TOKEN: ${{ steps.committer.outputs.token }}
-          PHYSICSCODE_BUMP: ${{ inputs.bump }}
+          # No dedicated GitHub App is provisioned for this repo (checked:
+          # none installed on the PAIdynamics org) - the built-in
+          # GITHUB_TOKEN already has contents:write (see `permissions:`
+          # above) and needs no setup, so use it directly for all
+          # same-repo release operations below.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A plain push to main (not one of the other channel branches, not a
+          # manual dispatch) is treated as an automatic lean patch release -
+          # see the publish-cli job below for what that path actually
+          # publishes (CLI binaries + npm only, no desktop apps/AUR/Docker).
+          PHYSICSCODE_BUMP: ${{ (github.ref_name == 'main' && github.event_name == 'push' && 'patch') || inputs.bump }}
           PHYSICSCODE_VERSION: ${{ inputs.version }}
           PHYSICSCODE_API_KEY: ${{ secrets.PHYSICSCODE_API_KEY }}
           GH_REPO: ${{ (github.ref_name == 'beta' && 'anomalyco/physicscode-beta') || github.repository }}
@@ -70,20 +73,13 @@ jobs:
   build-cli:
     needs: version
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    if: github.repository == 'anomalyco/physicscode'
+    if: github.repository == 'PAIdynamics/PhysicsCode'
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-tags: true
 
       - uses: ./.github/actions/setup-bun
-
-      - name: Setup git committer
-        id: committer
-        uses: ./.github/actions/setup-git-committer
-        with:
-          physicscode-app-id: ${{ vars.PHYSICSCODE_APP_ID }}
-          physicscode-app-secret: ${{ secrets.PHYSICSCODE_APP_SECRET }}
 
       - name: Build
         id: build
@@ -93,7 +89,7 @@ jobs:
           PHYSICSCODE_VERSION: ${{ needs.version.outputs.version }}
           PHYSICSCODE_RELEASE: ${{ needs.version.outputs.release }}
           GH_REPO: ${{ needs.version.outputs.repo }}
-          GH_TOKEN: ${{ steps.committer.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/upload-artifact@v4
         with:
@@ -114,7 +110,12 @@ jobs:
       - build-cli
       - version
     runs-on: blacksmith-4vcpu-windows-2025
-    if: github.repository == 'anomalyco/physicscode'
+    if: github.repository == 'PAIdynamics/PhysicsCode'
+    # Azure Trusted Signing secrets aren't provisioned yet - don't block the
+    # release on this. build-cli already uploaded unsigned Windows archives
+    # (see build.ts) as the working baseline; this job only improves on that
+    # with a real Authenticode signature when the secrets exist.
+    continue-on-error: true
     env:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -129,13 +130,6 @@ jobs:
         with:
           name: physicscode-cli-windows
           path: packages/physicscode/dist
-
-      - name: Setup git committer
-        id: committer
-        uses: ./.github/actions/setup-git-committer
-        with:
-          physicscode-app-id: ${{ vars.PHYSICSCODE_APP_ID }}
-          physicscode-app-secret: ${{ secrets.PHYSICSCODE_APP_SECRET }}
 
       - name: Azure login
         uses: azure/login@v2
@@ -192,7 +186,7 @@ jobs:
         if: needs.version.outputs.release != ''
         shell: pwsh
         env:
-          GH_TOKEN: ${{ steps.committer.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "v${{ needs.version.outputs.version }}" `
             "${{ github.workspace }}\packages\physicscode\dist\physicscode-windows-arm64.zip" `
@@ -213,6 +207,10 @@ jobs:
     needs:
       - build-cli
       - version
+    # Skip on the automatic lean main-push path - desktop app builds are slow
+    # and consume real Apple/Azure signing-cert usage; they stay manual
+    # (workflow_dispatch) or run on the other channel branches as before.
+    if: "!(github.ref_name == 'main' && github.event_name == 'push')"
     continue-on-error: false
     env:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -389,7 +387,8 @@ jobs:
     needs:
       - build-cli
       - version
-    if: github.repository == 'anomalyco/physicscode'
+    # Skip on the automatic lean main-push path - see build-tauri above.
+    if: github.repository == 'PAIdynamics/PhysicsCode' && !(github.ref_name == 'main' && github.event_name == 'push')
     continue-on-error: false
     env:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -551,6 +550,11 @@ jobs:
           name: latest-yml-${{ matrix.settings.target }}
           path: packages/desktop-electron/dist/latest*.yml
 
+  # Full publish: npm + Docker/GHCR + AUR + desktop app update manifests. Not
+  # run on the automatic lean main-push path (see publish-cli below) - it
+  # also does things out of scope for that path (git-tag-syncs to a `dev`
+  # branch this fork doesn't use, and Docker/AUR steps that still reference
+  # the stale `anomalyco` org, tracked separately).
   publish:
     needs:
       - version
@@ -558,7 +562,7 @@ jobs:
       - sign-cli-windows
       - build-tauri
       - build-electron
-    if: always() && !failure() && !cancelled()
+    if: always() && !failure() && !cancelled() && !(github.ref_name == 'main' && github.event_name == 'push')
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v3
@@ -639,3 +643,66 @@ jobs:
           GH_REPO: ${{ needs.version.outputs.repo }}
           NPM_CONFIG_PROVENANCE: false
           LATEST_YML_DIR: /tmp/latest-yml
+
+  # Lean automatic release path for a plain push to main: CLI binaries (built
+  # by build-cli/sign-cli-windows above) + npm only. Deliberately does NOT
+  # call the root ./script/publish.ts (Docker/GHCR, AUR, SDK/plugin publish,
+  # git-tag-sync to a `dev` branch this fork doesn't use) - see the comment
+  # on the `publish` job above for why that's out of scope here.
+  publish-cli:
+    needs:
+      - version
+      - build-cli
+      - sign-cli-windows
+    if: github.ref_name == 'main' && github.event_name == 'push' && needs.version.outputs.release != ''
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/setup-bun
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: physicscode-cli
+          path: packages/physicscode/dist
+
+      # Not physicscode-cli-signed-windows: sign-cli-windows is
+      # continue-on-error (Azure signing secrets aren't provisioned yet), so
+      # that artifact may not exist. This one (from build-cli, always
+      # produced) has the same binaries unsigned - the working baseline.
+      - uses: actions/download-artifact@v4
+        with:
+          name: physicscode-cli-windows
+          path: packages/physicscode/dist
+
+      - name: Publish CLI to npm
+        run: bun ./packages/physicscode/script/publish.ts
+        env:
+          PHYSICSCODE_VERSION: ${{ needs.version.outputs.version }}
+          PHYSICSCODE_RELEASE: ${{ needs.version.outputs.release }}
+          NPM_CONFIG_PROVENANCE: false
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ needs.version.outputs.tag }}" --draft=false --repo "${{ needs.version.outputs.repo }}"
+
+      - name: Notify physicscode-website to redeploy
+        # Best-effort: the CLI release above already succeeded regardless of
+        # this. GITHUB_TOKEN can't reach another repo, so this needs a
+        # separate credential with write access to
+        # PAIdynamics/physicscode-website (a fine-grained PAT, or a GitHub
+        # App installed on both repos) added as this secret; until then it
+        # fails visibly here without blocking the release itself.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.PHYSICSCODE_WEBSITE_DISPATCH_TOKEN }}
+        run: |
+          gh api repos/PAIdynamics/physicscode-website/dispatches \
+            -f event_type=cli-release \
+            -F "client_payload[version]=${{ needs.version.outputs.version }}"

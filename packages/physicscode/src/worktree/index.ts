@@ -21,6 +21,7 @@ import { AppFileSystem } from "@physicscode-ai/core/filesystem"
 import { BootstrapRuntime } from "@/effect/bootstrap-runtime"
 import { CrossSpawnSpawner } from "@physicscode-ai/core/cross-spawn-spawner"
 import { InstanceState } from "@/effect/instance-state"
+import { disposeInstance } from "@/effect/instance-registry"
 import { zod as effectZod } from "@/util/effect-zod"
 import { withStatics } from "@/util/schema"
 
@@ -348,7 +349,13 @@ export const layer: Layer.Layer<
 
     function cleanDirectory(target: string) {
       return Effect.promise(() =>
-        import("fs/promises")
+        // Release any resources still cached for this directory first (in
+        // particular the native file-watcher handle from InstanceBootstrap,
+        // if this worktree was ever booted) - on Windows an open watch
+        // handle blocks directory deletion outright (EBUSY), unlike POSIX
+        // where a directory can be unlinked out from under an open handle.
+        disposeInstance(target)
+          .then(() => import("fs/promises"))
           .then((fsp) => fsp.rm(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }))
           .catch((error) => {
             const message = errorMessage(error)

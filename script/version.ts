@@ -7,7 +7,14 @@ const output = [`version=${Script.version}`]
 const sha = process.env.GITHUB_SHA ?? (await $`git rev-parse HEAD`.text()).trim()
 
 if (!Script.preview) {
-  await $`bun script/changelog.ts --to ${sha}`.cwd(process.cwd())
+  // changelog.ts shells out to the physicscode CLI itself (an AI-generated
+  // summary via `physicscode run --command changelog`), which needs both
+  // the CLI installed and an LLM provider authenticated in this runner -
+  // neither is guaranteed for an automatic release (e.g. a plain push to
+  // main). Best-effort: fall back to "No notable changes" (matching the
+  // existing UPCOMING_CHANGELOG.md-read fallback below) rather than
+  // blocking the whole release on it.
+  await $`bun script/changelog.ts --to ${sha}`.cwd(process.cwd()).nothrow()
   const file = `${process.cwd()}/UPCOMING_CHANGELOG.md`
   const body = await Bun.file(file)
     .text()

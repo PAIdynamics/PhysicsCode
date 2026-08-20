@@ -423,3 +423,502 @@ describe("cli.cmd.providers.handlePluginAuth (api-key branch)", () => {
     })
   })
 })
+
+describe("cli.cmd.providers.handlePluginAuth (method.prompts loop)", () => {
+  test("collects a select-type prompt answer and passes it to authorize()", async () => {
+    resetClackMock()
+    clackMock.selectResult = "enterprise"
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        let received: Record<string, string> | undefined
+        const plugin = {
+          auth: {
+            provider: "test-prompts-select",
+            methods: [
+              {
+                label: "Test OAuth",
+                type: "oauth" as const,
+                prompts: [{ type: "select" as const, key: "deploymentType", message: "Pick one", options: [] }],
+                authorize: async (inputs: Record<string, string>) => {
+                  received = inputs
+                  return {
+                    method: "auto" as const,
+                    callback: async () => ({ type: "success" as const, refresh: "r", access: "a", expires: 0 }),
+                  }
+                },
+              },
+            ],
+          },
+        }
+
+        await handlePluginAuth(plugin as any, "test-prompts-select")
+        expect(received).toEqual({ deploymentType: "enterprise" })
+      },
+    })
+  })
+
+  test("throws CancelledError when a select-type prompt is cancelled", async () => {
+    resetClackMock()
+    clackMock.selectResult = CANCEL
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const plugin = {
+          auth: {
+            provider: "test-prompts-select-cancel",
+            methods: [
+              {
+                label: "Test OAuth",
+                type: "oauth" as const,
+                prompts: [{ type: "select" as const, key: "deploymentType", message: "Pick one", options: [] }],
+                authorize: async () => {
+                  throw new Error("should not be reached")
+                },
+              },
+            ],
+          },
+        }
+
+        let caught: unknown
+        try {
+          await handlePluginAuth(plugin as any, "test-prompts-select-cancel")
+          expect.unreachable()
+        } catch (e) {
+          caught = e
+        }
+        expect((caught as Error).name).toBe("UICancelledError")
+      },
+    })
+  })
+
+  test("collects a text-type prompt answer", async () => {
+    resetClackMock()
+    clackMock.textResult = "acme.ghe.com"
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        let received: Record<string, string> | undefined
+        const plugin = {
+          auth: {
+            provider: "test-prompts-text",
+            methods: [
+              {
+                label: "Test OAuth",
+                type: "oauth" as const,
+                prompts: [{ type: "text" as const, key: "enterpriseUrl", message: "Enter your domain" }],
+                authorize: async (inputs: Record<string, string>) => {
+                  received = inputs
+                  return {
+                    method: "auto" as const,
+                    callback: async () => ({ type: "success" as const, refresh: "r", access: "a", expires: 0 }),
+                  }
+                },
+              },
+            ],
+          },
+        }
+
+        await handlePluginAuth(plugin as any, "test-prompts-text")
+        expect(received).toEqual({ enterpriseUrl: "acme.ghe.com" })
+      },
+    })
+  })
+
+  test("throws CancelledError when a text-type prompt is cancelled", async () => {
+    resetClackMock()
+    clackMock.textResult = CANCEL
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const plugin = {
+          auth: {
+            provider: "test-prompts-text-cancel",
+            methods: [
+              {
+                label: "Test OAuth",
+                type: "oauth" as const,
+                prompts: [{ type: "text" as const, key: "enterpriseUrl", message: "Enter your domain" }],
+                authorize: async () => {
+                  throw new Error("should not be reached")
+                },
+              },
+            ],
+          },
+        }
+
+        let caught: unknown
+        try {
+          await handlePluginAuth(plugin as any, "test-prompts-text-cancel")
+          expect.unreachable()
+        } catch (e) {
+          caught = e
+        }
+        expect((caught as Error).name).toBe("UICancelledError")
+      },
+    })
+  })
+
+  test("skips a later prompt whose `when` condition doesn't match", async () => {
+    resetClackMock()
+    clackMock.selectResult = "github.com"
+    clackMock.textResult = "should-not-be-collected"
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        let received: Record<string, string> | undefined
+        const plugin = {
+          auth: {
+            provider: "test-prompts-when-skip",
+            methods: [
+              {
+                label: "Test OAuth",
+                type: "oauth" as const,
+                prompts: [
+                  { type: "select" as const, key: "deploymentType", message: "Pick one", options: [] },
+                  {
+                    type: "text" as const,
+                    key: "enterpriseUrl",
+                    message: "Enter your domain",
+                    when: { key: "deploymentType", op: "eq" as const, value: "enterprise" },
+                  },
+                ],
+                authorize: async (inputs: Record<string, string>) => {
+                  received = inputs
+                  return {
+                    method: "auto" as const,
+                    callback: async () => ({ type: "success" as const, refresh: "r", access: "a", expires: 0 }),
+                  }
+                },
+              },
+            ],
+          },
+        }
+
+        await handlePluginAuth(plugin as any, "test-prompts-when-skip")
+        expect(received).toEqual({ deploymentType: "github.com" })
+        expect(clackMock.calls.filter((c) => c.fn === "text")).toHaveLength(0)
+      },
+    })
+  })
+
+  test("asks a later prompt whose `when` condition matches", async () => {
+    resetClackMock()
+    clackMock.selectResult = "enterprise"
+    clackMock.textResult = "acme.ghe.com"
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        let received: Record<string, string> | undefined
+        const plugin = {
+          auth: {
+            provider: "test-prompts-when-match",
+            methods: [
+              {
+                label: "Test OAuth",
+                type: "oauth" as const,
+                prompts: [
+                  { type: "select" as const, key: "deploymentType", message: "Pick one", options: [] },
+                  {
+                    type: "text" as const,
+                    key: "enterpriseUrl",
+                    message: "Enter your domain",
+                    when: { key: "deploymentType", op: "eq" as const, value: "enterprise" },
+                  },
+                ],
+                authorize: async (inputs: Record<string, string>) => {
+                  received = inputs
+                  return {
+                    method: "auto" as const,
+                    callback: async () => ({ type: "success" as const, refresh: "r", access: "a", expires: 0 }),
+                  }
+                },
+              },
+            ],
+          },
+        }
+
+        await handlePluginAuth(plugin as any, "test-prompts-when-match")
+        expect(received).toEqual({ deploymentType: "enterprise", enterpriseUrl: "acme.ghe.com" })
+      },
+    })
+  })
+
+  test("respects a `when` op:'ne' (not-equal) condition", async () => {
+    resetClackMock()
+    clackMock.selectResult = "github.com"
+    clackMock.textResult = "collected-because-not-enterprise"
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        let received: Record<string, string> | undefined
+        const plugin = {
+          auth: {
+            provider: "test-prompts-when-ne",
+            methods: [
+              {
+                label: "Test OAuth",
+                type: "oauth" as const,
+                prompts: [
+                  { type: "select" as const, key: "deploymentType", message: "Pick one", options: [] },
+                  {
+                    type: "text" as const,
+                    key: "notes",
+                    message: "Anything else?",
+                    when: { key: "deploymentType", op: "ne" as const, value: "enterprise" },
+                  },
+                ],
+                authorize: async (inputs: Record<string, string>) => {
+                  received = inputs
+                  return {
+                    method: "auto" as const,
+                    callback: async () => ({ type: "success" as const, refresh: "r", access: "a", expires: 0 }),
+                  }
+                },
+              },
+            ],
+          },
+        }
+
+        await handlePluginAuth(plugin as any, "test-prompts-when-ne")
+        expect(received).toEqual({ deploymentType: "github.com", notes: "collected-because-not-enterprise" })
+      },
+    })
+  })
+
+  test("skips a prompt whose custom `condition` returns false", async () => {
+    resetClackMock()
+    clackMock.textResult = "should-not-be-collected"
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        let received: Record<string, string> | undefined
+        const plugin = {
+          auth: {
+            provider: "test-prompts-condition",
+            methods: [
+              {
+                label: "Test OAuth",
+                type: "oauth" as const,
+                prompts: [
+                  {
+                    type: "text" as const,
+                    key: "notes",
+                    message: "Anything else?",
+                    condition: () => false,
+                  },
+                ],
+                authorize: async (inputs: Record<string, string>) => {
+                  received = inputs
+                  return {
+                    method: "auto" as const,
+                    callback: async () => ({ type: "success" as const, refresh: "r", access: "a", expires: 0 }),
+                  }
+                },
+              },
+            ],
+          },
+        }
+
+        await handlePluginAuth(plugin as any, "test-prompts-condition")
+        expect(received).toEqual({})
+      },
+    })
+  })
+})
+
+describe("cli.cmd.providers.handlePluginAuth (oauth 'auto' with a key-style result)", () => {
+  test("stores an api-type credential when the oauth callback returns 'key' instead of 'refresh'", async () => {
+    resetClackMock()
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const plugin = {
+          auth: {
+            provider: "test-oauth-key-result",
+            methods: [
+              {
+                label: "Test OAuth",
+                type: "oauth" as const,
+                authorize: async () => ({
+                  method: "auto" as const,
+                  callback: async () => ({ type: "success" as const, key: "sk-oauth-issued" }),
+                }),
+              },
+            ],
+          },
+        }
+
+        await handlePluginAuth(plugin as any, "test-oauth-key-result")
+
+        const stored = await AppRuntime.runPromise(Auth.Service.use((svc) => svc.get("test-oauth-key-result")))
+        expect(stored?.type).toBe("api")
+        if (stored?.type === "api") expect(stored.key).toBe("sk-oauth-issued")
+      },
+    })
+  })
+})
+
+describe("cli.cmd.providers.handlePluginAuth (oauth 'code' method)", () => {
+  test("prompts for a code, exchanges it, and stores oauth credentials", async () => {
+    resetClackMock()
+    clackMock.textResult = "pasted-auth-code"
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        let receivedCode: string | undefined
+        const plugin = {
+          auth: {
+            provider: "test-oauth-code",
+            methods: [
+              {
+                label: "Test OAuth (code)",
+                type: "oauth" as const,
+                authorize: async () => ({
+                  method: "code" as const,
+                  url: "https://example.com/authorize",
+                  callback: async (code: string) => {
+                    receivedCode = code
+                    return { type: "success" as const, refresh: "r-code", access: "a-code", expires: 0 }
+                  },
+                }),
+              },
+            ],
+          },
+        }
+
+        const handled = await handlePluginAuth(plugin as any, "test-oauth-code")
+        expect(handled).toBe(true)
+        expect(receivedCode).toBe("pasted-auth-code")
+
+        const stored = await AppRuntime.runPromise(Auth.Service.use((svc) => svc.get("test-oauth-code")))
+        expect(stored?.type).toBe("oauth")
+        if (stored?.type === "oauth") expect(stored.refresh).toBe("r-code")
+      },
+    })
+  })
+
+  test("stores an api-type credential when the code callback returns 'key' instead of 'refresh'", async () => {
+    resetClackMock()
+    clackMock.textResult = "pasted-auth-code"
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const plugin = {
+          auth: {
+            provider: "test-oauth-code-key",
+            methods: [
+              {
+                label: "Test OAuth (code)",
+                type: "oauth" as const,
+                authorize: async () => ({
+                  method: "code" as const,
+                  callback: async () => ({ type: "success" as const, key: "sk-code-issued" }),
+                }),
+              },
+            ],
+          },
+        }
+
+        await handlePluginAuth(plugin as any, "test-oauth-code-key")
+
+        const stored = await AppRuntime.runPromise(Auth.Service.use((svc) => svc.get("test-oauth-code-key")))
+        expect(stored?.type).toBe("api")
+        if (stored?.type === "api") expect(stored.key).toBe("sk-code-issued")
+      },
+    })
+  })
+
+  test("does not store credentials when the code exchange fails", async () => {
+    resetClackMock()
+    clackMock.textResult = "bad-code"
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const plugin = {
+          auth: {
+            provider: "test-oauth-code-fail",
+            methods: [
+              {
+                label: "Test OAuth (code)",
+                type: "oauth" as const,
+                authorize: async () => ({
+                  method: "code" as const,
+                  callback: async () => ({ type: "failed" as const }),
+                }),
+              },
+            ],
+          },
+        }
+
+        const handled = await handlePluginAuth(plugin as any, "test-oauth-code-fail")
+        expect(handled).toBe(true)
+
+        const stored = await AppRuntime.runPromise(Auth.Service.use((svc) => svc.get("test-oauth-code-fail")))
+        expect(stored).toBeUndefined()
+      },
+    })
+  })
+
+  test("throws CancelledError when the code prompt is cancelled", async () => {
+    resetClackMock()
+    clackMock.textResult = CANCEL
+
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const plugin = {
+          auth: {
+            provider: "test-oauth-code-cancel",
+            methods: [
+              {
+                label: "Test OAuth (code)",
+                type: "oauth" as const,
+                authorize: async () => ({
+                  method: "code" as const,
+                  callback: async () => {
+                    throw new Error("should not be reached")
+                  },
+                }),
+              },
+            ],
+          },
+        }
+
+        let caught: unknown
+        try {
+          await handlePluginAuth(plugin as any, "test-oauth-code-cancel")
+          expect.unreachable()
+        } catch (e) {
+          caught = e
+        }
+        expect((caught as Error).name).toBe("UICancelledError")
+      },
+    })
+  })
+})

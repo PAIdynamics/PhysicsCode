@@ -7,8 +7,8 @@ import * as realPrompts from "@clack/prompts"
 // file's call runs last silently clobbers every other file's overrides.
 // This is that one place for "@clack/prompts". Every export not
 // explicitly overridden below passes through to the real module, so
-// unrelated production code paths (log.error, text, etc.) keep working
-// for every other test file regardless of load order.
+// unrelated production code paths (log.error, etc.) keep working for
+// every other test file regardless of load order.
 
 export const CANCEL = Symbol("cancel")
 
@@ -17,6 +17,7 @@ export const clackMock = {
   spinnerCalls: [] as Array<{ fn: string; args: unknown[] }>,
   selectResult: "picked" as unknown,
   passwordResult: "fake-password" as unknown,
+  textResult: "fake-text" as unknown,
 }
 
 export function resetClackMock() {
@@ -24,6 +25,7 @@ export function resetClackMock() {
   clackMock.spinnerCalls = []
   clackMock.selectResult = "picked"
   clackMock.passwordResult = "fake-password"
+  clackMock.textResult = "fake-text"
 }
 
 void mock.module("@clack/prompts", () => ({
@@ -41,6 +43,10 @@ void mock.module("@clack/prompts", () => ({
   password: async (...args: unknown[]) => {
     clackMock.calls.push({ fn: "password", args })
     return clackMock.passwordResult
+  },
+  text: async (...args: unknown[]) => {
+    clackMock.calls.push({ fn: "text", args })
+    return clackMock.textResult
   },
   isCancel: (value: unknown) => value === CANCEL,
   spinner: () => ({

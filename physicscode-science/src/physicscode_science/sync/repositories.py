@@ -14,9 +14,10 @@ def sync_repositories(
     *,
     fetch: bool = False,
     clone_missing: bool = False,
+    pull: bool = False,
 ) -> list[dict[str, object]]:
     return [
-        sync_repository(repository, fetch=fetch, clone_missing=clone_missing)
+        sync_repository(repository, fetch=fetch, clone_missing=clone_missing, pull=pull)
         for repository in repositories
     ]
 
@@ -26,6 +27,7 @@ def sync_repository(
     *,
     fetch: bool = False,
     clone_missing: bool = False,
+    pull: bool = False,
 ) -> dict[str, object]:
     path = Path(repository.local_path)
     report: dict[str, object] = {
@@ -47,8 +49,35 @@ def sync_repository(
             _run(["git", "clone", repository.url, str(path)])
             report["actions"].append("cloned")  # type: ignore[union-attr]
         if fetch:
-            _run(["git", "-C", str(path), "fetch", "--tags", "origin"])
+            # --force: some upstreams (e.g. pytorch's ciflow/* CI tags, spack's
+            # releases/latest) move tags rather than only adding new ones. A
+            # plain fetch refuses to update a local tag ref that would then
+            # point somewhere different ("would clobber existing tag"),
+            # aborting the whole sync before it even reaches the actual
+            # branch pull below. These are read-only reference mirrors, so
+            # always reflecting upstream's current tags is exactly what we
+            # want.
+            _run(["git", "-C", str(path), "fetch", "--tags", "--force", "origin"])
             report["actions"].append("fetched")  # type: ignore[union-attr]
+        if pull:
+            # These are read-only reference mirrors ingested for retrieval,
+            # not clones anyone edits - force the local branch to exactly
+            # match the fetched remote default branch (handles detached
+            # HEAD, a diverged branch, or local drift uniformly) rather than
+            # a merge/rebase that could fail or leave stray local commits.
+            _run(["git", "-C", str(path), "fetch", "origin", repository.default_branch])
+            _run(
+                [
+                    "git",
+                    "-C",
+                    str(path),
+                    "checkout",
+                    "-B",
+                    repository.default_branch,
+                    f"origin/{repository.default_branch}",
+                ]
+            )
+            report["actions"].append("pulled")  # type: ignore[union-attr]
         revision = resolve_revision(repository)
         report.update(
             {

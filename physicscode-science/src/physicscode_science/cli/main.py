@@ -76,6 +76,11 @@ def main() -> None:
     sync.add_argument("--repository", action="append", default=[])
     sync.add_argument("--fetch", action="store_true")
     sync.add_argument("--clone-missing", action="store_true")
+    sync.add_argument(
+        "--pull",
+        action="store_true",
+        help="Force the local branch to exactly match the fetched remote default branch",
+    )
     search_command = subcommands.add_parser("search", help="Search indexed scientific source objects")
     search_command.add_argument("query")
     search_command.add_argument("--db", default=".science/physicscode-science.sqlite")
@@ -217,6 +222,7 @@ def main() -> None:
             repositories,
             fetch=bool(args.fetch),
             clone_missing=bool(args.clone_missing),
+            pull=bool(args.pull),
         )
         print(json.dumps(reports, indent=2, sort_keys=True))
     if args.command == "search":

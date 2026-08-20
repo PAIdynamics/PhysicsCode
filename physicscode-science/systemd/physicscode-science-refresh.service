@@ -1,0 +1,16 @@
+[Unit]
+Description=PhysicsCode science corpus refresh (sync + ingest + re-embed changed repositories)
+After=network-online.target vllm-model@bge-m3.service
+Wants=network-online.target vllm-model@bge-m3.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/github/physicscode/physicscode-science
+Environment=PYTHONPATH=%h/github/physicscode/physicscode-science/src
+Environment=PHYSICSCODE_SCIENCE_QDRANT_URL=http://127.0.0.1:6333
+Environment=PHYSICSCODE_SCIENCE_QDRANT_COLLECTION=physicscode_science_multiview_bge_m3_v2
+Environment=PHYSICSCODE_SCIENCE_EMBEDDING_URL=http://127.0.0.1:8009
+Environment=PHYSICSCODE_SCIENCE_EMBEDDING_MODEL=paidynamics/bge-m3-pai
+Environment=PHYSICSCODE_SCIENCE_EMBEDDING_MAX_CHARS=6000
+Environment=PHYSICSCODE_SCIENCE_API_KEY_FILE=%h/.config/vllm/client_api_key
+ExecStart=/usr/bin/python3 scripts/refresh_corpus.py

@@ -80,4 +80,15 @@ describe("config.ConfigManaged.readManagedPreferences", () => {
     setPlatform("linux")
     expect(await ConfigManaged.readManagedPreferences()).toBeUndefined()
   })
+
+  test("returns undefined on darwin when neither managed plist path exists", async () => {
+    setPlatform("darwin")
+    // Real fs.existsSync: on this Linux test runner, the macOS-only
+    // /Library/Managed Preferences/... paths genuinely don't exist, so
+    // both candidates fall through without needing to mock Process.run
+    // (which - see util/archive.test.ts - can't be intercepted here
+    // anyway, since config/managed.ts is pulled into test/preload.ts's
+    // eager import graph before any per-file mock.module call runs).
+    expect(await ConfigManaged.readManagedPreferences()).toBeUndefined()
+  })
 })

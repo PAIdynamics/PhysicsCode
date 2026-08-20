@@ -163,3 +163,77 @@ describe("shell", () => {
     })
   }
 })
+
+const unix = process.platform !== "win32" ? describe : describe.skip
+
+unix("shell.killTree", () => {
+  test("terminates a running process and its children", async () => {
+    const { spawn } = await import("child_process")
+    // Spawn as its own process group leader (detached) so killTree's
+    // process.kill(-pid, ...) - which signals the whole group - can reach
+    // a spawned grandchild too, not just this direct child.
+    const proc = spawn("sh", ["-c", "sleep 30 & wait"], { detached: true, stdio: "ignore" })
+    await new Promise<void>((resolve, reject) => {
+      proc.once("spawn", () => resolve())
+      proc.once("error", reject)
+    })
+
+    let exited = false
+    proc.once("exit", () => {
+      exited = true
+    })
+
+    await Shell.killTree(proc)
+    // SIGTERM is sent first; give the process a moment to actually exit
+    // before asserting (killTree itself only waits out the SIGKILL escalation
+    // window when the process hasn't exited yet).
+    for (let i = 0; i < 20 && !exited; i++) {
+      await new Promise((r) => setTimeout(r, 50))
+    }
+    expect(exited).toBe(true)
+  })
+
+  test("does nothing when the process has no pid", async () => {
+    // Should resolve immediately without throwing.
+    await Shell.killTree({ pid: undefined } as any)
+  })
+
+  test("does nothing when opts.exited() already reports true", async () => {
+    const { spawn } = await import("child_process")
+    const proc = spawn("sh", ["-c", "sleep 30"], { detached: true, stdio: "ignore" })
+    await new Promise<void>((resolve, reject) => {
+      proc.once("spawn", () => resolve())
+      proc.once("error", reject)
+    })
+
+    try {
+      // exited() reporting true short-circuits killTree before it signals
+      // anything - the process should still be alive afterward.
+      await Shell.killTree(proc, { exited: () => true })
+      expect(() => process.kill(proc.pid!, 0)).not.toThrow()
+    } finally {
+      proc.kill("SIGKILL")
+    }
+  })
+
+  test("escalates to SIGKILL when the process ignores SIGTERM", async () => {
+    const { spawn } = await import("child_process")
+    // trap SIGTERM and ignore it, forcing killTree's SIGKILL escalation path
+    const proc = spawn("sh", ["-c", "trap '' TERM; sleep 30"], { detached: true, stdio: "ignore" })
+    await new Promise<void>((resolve, reject) => {
+      proc.once("spawn", () => resolve())
+      proc.once("error", reject)
+    })
+
+    let exited = false
+    proc.once("exit", () => {
+      exited = true
+    })
+
+    await Shell.killTree(proc)
+    for (let i = 0; i < 20 && !exited; i++) {
+      await new Promise((r) => setTimeout(r, 50))
+    }
+    expect(exited).toBe(true)
+  }, 10000)
+})

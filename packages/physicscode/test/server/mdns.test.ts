@@ -20,6 +20,8 @@ class FakeService {
   }
 }
 
+let lastService: FakeService | undefined
+
 class FakeBonjour {
   record: (typeof instances)[number]
   constructor() {
@@ -29,7 +31,8 @@ class FakeBonjour {
   publish(opts: PublishOptions) {
     if (publishThrows) throw new Error("publish failed")
     this.record.published.push(opts)
-    return new FakeService()
+    lastService = new FakeService()
+    return lastService
   }
   unpublishAll() {
     this.record.unpublishAllCalls++
@@ -119,5 +122,12 @@ describe("server.MDNS", () => {
     instances[0]!.unpublishAllThrows = true
 
     expect(() => MDNS.unpublish()).not.toThrow()
+  })
+
+  test("logs when the underlying service reports up or error", () => {
+    MDNS.publish(4096)
+
+    expect(() => lastService!.handlers["up"]!.forEach((fn) => fn())).not.toThrow()
+    expect(() => lastService!.handlers["error"]!.forEach((fn) => fn(new Error("boom")))).not.toThrow()
   })
 })

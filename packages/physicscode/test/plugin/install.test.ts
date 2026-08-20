@@ -3,6 +3,7 @@ import fs from "fs/promises"
 import path from "path"
 import { parse as parseJsonc } from "jsonc-parser"
 import { Filesystem } from "@/util/filesystem"
+import { Process } from "@/util/process"
 import { createPlugTask, type PlugCtx, type PlugDeps } from "../../src/cli/cmd/plug"
 import { tmpdir } from "../fixture/fixture"
 
@@ -565,6 +566,65 @@ describe("plugin.install.task", () => {
 
     const ok = await run(ctx(tmp.path))
     expect(ok).toBe(false)
+    expect(await Filesystem.exists(path.join(tmp.path, ".physicscode", "physicscode.jsonc"))).toBe(false)
+  })
+
+  test("surfaces the offending npm error line when install fails with a process error", async () => {
+    await using tmp = await tmpdir()
+    const errors: string[] = []
+    const infos: string[] = []
+    const run = createPlugTask(
+      {
+        mod: "acme@9.9.9",
+      },
+      {
+        ...deps(
+          path.join(tmp.path, "global"),
+          new Process.RunFailedError(
+            ["npm", "install", "acme@9.9.9"],
+            1,
+            Buffer.from(""),
+            Buffer.from("npm warn deprecated\nerror: No version matching 9.9.9 found\n"),
+          ),
+        ),
+        log: {
+          error: (msg) => errors.push(msg),
+          info: (msg) => infos.push(msg),
+          success() {},
+        },
+      },
+    )
+
+    const ok = await run(ctx(tmp.path))
+    expect(ok).toBe(false)
+    expect(errors).toContain("No version matching 9.9.9 found")
+    expect(infos.some((line) => line.includes("not available in your npm registry"))).toBe(true)
+  })
+
+  test("returns false when writing the patched config fails", async () => {
+    await using tmp = await tmpdir()
+    const target = await plugin(tmp.path, ["server"])
+    const errors: string[] = []
+    const run = createPlugTask(
+      {
+        mod: "acme@1.2.3",
+      },
+      {
+        ...deps(path.join(tmp.path, "global"), target),
+        write: async () => {
+          throw new Error("disk full")
+        },
+        log: {
+          error: (msg) => errors.push(msg),
+          info() {},
+          success() {},
+        },
+      },
+    )
+
+    const ok = await run(ctx(tmp.path))
+    expect(ok).toBe(false)
+    expect(errors).toContain("disk full")
     expect(await Filesystem.exists(path.join(tmp.path, ".physicscode", "physicscode.jsonc"))).toBe(false)
   })
 })

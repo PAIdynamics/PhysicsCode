@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { WorkspaceRoutes } from "@/server/routes/control/workspace"
+import { WorkspaceID } from "../../src/control-plane/schema"
+import { SessionID } from "../../src/session/schema"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 
@@ -37,6 +39,38 @@ describe("server.routes.control.WorkspaceRoutes", () => {
         const res = await WorkspaceRoutes().fetch(new Request("http://localhost/status"))
         expect(res.status).toBe(200)
         expect(await res.json()).toEqual([])
+      },
+    })
+  })
+
+  test("DELETE /:id is a no-op for a workspace that doesn't exist", async () => {
+    await using tmp = await tmpdir({ git: true })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const id = WorkspaceID.ascending()
+        const res = await WorkspaceRoutes().fetch(new Request(`http://localhost/${id}`, { method: "DELETE" }))
+        expect(res.status).toBe(200)
+        expect((await res.text()).trim()).toBe("")
+      },
+    })
+  })
+
+  test("POST /:id/session-restore fails and logs for an unknown workspace", async () => {
+    await using tmp = await tmpdir({ git: true })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const id = WorkspaceID.ascending()
+        const sessionID = SessionID.descending()
+        const res = await WorkspaceRoutes().fetch(
+          new Request(`http://localhost/${id}/session-restore`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ sessionID }),
+          }),
+        )
+        expect(res.status).toBeGreaterThanOrEqual(400)
       },
     })
   })

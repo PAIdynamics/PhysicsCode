@@ -99,6 +99,19 @@ describe("Truncate", () => {
       }),
     )
 
+    it.live("truncates from tail by byte count before the line limit is reached", () =>
+      Effect.gen(function* () {
+        const svc = yield* Truncate.Service
+        const lines = Array.from({ length: 10 }, (_, i) => `line${i}-${"x".repeat(50)}`).join("\n")
+        const result = yield* svc.output(lines, { maxLines: 8, maxBytes: 120, direction: "tail" })
+
+        expect(result.truncated).toBe(true)
+        expect(result.content).toContain("bytes truncated")
+        expect(result.content).toContain("line9")
+        expect(result.content).not.toContain("line0-")
+      }),
+    )
+
     test("uses default MAX_LINES and MAX_BYTES", () => {
       expect(Truncate.MAX_LINES).toBe(2000)
       expect(Truncate.MAX_BYTES).toBe(50 * 1024)

@@ -1,10 +1,18 @@
-import { describe, expect, test } from "bun:test"
-import { handlePluginAuth, resolvePluginProviders } from "@/cli/cmd/providers"
+import { afterEach, describe, expect, test } from "bun:test"
+import { handlePluginAuth, ProvidersLogoutCommand, resolvePluginProviders } from "@/cli/cmd/providers"
 import { Auth } from "@/auth"
 import { AppRuntime } from "@/effect/app-runtime"
 import { Instance } from "@/project/instance"
 import { tmpdir } from "../../fixture/fixture"
 import { CANCEL, clackMock, resetClackMock } from "../../lib/clack-mock"
+
+function putAuth(key: string, info: Auth.Info) {
+  return AppRuntime.runPromise(Auth.Service.use((svc) => svc.set(key, info)))
+}
+
+function removeAuth(key: string) {
+  return AppRuntime.runPromise(Auth.Service.use((svc) => svc.remove(key)))
+}
 
 function hook(provider?: string) {
   return provider ? { auth: { provider, methods: [] } } : {}
@@ -920,5 +928,53 @@ describe("cli.cmd.providers.handlePluginAuth (oauth 'code' method)", () => {
         expect((caught as Error).name).toBe("UICancelledError")
       },
     })
+  })
+})
+
+describe("cli.cmd.providers.ProvidersLogoutCommand", () => {
+  afterEach(() => {
+    resetClackMock()
+  })
+
+  test("prints an error and exits early when there are no stored credentials", async () => {
+    const all = await AppRuntime.runPromise(Auth.Service.use((svc) => svc.all()))
+    for (const key of Object.keys(all)) await removeAuth(key)
+    resetClackMock()
+
+    await ProvidersLogoutCommand.handler({} as any)
+
+    // clack-mock only overrides log.info, not log.error - the "No
+    // credentials found" message goes to the real clack log, so this
+    // asserts the observable, trackable effect instead: the handler
+    // returned before ever prompting for a provider to remove.
+    expect(clackMock.calls.some((c) => c.fn === "select")).toBe(false)
+  })
+
+  test("removes the selected credential", async () => {
+    await putAuth("logout-cmd-test", { type: "api", key: "sk-test" })
+    resetClackMock()
+    clackMock.selectResult = "logout-cmd-test"
+
+    await ProvidersLogoutCommand.handler({} as any)
+
+    const all = await AppRuntime.runPromise(Auth.Service.use((svc) => svc.all()))
+    expect(all["logout-cmd-test"]).toBeUndefined()
+  })
+
+  test("throws a cancellation error when the selection is cancelled", async () => {
+    await putAuth("logout-cmd-test-2", { type: "api", key: "sk-test" })
+    resetClackMock()
+    clackMock.selectResult = CANCEL
+
+    let caught: unknown
+    try {
+      await ProvidersLogoutCommand.handler({} as any)
+      expect.unreachable()
+    } catch (e) {
+      caught = e
+    }
+    expect((caught as Error).name).toBe("UICancelledError")
+
+    await removeAuth("logout-cmd-test-2")
   })
 })

@@ -77,6 +77,25 @@ function writeProviderAuthPlugin(dir: string) {
   })
 }
 
+function requestCallback(input: {
+  app: ReturnType<typeof app>
+  providerID: string
+  headers: HeadersInit
+  body: unknown
+}) {
+  return Effect.promise(async () => {
+    const response = await input.app.request(`/provider/${input.providerID}/oauth/callback`, {
+      method: "POST",
+      headers: input.headers,
+      body: JSON.stringify(input.body),
+    })
+    return {
+      status: response.status,
+      body: await response.text(),
+    }
+  })
+}
+
 function withProviderProject<A, E, R>(self: (dir: string) => Effect.Effect<A, E, R>) {
   return Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
@@ -144,6 +163,65 @@ describe("provider HttpApi", () => {
           method: "code",
           instructions: oauthInstructions,
         })
+      }),
+    ),
+  )
+
+  it.live(
+    "POST /provider/:providerID/oauth/callback completes the pending OAuth flow and stores credentials",
+    withProviderProject((dir) =>
+      Effect.gen(function* () {
+        const headers = { "x-physicscode-directory": dir, "content-type": "application/json" }
+        const httpapi = app(true)
+
+        yield* requestAuthorize({ app: httpapi, providerID, method: 1, headers })
+
+        const callbackRes = yield* requestCallback({
+          app: httpapi,
+          providerID,
+          headers,
+          body: { method: 1, code: "test-code" },
+        })
+        expect(callbackRes.status).toBe(200)
+        expect(JSON.parse(callbackRes.body)).toBe(true)
+      }),
+    ),
+  )
+
+  it.live(
+    "POST /provider/:providerID/oauth/callback fails when there is no pending OAuth flow",
+    withProviderProject((dir) =>
+      Effect.gen(function* () {
+        const headers = { "x-physicscode-directory": dir, "content-type": "application/json" }
+        const httpapi = app(true)
+
+        const callbackRes = yield* requestCallback({
+          app: httpapi,
+          providerID,
+          headers,
+          body: { method: 1, code: "test-code" },
+        })
+        expect(callbackRes.status).toBeGreaterThanOrEqual(400)
+      }),
+    ),
+  )
+
+  it.live(
+    "POST /provider/:providerID/oauth/callback fails when a code-method flow is missing its code",
+    withProviderProject((dir) =>
+      Effect.gen(function* () {
+        const headers = { "x-physicscode-directory": dir, "content-type": "application/json" }
+        const httpapi = app(true)
+
+        yield* requestAuthorize({ app: httpapi, providerID, method: 1, headers })
+
+        const callbackRes = yield* requestCallback({
+          app: httpapi,
+          providerID,
+          headers,
+          body: { method: 1 },
+        })
+        expect(callbackRes.status).toBeGreaterThanOrEqual(400)
       }),
     ),
   )

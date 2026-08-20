@@ -116,7 +116,13 @@ jobs:
       - build-cli
       - version
     runs-on: windows-latest
-    if: github.repository == 'PAIdynamics/PhysicsCode'
+    # Disabled until Azure Trusted Signing secrets are provisioned - it can
+    # only fail right now (AZURE_CLIENT_ID etc are unset), so there's no
+    # point spending CI minutes on it. build-cli already uploads unsigned
+    # Windows archives (see build.ts) as the working baseline. Flip this
+    # back to `github.repository == 'PAIdynamics/PhysicsCode'` once the
+    # Azure secrets exist.
+    if: false
     # Azure Trusted Signing secrets aren't provisioned yet - don't block the
     # release on this. build-cli already uploaded unsigned Windows archives
     # (see build.ts) as the working baseline; this job only improves on that
@@ -660,7 +666,11 @@ jobs:
       - version
       - build-cli
       - sign-cli-windows
-    if: github.ref_name == 'main' && github.event_name == 'push' && needs.version.outputs.release != ''
+    # always() + explicit failure()/cancelled() checks: sign-cli-windows is
+    # now skipped (if: false above), and the default implicit success() gate
+    # on `needs` treats a skipped dependency as not-satisfied, which would
+    # silently skip this job too.
+    if: always() && !failure() && !cancelled() && github.ref_name == 'main' && github.event_name == 'push' && needs.version.outputs.release != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

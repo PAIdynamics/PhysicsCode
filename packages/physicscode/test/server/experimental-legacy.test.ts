@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test"
 import { Effect } from "effect"
+import { Hono } from "hono"
 import { GlobalBus } from "@/bus/global"
 import { Instance } from "@/project/instance"
+import { ErrorMiddleware } from "@/server/middleware"
 import { ExperimentalRoutes } from "@/server/routes/instance/experimental"
 import { Session } from "@/session/session"
 import { Database } from "@/storage/db"
@@ -11,10 +13,14 @@ import { tmpdir } from "../fixture/fixture"
 
 const testWorktreeMutations = process.platform === "win32" ? test.skip : test
 
+// Mounted with the same onError wiring server.ts uses in production -
+// ExperimentalRoutes() alone has no error handling, so hitting it bare
+// would surface thrown errors as rejected promises instead of the real
+// HTTP error responses clients actually receive.
 function withExperimental(dir: string, path: string, init?: RequestInit) {
   return Instance.provide({
     directory: dir,
-    fn: () => ExperimentalRoutes().request(path, init),
+    fn: () => new Hono().onError(ErrorMiddleware).route("/", ExperimentalRoutes()).request(path, init),
   })
 }
 
@@ -120,6 +126,39 @@ describe("legacy ExperimentalRoutes", () => {
 
     expect(switched.status).toBe(200)
     expect(await switched.json()).toBe(true)
+  })
+
+  test("POST /console/login surfaces a clean 400 error instead of a 500 stack trace", async () => {
+    await using tmp = await tmpdir({ config: { formatter: false, lsp: false } })
+
+    const res = await withExperimental(tmp.path, "/console/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      // Port 1 refuses connections immediately, deterministically triggering
+      // Account.Service's AccountTransportError without a real network call.
+      body: JSON.stringify({ url: "http://127.0.0.1:1" }),
+    })
+
+    expect(res.status).toBe(400)
+    const body = (await res.json()) as { name: string; data: { message: string } }
+    expect(body.name).toBe("UnknownError")
+    expect(body.data.message).toContain("Could not reach")
+    expect(body.data.message.split("\n").length).toBeLessThan(5)
+  })
+
+  test("POST /console/login/api-key surfaces a clean 400 error instead of a 500 stack trace", async () => {
+    await using tmp = await tmpdir({ config: { formatter: false, lsp: false } })
+
+    const res = await withExperimental(tmp.path, "/console/login/api-key", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url: "http://127.0.0.1:1", apiKey: "sk-test" }),
+    })
+
+    expect(res.status).toBe(400)
+    const body = (await res.json()) as { name: string; data: { message: string } }
+    expect(body.name).toBe("UnknownError")
+    expect(body.data.message).toContain("Could not reach")
   })
 
   test("serves global session list", async () => {

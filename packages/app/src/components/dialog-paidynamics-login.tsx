@@ -23,6 +23,17 @@ type Status = "idle" | "pending" | "error"
 function errorMessage(error: unknown, fallback: string) {
   if (error instanceof Error && error.message) return error.message
   if (typeof error === "string" && error) return error
+  if (typeof error === "object" && error !== null) {
+    // httpapi failures (ConsoleActionError, see groups/experimental.ts)
+    // decode to a plain object shaped `{ error: "message" }`.
+    const tagged = (error as { error?: unknown }).error
+    if (typeof tagged === "string" && tagged) return tagged
+    // Legacy backend failures decode to NamedError's wire shape,
+    // `{ name, data: { message } }` (see server/middleware.ts).
+    const data = (error as { data?: unknown }).data
+    const named = data && typeof data === "object" ? (data as { message?: unknown }).message : undefined
+    if (typeof named === "string" && named) return named
+  }
   return fallback
 }
 

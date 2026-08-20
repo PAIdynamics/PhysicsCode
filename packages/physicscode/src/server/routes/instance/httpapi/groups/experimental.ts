@@ -35,6 +35,18 @@ export const ConsoleSwitchPayload = Schema.Struct({
   orgID: OrgID,
 })
 
+// Carries the real Account.Service failure message (invalid credentials,
+// unreachable Console server, decode failure, ...) to HttpApi clients (the
+// desktop/web app's login dialog, any other httpapi consumer) - mirrors the
+// mcp group's UnsupportedOAuthError. Without a message-carrying error type
+// here, a failed Console login surfaces as either an unrecoverable defect
+// or a contentless HttpApiError.BadRequest, and every client-side failure
+// path collapses to the same generic fallback string regardless of cause.
+export class ConsoleActionError extends Schema.ErrorClass<ConsoleActionError>("ConsoleActionError")(
+  { error: Schema.String },
+  { httpApiStatus: 400 },
+) {}
+
 // Account.Login/PollResult carry Effect Duration/Defect fields that don't
 // round-trip through JSON well, so - matching the legacy Hono routes in
 // ../../experimental.ts - these use hand-rolled wire shapes (ms instead of
@@ -150,7 +162,7 @@ export const ExperimentalApi = HttpApi.make("experimental")
         HttpApiEndpoint.post("consoleSwitch", ExperimentalPaths.consoleSwitch, {
           payload: ConsoleSwitchPayload,
           success: described(Schema.Boolean, "Switch success"),
-          error: HttpApiError.BadRequest,
+          error: ConsoleActionError,
         }).annotateMerge(
           OpenApi.annotations({
             identifier: "experimental.console.switchOrg",
@@ -161,6 +173,7 @@ export const ExperimentalApi = HttpApi.make("experimental")
         HttpApiEndpoint.post("consoleLogin", ExperimentalPaths.consoleLogin, {
           payload: ConsoleLoginPayload,
           success: described(ConsoleLoginStart, "Device code login started"),
+          error: ConsoleActionError,
         }).annotateMerge(
           OpenApi.annotations({
             identifier: "experimental.console.login",
@@ -173,6 +186,7 @@ export const ExperimentalApi = HttpApi.make("experimental")
         HttpApiEndpoint.post("consoleLoginPoll", ExperimentalPaths.consoleLoginPoll, {
           payload: ConsoleLoginPollPayload,
           success: described(ConsoleLoginPollResult, "Poll result"),
+          error: ConsoleActionError,
         }).annotateMerge(
           OpenApi.annotations({
             identifier: "experimental.console.loginPoll",
@@ -186,7 +200,7 @@ export const ExperimentalApi = HttpApi.make("experimental")
         HttpApiEndpoint.post("consoleLoginApiKey", ExperimentalPaths.consoleLoginApiKey, {
           payload: ConsoleLoginApiKeyPayload,
           success: described(ConsoleAccount, "Logged in account"),
-          error: HttpApiError.BadRequest,
+          error: ConsoleActionError,
         }).annotateMerge(
           OpenApi.annotations({
             identifier: "experimental.console.loginApiKey",
@@ -197,6 +211,7 @@ export const ExperimentalApi = HttpApi.make("experimental")
         HttpApiEndpoint.post("consoleLogout", ExperimentalPaths.consoleLogout, {
           payload: ConsoleLogoutPayload,
           success: described(Schema.Boolean, "Logout success"),
+          error: ConsoleActionError,
         }).annotateMerge(
           OpenApi.annotations({
             identifier: "experimental.console.logout",

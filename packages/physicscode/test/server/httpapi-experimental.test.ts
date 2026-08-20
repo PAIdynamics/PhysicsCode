@@ -134,6 +134,36 @@ describe("experimental HttpApi", () => {
     expect(await switched.json()).toBe(true)
   })
 
+  test("POST /console/login surfaces the real failure reason instead of an empty BadRequest", async () => {
+    await using tmp = await tmpdir({ config: { formatter: false, lsp: false } })
+
+    const res = await app().request(ExperimentalPaths.consoleLogin, {
+      method: "POST",
+      headers: { "x-physicscode-directory": tmp.path, "content-type": "application/json" },
+      // Port 1 refuses connections immediately, deterministically triggering
+      // Account.Service's AccountTransportError without a real network call.
+      body: JSON.stringify({ url: "http://127.0.0.1:1" }),
+    })
+
+    expect(res.status).toBe(400)
+    const body = (await res.json()) as { error?: string }
+    expect(body.error).toContain("Could not reach")
+  })
+
+  test("POST /console/login/api-key surfaces the real failure reason instead of an empty BadRequest", async () => {
+    await using tmp = await tmpdir({ config: { formatter: false, lsp: false } })
+
+    const res = await app().request(ExperimentalPaths.consoleLoginApiKey, {
+      method: "POST",
+      headers: { "x-physicscode-directory": tmp.path, "content-type": "application/json" },
+      body: JSON.stringify({ url: "http://127.0.0.1:1", apiKey: "sk-test" }),
+    })
+
+    expect(res.status).toBe(400)
+    const body = (await res.json()) as { error?: string }
+    expect(body.error).toContain("Could not reach")
+  })
+
   test("serves global session list through Hono bridge", async () => {
     await using tmp = await tmpdir({ git: true, config: { formatter: false, lsp: false } })
 

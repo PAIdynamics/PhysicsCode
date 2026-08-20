@@ -7,13 +7,15 @@ import { Project } from "@/project/project"
 import { Session } from "@/session/session"
 import { ToolRegistry } from "@/tool/registry"
 import * as EffectZod from "@/util/effect-zod"
+import { errorMessage } from "@/util/error"
 import { Worktree } from "@/worktree"
 import { Effect, Option } from "effect"
 import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse"
-import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi"
+import { HttpApiBuilder } from "effect/unstable/httpapi"
 import { toWireAccount, toWireLogin, toWirePollResult, fromWireLogin } from "../../experimental"
 import { InstanceHttpApi } from "../api"
 import {
+  ConsoleActionError,
   ConsoleSwitchPayload,
   ConsoleLoginPayload,
   ConsoleLoginPollPayload,
@@ -22,6 +24,9 @@ import {
   SessionListQuery,
   ToolListQuery,
 } from "../groups/experimental"
+
+const mapConsoleError = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  effect.pipe(Effect.catch((cause) => Effect.fail(new ConsoleActionError({ error: errorMessage(cause) }))))
 
 export const experimentalHandlers = HttpApiBuilder.group(InstanceHttpApi, "experimental", (handlers) =>
   Effect.gen(function* () {
@@ -72,38 +77,32 @@ export const experimentalHandlers = HttpApiBuilder.group(InstanceHttpApi, "exper
     const switchConsole = Effect.fn("ExperimentalHttpApi.consoleSwitch")(function* (ctx: {
       payload: typeof ConsoleSwitchPayload.Type
     }) {
-      yield* account
-        .use(ctx.payload.accountID, Option.some(ctx.payload.orgID))
-        .pipe(Effect.catch(() => Effect.fail(new HttpApiError.BadRequest({}))))
+      yield* mapConsoleError(account.use(ctx.payload.accountID, Option.some(ctx.payload.orgID)))
       return true
     })
 
     const login = Effect.fn("ExperimentalHttpApi.consoleLogin")(function* (ctx: {
       payload: typeof ConsoleLoginPayload.Type
     }) {
-      return toWireLogin(yield* account.login(ctx.payload.url).pipe(Effect.orDie))
+      return toWireLogin(yield* mapConsoleError(account.login(ctx.payload.url)))
     })
 
     const loginPoll = Effect.fn("ExperimentalHttpApi.consoleLoginPoll")(function* (ctx: {
       payload: typeof ConsoleLoginPollPayload.Type
     }) {
-      return toWirePollResult(yield* account.poll(fromWireLogin(ctx.payload)).pipe(Effect.orDie))
+      return toWirePollResult(yield* mapConsoleError(account.poll(fromWireLogin(ctx.payload))))
     })
 
     const loginApiKey = Effect.fn("ExperimentalHttpApi.consoleLoginApiKey")(function* (ctx: {
       payload: typeof ConsoleLoginApiKeyPayload.Type
     }) {
-      return toWireAccount(
-        yield* account
-          .loginWithApiKey(ctx.payload.url, ctx.payload.apiKey)
-          .pipe(Effect.catch(() => Effect.fail(new HttpApiError.BadRequest({})))),
-      )
+      return toWireAccount(yield* mapConsoleError(account.loginWithApiKey(ctx.payload.url, ctx.payload.apiKey)))
     })
 
     const logout = Effect.fn("ExperimentalHttpApi.consoleLogout")(function* (ctx: {
       payload: typeof ConsoleLogoutPayload.Type
     }) {
-      yield* account.remove(ctx.payload.accountID).pipe(Effect.orDie)
+      yield* mapConsoleError(account.remove(ctx.payload.accountID))
       return true
     })
 

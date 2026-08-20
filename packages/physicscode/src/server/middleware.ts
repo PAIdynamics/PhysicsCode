@@ -1,3 +1,4 @@
+import { Account } from "@/account/account"
 import { Provider } from "@/provider/provider"
 import { NamedError } from "@physicscode-ai/core/util/error"
 import { NotFoundError } from "@/storage/storage"
@@ -29,6 +30,16 @@ export const ErrorMiddleware: ErrorHandler = (err, c) => {
     return c.json(err.toObject(), { status })
   }
   if (err instanceof Session.BusyError) {
+    return c.json(new NamedError.Unknown({ message: err.message }).toObject(), { status: 400 })
+  }
+  // Account.Service errors (bad Console credentials, unreachable Console
+  // server, ...) aren't NamedError - they're Effect Schema tagged errors -
+  // so without this they'd fall through to the generic 500/stack-trace
+  // branch below. The /console/login* routes let these propagate
+  // uncaught, so this is what turns "wrong API key" into a clean 400 with
+  // a real, single-line message for clients (app login dialog, etc.)
+  // instead of a 500 wrapping a multi-line stack trace.
+  if (err instanceof Account.AccountServiceError || err instanceof Account.AccountTransportError) {
     return c.json(new NamedError.Unknown({ message: err.message }).toObject(), { status: 400 })
   }
   if (err instanceof HTTPException) return err.getResponse()

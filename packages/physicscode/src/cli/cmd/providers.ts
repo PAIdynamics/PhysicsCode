@@ -465,7 +465,7 @@ export const ProvidersLoginCommand = cmd({
         }
 
         if (provider === "physicscode") {
-          prompts.log.info("Create an api key at https://physicscode.ai/auth")
+          prompts.log.info("Create an api key at https://physicscode.ai/account")
         }
 
         if (provider === "paidynamics") {

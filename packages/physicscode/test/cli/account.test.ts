@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import stripAnsi from "strip-ansi"
 import { Effect, Layer, Option } from "effect"
+import { CANCEL, clackMock, resetClackMock } from "../lib/clack-mock"
 import { Account } from "@/account/account"
 import { Info } from "@/account/schema"
 import type { AccountID, OrgID } from "@/account/schema"
@@ -144,6 +145,57 @@ describe("console account.logoutEffect", () => {
     })
     await Effect.runPromise(logoutEffect("one@example.com").pipe(Effect.provide(layer)))
     expect(removedID).toBe("acc_1")
+  })
+
+  test("without an email, prompts for a choice and removes the selected account", async () => {
+    resetClackMock()
+    clackMock.selectResult = account({ id: "acc_2", email: "two@example.com" })
+
+    let removedID: string | undefined
+    const layer = fakeAccountService({
+      list: () => Effect.succeed([account({ id: "acc_1" }), account({ id: "acc_2", email: "two@example.com" })]),
+      active: () => Effect.succeed(Option.none()),
+      remove: (id) => {
+        removedID = id
+        return Effect.void
+      },
+    })
+    await Effect.runPromise(logoutEffect(undefined).pipe(Effect.provide(layer)))
+    expect(removedID).toBe("acc_2")
+  })
+
+  test("without an email, does nothing when the account choice is cancelled", async () => {
+    resetClackMock()
+    clackMock.selectResult = CANCEL
+
+    let removeCalled = false
+    const layer = fakeAccountService({
+      list: () => Effect.succeed([account()]),
+      active: () => Effect.succeed(Option.none()),
+      remove: () => {
+        removeCalled = true
+        return Effect.void
+      },
+    })
+    await Effect.runPromise(logoutEffect(undefined).pipe(Effect.provide(layer)))
+    expect(removeCalled).toBe(false)
+  })
+
+  test("without an email, marks the active account's option as active", async () => {
+    resetClackMock()
+    const active = account({ id: "acc_1" })
+    clackMock.selectResult = active
+
+    const layer = fakeAccountService({
+      list: () => Effect.succeed([active]),
+      active: () => Effect.succeed(Option.some(active)),
+      remove: () => Effect.void,
+    })
+    await Effect.runPromise(logoutEffect(undefined).pipe(Effect.provide(layer)))
+
+    const selectCall = clackMock.calls.find((c) => c.fn === "select")
+    const options = (selectCall?.args[0] as { options: Array<{ label: string }> }).options
+    expect(options[0].label).toContain("(active)")
   })
 })
 

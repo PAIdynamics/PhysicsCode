@@ -9,6 +9,11 @@ on:
       - dev
       - beta
       - snapshot-*
+    # Test-only changes don't warrant a real release (npm/GitHub Release
+    # version bump) - this only skips the push trigger, not workflow_dispatch,
+    # so a manual release still works if a test-only commit needs one.
+    paths-ignore:
+      - "**/*.test.ts"
   workflow_dispatch:
     inputs:
       bump:

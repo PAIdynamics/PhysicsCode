@@ -953,7 +953,12 @@ it.live(
       }),
       { git: true, config: providerCfg },
     ),
-  3_000,
+  // The test's own inner polling loop budgets up to 5000ms waiting for the
+  // second prompt to save (see the Effect.promise block above) - a 3s outer
+  // timeout can fire first under Windows CI's slower scheduling before that
+  // inner budget ever gets to legitimately succeed or fail on its own terms.
+  // Same class of issue as the two tests above this one.
+  30_000,
 )
 
 it.live(

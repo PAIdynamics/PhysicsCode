@@ -9,11 +9,14 @@ on:
       - dev
       - beta
       - snapshot-*
-    # Test-only changes don't warrant a real release (npm/GitHub Release
-    # version bump) - this only skips the push trigger, not workflow_dispatch,
-    # so a manual release still works if a test-only commit needs one.
+    # Test-only changes, and physicscode-science (a separate Python
+    # sub-project living in this repo, unrelated to the CLI package),
+    # don't warrant a real release (npm/GitHub Release version bump) -
+    # this only skips the push trigger, not workflow_dispatch, so a
+    # manual release still works if either ever needs one.
     paths-ignore:
       - "**/*.test.ts"
+      - "physicscode-science/**"
   workflow_dispatch:
     inputs:
       bump:

@@ -98,7 +98,46 @@ class ScienceStore:
             create index if not exists source_relationship_target_idx on source_relationship(target_id);
             """
         )
+        self._migrate_fts()
         self.connection.commit()
+
+    def _migrate_fts(self) -> None:
+        # search_candidates()'s per-repository term match used to rank every
+        # row in source_object with unindexable LIKE '%term%' scans — fine at
+        # a few hundred thousand rows, a full multi-minute table scan on
+        # every live query once the corpus reached millions. FTS5 gives term
+        # matching a real index; content='source_object' keeps the text out
+        # of a second on-disk copy, with triggers below keeping it in sync
+        # since upsert_object/prune_objects_for_file write to source_object
+        # directly (both go through plain insert/delete, so an AFTER INSERT
+        # and AFTER DELETE trigger — no AFTER UPDATE — cover every write path:
+        # upsert_object's "insert or replace" resolves its conflict as a
+        # delete-then-insert per SQLite's documented REPLACE semantics).
+        exists = self.connection.execute(
+            "select 1 from sqlite_master where type='table' and name='source_object_fts'"
+        ).fetchone()
+        if exists:
+            return
+        self.connection.executescript(
+            """
+            create virtual table source_object_fts using fts5(
+                path, symbol, raw_content,
+                content='source_object',
+                content_rowid='rowid'
+            );
+
+            create trigger source_object_fts_ai after insert on source_object begin
+              insert into source_object_fts(rowid, path, symbol, raw_content)
+              values (new.rowid, new.path, new.symbol, new.raw_content);
+            end;
+
+            create trigger source_object_fts_ad after delete on source_object begin
+              insert into source_object_fts(source_object_fts, rowid, path, symbol, raw_content)
+              values ('delete', old.rowid, old.path, old.symbol, old.raw_content);
+            end;
+            """
+        )
+        self.connection.execute("insert into source_object_fts(source_object_fts) values('rebuild')")
 
     def upsert_revision(self, revision: RepositoryRevision, ingested_at: datetime) -> None:
         self.connection.execute(
@@ -202,10 +241,14 @@ class ScienceStore:
     def prune_objects_for_file(
         self, repository: str, commit: str, path: str, keep_object_ids: set[str]
     ) -> int:
-        before = self.connection.total_changes
+        # cursor.rowcount, not connection.total_changes: the source_object_fts
+        # sync triggers (see _migrate_fts) also touch rows on every delete
+        # here, and total_changes counts trigger-driven writes too — a
+        # before/after delta would double-count deletions once those
+        # triggers exist. rowcount reflects only this statement.
         if keep_object_ids:
             placeholders = ",".join("?" for _ in keep_object_ids)
-            self.connection.execute(
+            cursor = self.connection.execute(
                 f"""
                 delete from source_object
                 where repository = ?
@@ -216,14 +259,14 @@ class ScienceStore:
                 (repository, commit, path, *sorted(keep_object_ids)),
             )
         else:
-            self.connection.execute(
+            cursor = self.connection.execute(
                 """
                 delete from source_object
                 where repository = ? and commit_sha = ? and path = ?
                 """,
                 (repository, commit, path),
             )
-        return self.connection.total_changes - before
+        return cursor.rowcount
 
     def commit(self) -> None:
         self.connection.commit()
@@ -284,34 +327,74 @@ class ScienceStore:
             # IPPL stand for") often names something (the repo/project
             # itself) that appears in a chunk's prose but not its path or
             # symbol at all (e.g. a README's untitled leading section).
+            #
+            # This used to score every row with unindexable LIKE '%term%'
+            # scans via a single window function over the whole table — a
+            # full 4M+ row scan-and-sort on every live query regardless of
+            # any repository filter, since row_number() has to rank every
+            # row in a partition even when most of them score 0. Splitting
+            # into two phases keeps each one cheap: (1) source_object_fts
+            # (see _migrate_fts) finds actual term matches via a real index,
+            # so only that (typically small) matched set gets windowed; (2)
+            # any repository still under DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY
+            # after that is topped up with a plain indexed per-repository
+            # query (source_object_repo_idx) instead of ranking the full
+            # table. tokenize()'s pattern ([A-Za-z_][A-Za-z0-9_]*) can't
+            # produce FTS5 query-syntax characters, so terms are safe to
+            # splice into the MATCH string unescaped.
             terms = sorted({term for term in tokenize(query.query) if len(term) >= 3}, key=len, reverse=True)[:8]
-            match_score_sql = "0"
-            match_values: list[str] = []
+            rows: list[sqlite3.Row] = []
+            matched_ids_by_repo: dict[str, set[str]] = {}
             if terms:
-                match_score_sql = " + ".join(
-                    "(case when path like ? or symbol like ? then 2"
-                    " when substr(raw_content, 1, 3000) like ? then 1"
-                    " else 0 end)"
-                    for _ in terms
+                fts_query = " OR ".join(f'"{term}"' for term in terms)
+                rows = self.connection.execute(
+                    f"""
+                    select object_id, repository, repository_url, commit_sha, path, start_line, end_line,
+                           symbol, object_type, language, license, raw_content, metadata_json
+                    from (
+                        select source_object.*, row_number() over (
+                            partition by repository order by fts_match.rank asc, object_id
+                        ) as rn
+                        from source_object
+                        join (
+                            select rowid, bm25(source_object_fts, 4.0, 4.0, 1.0) as rank
+                            from source_object_fts
+                            where source_object_fts match ?
+                        ) as fts_match on fts_match.rowid = source_object.rowid
+                        {where}
+                    )
+                    where rn <= ?
+                    """,
+                    (fts_query, *values, DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY),
+                ).fetchall()
+                for row in rows:
+                    matched_ids_by_repo.setdefault(row["repository"], set()).add(row["object_id"])
+
+            pad_repositories = query.repositories or self.distinct_repositories()
+            for repository in pad_repositories:
+                matched_ids = matched_ids_by_repo.get(repository, set())
+                remaining = DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY - len(matched_ids)
+                if remaining <= 0:
+                    continue
+                pad_conditions = [*conditions, "repository = ?"]
+                pad_values = [*values, repository]
+                if matched_ids:
+                    pad_conditions.append(f"object_id not in ({','.join('?' for _ in matched_ids)})")
+                    pad_values.extend(matched_ids)
+                pad_where = f"where {' and '.join(pad_conditions)}"
+                rows.extend(
+                    self.connection.execute(
+                        f"""
+                        select object_id, repository, repository_url, commit_sha, path, start_line, end_line,
+                               symbol, object_type, language, license, raw_content, metadata_json
+                        from source_object
+                        {pad_where}
+                        order by object_id
+                        limit ?
+                        """,
+                        (*pad_values, remaining),
+                    ).fetchall()
                 )
-                for term in terms:
-                    pattern = f"%{term}%"
-                    match_values.extend([pattern, pattern, pattern])
-            rows = self.connection.execute(
-                f"""
-                select object_id, repository, repository_url, commit_sha, path, start_line, end_line,
-                       symbol, object_type, language, license, raw_content, metadata_json
-                from (
-                    select *, row_number() over (
-                        partition by repository order by ({match_score_sql}) desc, object_id
-                    ) as rn
-                    from source_object
-                    {where}
-                )
-                where rn <= ?
-                """,
-                (*match_values, *values, DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY),
-            ).fetchall()
         candidates = [
             SearchCandidate(
                 object_id=row["object_id"],

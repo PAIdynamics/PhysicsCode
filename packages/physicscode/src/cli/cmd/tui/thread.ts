@@ -122,6 +122,15 @@ export const TuiThreadCommand = cmd({
       // spawn or async work so the OS cannot kill the process group.
       win32DisableProcessedInput()
 
+      if (!process.stdout.isTTY) {
+        UI.error(
+          "the physicscode TUI needs an interactive terminal (stdout is not a TTY). " +
+            "Run it directly from a shell, or use `physicscode run` / `physicscode serve` for non-interactive use.",
+        )
+        process.exitCode = 1
+        return
+      }
+
       if (args.fork && !args.continue && !args.session) {
         UI.error("--fork requires --continue or --session")
         process.exitCode = 1
@@ -258,4 +267,3 @@ export const TuiThreadCommand = cmd({
     process.exit(0)
   },
 })
-// scratch

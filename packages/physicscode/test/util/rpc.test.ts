@@ -13,22 +13,25 @@ describe("util.Rpc.client", () => {
       },
       onmessage: null,
     }
+    const receive = (data: unknown) => {
+      // Strip the `this: Worker` parameter type before calling - rpc.ts
+      // never actually reads `this`, that annotation just documents the
+      // real Worker.onmessage call convention.
+      const handler = target.onmessage as ((ev: MessageEvent<any>) => any) | null
+      return handler!({ data: JSON.stringify(data) } as MessageEvent<any>)
+    }
     return {
       target,
       sent,
-      receive: (data: unknown) => {
-        // Strip the `this: Worker` parameter type before calling - rpc.ts
-        // never actually reads `this`, that annotation just documents the
-        // real Worker.onmessage call convention.
-        const handler = target.onmessage as ((ev: MessageEvent<any>) => any) | null
-        return handler!({ data: JSON.stringify(data) } as MessageEvent<any>)
-      },
+      receive,
+      ready: () => receive({ type: "rpc.ready" }),
     }
   }
 
   test("call posts an rpc.request and resolves on the matching rpc.result", async () => {
-    const { target, sent, receive } = fakeWorker()
+    const { target, sent, receive, ready } = fakeWorker()
     const client = Rpc.client<{ greet: (input: { name: string }) => string }>(target)
+    ready()
 
     const promise = client.call("greet", { name: "ada" })
     expect(sent).toEqual([{ type: "rpc.request", method: "greet", input: { name: "ada" }, id: 0 }])
@@ -38,8 +41,9 @@ describe("util.Rpc.client", () => {
   })
 
   test("assigns increasing ids across multiple calls", async () => {
-    const { target, sent, receive } = fakeWorker()
+    const { target, sent, receive, ready } = fakeWorker()
     const client = Rpc.client<{ noop: (input: undefined) => string }>(target)
+    ready()
 
     const first = client.call("noop", undefined)
     const second = client.call("noop", undefined)
@@ -52,8 +56,9 @@ describe("util.Rpc.client", () => {
   })
 
   test("ignores an rpc.result for an id that was already resolved or never sent", async () => {
-    const { target, receive } = fakeWorker()
+    const { target, receive, ready } = fakeWorker()
     const client = Rpc.client<{ noop: (input: undefined) => string }>(target)
+    ready()
 
     const promise = client.call("noop", undefined)
     receive({ type: "rpc.result", result: "first", id: 0 })
@@ -110,6 +115,53 @@ describe("util.Rpc.client", () => {
   })
 })
 
+describe("util.Rpc.client readiness and errors", () => {
+  test("holds requests until the worker reports rpc.ready, then flushes in order", async () => {
+    const { target, sent, receive, ready } = fakeWorker()
+    const client = Rpc.client<{ noop: (input: undefined) => string }>(target)
+
+    const first = client.call("noop", undefined)
+    const second = client.call("noop", undefined)
+    expect(sent).toEqual([])
+
+    ready()
+    expect(sent.map((item: any) => item.id)).toEqual([0, 1])
+
+    receive({ type: "rpc.result", result: "a", id: 0 })
+    receive({ type: "rpc.result", result: "b", id: 1 })
+    expect(await first).toBe("a")
+    expect(await second).toBe("b")
+  })
+
+  test("rejects the matching call on rpc.error instead of hanging", async () => {
+    const { target, receive, ready } = fakeWorker()
+    const client = Rpc.client<{ boom: (input: undefined) => string }>(target)
+    ready()
+
+    const promise = client.call("boom", undefined)
+    receive({ type: "rpc.error", error: "kaboom", id: 0 })
+    await expect(promise).rejects.toThrow("kaboom")
+  })
+
+  function fakeWorker() {
+    const sent: unknown[] = []
+    const target: {
+      postMessage: (data: string) => void
+      onmessage: ((this: Worker, ev: MessageEvent<any>) => any) | null
+    } = {
+      postMessage: (data: string) => {
+        sent.push(JSON.parse(data))
+      },
+      onmessage: null,
+    }
+    const receive = (data: unknown) => {
+      const handler = target.onmessage as ((ev: MessageEvent<any>) => any) | null
+      return handler!({ data: JSON.stringify(data) } as MessageEvent<any>)
+    }
+    return { target, sent, receive, ready: () => receive({ type: "rpc.ready" }) }
+  }
+})
+
 describe("util.Rpc.listen / emit", () => {
   const originalPostMessage = (globalThis as any).postMessage
   const originalOnMessage = (globalThis as any).onmessage
@@ -129,7 +181,7 @@ describe("util.Rpc.listen / emit", () => {
 
     await (globalThis as any).onmessage({ data: JSON.stringify({ type: "rpc.request", method: "add", input: { a: 2, b: 3 }, id: 7 }) })
 
-    expect(posted).toEqual([{ type: "rpc.result", result: 5, id: 7 }])
+    expect(posted).toEqual([{ type: "rpc.ready" }, { type: "rpc.result", result: 5, id: 7 }])
   })
 
   test("listen awaits an async rpc method before posting the result", async () => {
@@ -147,7 +199,7 @@ describe("util.Rpc.listen / emit", () => {
       data: JSON.stringify({ type: "rpc.request", method: "slow", input: { value: "hi" }, id: 1 }),
     })
 
-    expect(posted).toEqual([{ type: "rpc.result", result: "HI", id: 1 }])
+    expect(posted).toEqual([{ type: "rpc.ready" }, { type: "rpc.result", result: "HI", id: 1 }])
   })
 
   test("listen ignores non rpc.request messages", async () => {
@@ -158,7 +210,37 @@ describe("util.Rpc.listen / emit", () => {
 
     await (globalThis as any).onmessage({ data: JSON.stringify({ type: "rpc.event", event: "noop", data: null }) })
 
+    expect(posted).toEqual([{ type: "rpc.ready" }])
+  })
+
+  test("listen posts rpc.error when a method throws", async () => {
+    const posted: unknown[] = []
+    ;(globalThis as any).postMessage = (data: string) => posted.push(JSON.parse(data))
+
+    Rpc.listen({
+      boom: async () => {
+        throw new Error("kaboom")
+      },
+    })
+
+    await (globalThis as any).onmessage({ data: JSON.stringify({ type: "rpc.request", method: "boom", input: undefined, id: 3 }) })
+
+    expect(posted).toEqual([{ type: "rpc.ready" }, { type: "rpc.error", error: "kaboom", id: 3 }])
+  })
+
+  test("queue() buffers requests that arrive before listen() and replays them", async () => {
+    const posted: unknown[] = []
+    ;(globalThis as any).postMessage = (data: string) => posted.push(JSON.parse(data))
+
+    Rpc.queue()
+    await (globalThis as any).onmessage({ data: JSON.stringify({ type: "rpc.request", method: "add", input: { a: 1, b: 1 }, id: 9 }) })
     expect(posted).toEqual([])
+
+    Rpc.listen({ add: (input: { a: number; b: number }) => input.a + input.b })
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(posted).toEqual([{ type: "rpc.ready" }, { type: "rpc.result", result: 2, id: 9 }])
   })
 
   test("emit posts an rpc.event with the given event name and data", () => {

@@ -13,6 +13,12 @@ import { Heap } from "@/cli/heap"
 import { AppRuntime } from "@/effect/app-runtime"
 import { ensureProcessMetadata } from "@physicscode-ai/core/util/physicscode-process"
 
+// Buffer RPC messages from the main thread until Rpc.listen() runs below.
+// This must be the first statement: Bun drops worker messages dispatched while
+// no onmessage handler is installed, and the awaits below take long enough for
+// the TUI's first requests to arrive.
+Rpc.queue()
+
 ensureProcessMetadata("worker")
 
 await Log.init({

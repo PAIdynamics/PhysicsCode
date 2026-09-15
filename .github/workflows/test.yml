@@ -27,10 +27,12 @@ jobs:
       fail-fast: false
       matrix:
         settings:
+          # Windows is intentionally not in this matrix: the project targets
+          # linux and macos for now, and the windows leg cost ~17min per run
+          # (vs ~4min for linux) while contributing only timing flakes. The
+          # windows e2e job still runs. Re-add here when windows is a target.
           - name: linux
             host: ubuntu-latest
-          - name: windows
-            host: windows-latest
     runs-on: ${{ matrix.settings.host }}
     defaults:
       run:

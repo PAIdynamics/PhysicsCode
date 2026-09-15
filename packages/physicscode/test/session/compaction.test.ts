@@ -351,6 +351,17 @@ function wait(ms = 50) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+// Budget for "an event we expect should have arrived by now". These only guard
+// against a hang - every real assertion happens after the event lands - so they
+// get generous headroom. Loaded CI runners (Windows especially) routinely stall
+// for seconds, which is what made the old 500ms/1000ms budgets flake.
+const EVENT_TIMEOUT = 10_000
+
+// Budget for "abort took effect promptly". The stub below advertises
+// `retry-after-ms: 10000`, so finishing well inside this proves the abort cut
+// the backoff short rather than waiting it out.
+const ABORT_TIMEOUT = 2_000
+
 function defer() {
   let resolve!: () => void
   const promise = new Promise<void>((done) => {
@@ -855,7 +866,7 @@ describe("session.compaction.process", () => {
 
           await Promise.race([
             done.promise,
-            wait(500).then(() => {
+            wait(EVENT_TIMEOUT).then(() => {
               throw new Error("timed out waiting for compacted event")
             }),
           ])
@@ -1411,7 +1422,7 @@ describe("session.compaction.process", () => {
 
           await Promise.race([
             ready.promise,
-            wait(1000).then(() => {
+            wait(EVENT_TIMEOUT).then(() => {
               throw new Error("timed out waiting for retry status")
             }),
           ])
@@ -1420,13 +1431,13 @@ describe("session.compaction.process", () => {
           abort.abort()
           const result = await Promise.race([
             run.then((value) => ({ kind: "done" as const, value, ms: Date.now() - start })),
-            wait(250).then(() => ({ kind: "timeout" as const })),
+            wait(ABORT_TIMEOUT).then(() => ({ kind: "timeout" as const })),
           ])
 
           expect(result.kind).toBe("done")
           if (result.kind === "done") {
             expect(result.value).toBe("stop")
-            expect(result.ms).toBeLessThan(250)
+            expect(result.ms).toBeLessThan(ABORT_TIMEOUT)
           }
         } finally {
           off?.()
@@ -1474,7 +1485,7 @@ describe("session.compaction.process", () => {
 
           await Promise.race([
             ready.promise,
-            wait(1000).then(() => {
+            wait(EVENT_TIMEOUT).then(() => {
               throw new Error("timed out waiting for compaction hook")
             }),
           ])

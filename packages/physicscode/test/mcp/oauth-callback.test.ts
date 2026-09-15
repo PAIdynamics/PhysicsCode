@@ -1,28 +1,46 @@
-import { afterEach, describe, expect, test } from "bun:test"
+import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import { createServer } from "http"
 import { McpOAuthCallback } from "@/mcp/oauth-callback"
 
-let nextPort = 39001
-function port() {
-  return nextPort++
-}
-function redirectUri(p: number) {
-  return `http://127.0.0.1:${p}/mcp/oauth/callback`
-}
+// The callback server is a module-level singleton shared with every other test
+// file in the process, so start from a known-stopped state instead of trusting
+// whoever ran before us to have cleaned up. Without this, a server leaked by
+// another file makes the first isRunning() assertion below fail.
+beforeEach(async () => {
+  await McpOAuthCallback.stop()
+})
 
 afterEach(async () => {
   await McpOAuthCallback.stop()
 })
 
+// Let the OS pick the port. A fixed base (39001) sits inside Linux's ephemeral
+// range, so an unrelated socket can already hold it - and ensureRunning()
+// silently no-ops when the port is in use, which then looks like "the server
+// failed to start".
+async function port() {
+  const probe = createServer()
+  try {
+    await new Promise<void>((resolve) => probe.listen(0, "127.0.0.1", () => resolve()))
+    return (probe.address() as { port: number }).port
+  } finally {
+    await new Promise<void>((resolve) => probe.close(() => resolve()))
+  }
+}
+
+function redirectUri(p: number) {
+  return `http://127.0.0.1:${p}/mcp/oauth/callback`
+}
+
 describe("mcp.McpOAuthCallback", () => {
   test("ensureRunning starts a server that isRunning() reflects", async () => {
     expect(McpOAuthCallback.isRunning()).toBe(false)
-    await McpOAuthCallback.ensureRunning(redirectUri(port()))
+    await McpOAuthCallback.ensureRunning(redirectUri(await port()))
     expect(McpOAuthCallback.isRunning()).toBe(true)
   })
 
   test("a request to an unknown path returns 404", async () => {
-    const p = port()
+    const p = await port()
     await McpOAuthCallback.ensureRunning(redirectUri(p))
 
     const res = await fetch(`http://127.0.0.1:${p}/wrong/path`)
@@ -30,7 +48,7 @@ describe("mcp.McpOAuthCallback", () => {
   })
 
   test("resolves the pending promise when a matching code+state callback arrives", async () => {
-    const p = port()
+    const p = await port()
     await McpOAuthCallback.ensureRunning(redirectUri(p))
 
     const pending = McpOAuthCallback.waitForCallback("state-1")
@@ -41,7 +59,7 @@ describe("mcp.McpOAuthCallback", () => {
   })
 
   test("rejects with a CSRF error when state is missing", async () => {
-    const p = port()
+    const p = await port()
     await McpOAuthCallback.ensureRunning(redirectUri(p))
 
     const res = await fetch(`http://127.0.0.1:${p}/mcp/oauth/callback?code=abc`)
@@ -50,7 +68,7 @@ describe("mcp.McpOAuthCallback", () => {
   })
 
   test("rejects the pending promise when the provider reports an error", async () => {
-    const p = port()
+    const p = await port()
     await McpOAuthCallback.ensureRunning(redirectUri(p))
 
     // Attach the rejection handler immediately (rather than after the
@@ -72,7 +90,7 @@ describe("mcp.McpOAuthCallback", () => {
   })
 
   test("returns 400 when no code and no error is provided", async () => {
-    const p = port()
+    const p = await port()
     await McpOAuthCallback.ensureRunning(redirectUri(p))
 
     const res = await fetch(`http://127.0.0.1:${p}/mcp/oauth/callback?state=state-2`)
@@ -81,7 +99,7 @@ describe("mcp.McpOAuthCallback", () => {
   })
 
   test("returns 400 for a state that has no pending auth", async () => {
-    const p = port()
+    const p = await port()
     await McpOAuthCallback.ensureRunning(redirectUri(p))
 
     const res = await fetch(`http://127.0.0.1:${p}/mcp/oauth/callback?code=abc&state=never-registered`)
@@ -96,7 +114,7 @@ describe("mcp.McpOAuthCallback", () => {
   })
 
   test("stop() rejects all pending callbacks and clears isRunning", async () => {
-    await McpOAuthCallback.ensureRunning(redirectUri(port()))
+    await McpOAuthCallback.ensureRunning(redirectUri(await port()))
     // Attach immediately - stop() awaits closing the server before
     // rejecting pending callbacks, so there's a real async gap between
     // creating this promise and `await McpOAuthCallback.stop()` returning.
@@ -112,7 +130,7 @@ describe("mcp.McpOAuthCallback", () => {
   })
 
   test("isPortInUse reflects a real listener on that port", async () => {
-    const p = port()
+    const p = await port()
     expect(await McpOAuthCallback.isPortInUse(p)).toBe(false)
 
     await McpOAuthCallback.ensureRunning(redirectUri(p))
@@ -120,7 +138,7 @@ describe("mcp.McpOAuthCallback", () => {
   })
 
   test("ensureRunning defers to an already-running listener on the same port instead of erroring", async () => {
-    const p = port()
+    const p = await port()
     const foreign = createServer((_req, res) => res.end("foreign"))
     await new Promise<void>((resolve) => foreign.listen(p, resolve))
 
@@ -135,8 +153,8 @@ describe("mcp.McpOAuthCallback", () => {
   })
 
   test("ensureRunning reconfigures to a new port when called again with a different redirect URI", async () => {
-    const p1 = port()
-    const p2 = port()
+    const p1 = await port()
+    const p2 = await port()
     await McpOAuthCallback.ensureRunning(redirectUri(p1))
     expect(await McpOAuthCallback.isPortInUse(p1)).toBe(true)
 
@@ -147,7 +165,7 @@ describe("mcp.McpOAuthCallback", () => {
   })
 
   test("ensureRunning is a no-op when already running on the same port/path", async () => {
-    const p = port()
+    const p = await port()
     await McpOAuthCallback.ensureRunning(redirectUri(p))
     await McpOAuthCallback.ensureRunning(redirectUri(p))
     expect(McpOAuthCallback.isRunning()).toBe(true)

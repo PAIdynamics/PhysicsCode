@@ -27,6 +27,11 @@ declare global {
   const PHYSICSCODE_WORKER_PATH: string
 }
 
+// Worker bootstrap does real work (log init, directory creation), so this is
+// generous - it only needs to be finite so a worker that dies silently
+// surfaces as an error rather than an indefinite hang.
+const WORKER_READY_TIMEOUT = 30_000
+
 type RpcClient = ReturnType<typeof Rpc.client<typeof rpc>>
 
 function createWorkerFetch(client: RpcClient): typeof fetch {
@@ -156,6 +161,11 @@ export const TuiThreadCommand = cmd({
       const worker = new Worker(file, {
         env,
       })
+
+      // Create the client before anything can await, so its onmessage handler
+      // is installed before the worker can post `rpc.ready`.
+      const client = Rpc.client<typeof rpc>(worker, { readyTimeout: WORKER_READY_TIMEOUT })
+
       worker.onerror = (e) => {
         Log.Default.error("thread error", {
           message: e.message,
@@ -164,9 +174,13 @@ export const TuiThreadCommand = cmd({
           colno: e.colno,
           error: e.error,
         })
+        // A worker that dies before Rpc.listen() never sends `rpc.ready`, so
+        // every call would sit queued forever - fail them instead of hanging
+        // the TUI on a dark screen. Once the handshake is done the worker is
+        // alive, and a stray error shouldn't kill a working session.
+        if (!client.isReady()) client.fail(new Error("physicscode worker failed to start: " + e.message))
       }
 
-      const client = Rpc.client<typeof rpc>(worker)
       const error = (e: unknown) => {
         Log.Default.error("process error", { error: errorMessage(e) })
       }
@@ -208,17 +222,28 @@ export const TuiThreadCommand = cmd({
         network.port !== 0 ||
         network.hostname !== "127.0.0.1"
 
-      const transport = external
-        ? {
-            url: (await client.call("server", network)).url,
-            fetch: undefined,
-            events: undefined,
-          }
-        : {
-            url: "http://physicscode.internal",
-            fetch: createWorkerFetch(client),
-            events: createEventSource(client),
-          }
+      // `client.call` rejects if the worker died during bootstrap, so report
+      // that as an error the user can read instead of letting it escape the
+      // handler as an unhandled rejection.
+      let transport: { url: string; fetch?: typeof fetch; events?: EventSource }
+      try {
+        transport = external
+          ? {
+              url: (await client.call("server", network)).url,
+              fetch: undefined,
+              events: undefined,
+            }
+          : {
+              url: "http://physicscode.internal",
+              fetch: createWorkerFetch(client),
+              events: createEventSource(client),
+            }
+      } catch (e) {
+        UI.error(errorMessage(e))
+        process.exitCode = 1
+        worker.terminate()
+        return
+      }
 
       try {
         await validateSession({

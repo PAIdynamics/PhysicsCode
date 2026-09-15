@@ -1,4 +1,4 @@
-import { test, expect, mock, beforeEach } from "bun:test"
+import { test, expect, mock, afterEach, beforeEach } from "bun:test"
 import { EventEmitter } from "events"
 import { Effect } from "effect"
 import type { MCP as MCPNS } from "../../src/mcp/index"
@@ -108,6 +108,14 @@ const { McpOAuthCallback } = await import("../../src/mcp/oauth-callback")
 const { Instance } = await import("../../src/project/instance")
 const { tmpdir } = await import("../fixture/fixture")
 const service = MCP.Service as unknown as Effect.Effect<MCPNS.Interface, never, never>
+
+// Each test stops the callback server mid-flight, but `authenticate()` keeps
+// running and can reach ensureRunning() *after* that stop - leaving the
+// module-level singleton listening and leaking into other test files. Stop it
+// again once the auth flow has fully settled.
+afterEach(async () => {
+  await McpOAuthCallback.stop()
+})
 
 test("BrowserOpenFailed event is published when open() throws", async () => {
   await using tmp = await tmpdir({

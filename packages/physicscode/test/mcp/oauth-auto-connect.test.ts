@@ -1,4 +1,4 @@
-import { test, expect, mock, beforeEach } from "bun:test"
+import { test, expect, mock, afterEach, beforeEach } from "bun:test"
 import { Effect } from "effect"
 
 // Mock UnauthorizedError to match the SDK's class
@@ -113,6 +113,15 @@ beforeEach(() => {
 const { MCP } = await import("../../src/mcp/index")
 const { Instance } = await import("../../src/project/instance")
 const { tmpdir } = await import("../fixture/fixture")
+const { McpOAuthCallback } = await import("../../src/mcp/oauth-callback")
+
+// authenticate() starts the OAuth callback server, which is a module-level
+// singleton shared with every other test file in the process. Leaving it
+// listening made test/mcp/oauth-callback.test.ts fail on whichever run
+// happened to be ordered after this file.
+afterEach(async () => {
+  await McpOAuthCallback.stop()
+})
 
 test("first connect to OAuth server shows needs_auth instead of failed", async () => {
   await using tmp = await tmpdir({

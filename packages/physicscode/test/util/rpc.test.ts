@@ -143,6 +143,100 @@ describe("util.Rpc.client readiness and errors", () => {
     await expect(promise).rejects.toThrow("kaboom")
   })
 
+  test("fail() rejects both in-flight and still-queued calls", async () => {
+    const { target, receive, ready } = fakeWorker()
+    const client = Rpc.client<{ noop: (input: undefined) => string }>(target)
+
+    ready()
+    const inflight = client.call("noop", undefined)
+    // Nothing flushes this one - the worker is gone before it is answered.
+    const queued = client.call("noop", undefined)
+
+    client.fail(new Error("worker died"))
+
+    await expect(inflight).rejects.toThrow("worker died")
+    await expect(queued).rejects.toThrow("worker died")
+    // A late result for a rejected id must not throw.
+    expect(() => receive({ type: "rpc.result", result: "late", id: 0 })).not.toThrow()
+  })
+
+  test("fail() rejects calls queued before the worker ever became ready", async () => {
+    const { target, sent } = fakeWorker()
+    const client = Rpc.client<{ noop: (input: undefined) => string }>(target)
+
+    const promise = client.call("noop", undefined)
+    expect(sent).toEqual([])
+
+    client.fail(new Error("worker failed to start"))
+
+    await expect(promise).rejects.toThrow("worker failed to start")
+    // The outbox is discarded rather than flushed later.
+    expect(sent).toEqual([])
+  })
+
+  test("calls made after fail() reject immediately instead of queueing", async () => {
+    const { target, sent } = fakeWorker()
+    const client = Rpc.client<{ noop: (input: undefined) => string }>(target)
+
+    client.fail(new Error("worker died"))
+    await expect(client.call("noop", undefined)).rejects.toThrow("worker died")
+    expect(sent).toEqual([])
+  })
+
+  test("fail() keeps the first error and ignores a later one", async () => {
+    const { target } = fakeWorker()
+    const client = Rpc.client<{ noop: (input: undefined) => string }>(target)
+
+    client.fail(new Error("first"))
+    client.fail(new Error("second"))
+    await expect(client.call("noop", undefined)).rejects.toThrow("first")
+  })
+
+  test("a late rpc.ready after fail() does not flush or revive the client", async () => {
+    const { target, sent, ready } = fakeWorker()
+    const client = Rpc.client<{ noop: (input: undefined) => string }>(target)
+
+    const promise = client.call("noop", undefined)
+    client.fail(new Error("worker died"))
+    await expect(promise).rejects.toThrow("worker died")
+
+    ready()
+
+    expect(sent).toEqual([])
+    await expect(client.call("noop", undefined)).rejects.toThrow("worker died")
+  })
+
+  test("readyTimeout rejects queued calls when rpc.ready never arrives", async () => {
+    const { target, sent } = fakeWorker()
+    const client = Rpc.client<{ noop: (input: undefined) => string }>(target, { readyTimeout: 10 })
+
+    const promise = client.call("noop", undefined)
+
+    await expect(promise).rejects.toThrow("worker did not report ready within 10ms")
+    expect(sent).toEqual([])
+  })
+
+  test("isReady reflects the handshake so callers can tell bootstrap failure from a later error", async () => {
+    const { target, ready } = fakeWorker()
+    const client = Rpc.client<{ noop: (input: undefined) => string }>(target)
+
+    expect(client.isReady()).toBe(false)
+    ready()
+    expect(client.isReady()).toBe(true)
+  })
+
+  test("readyTimeout does not fire once the worker reports ready", async () => {
+    const { target, receive, ready } = fakeWorker()
+    const client = Rpc.client<{ noop: (input: undefined) => string }>(target, { readyTimeout: 10 })
+
+    ready()
+    const promise = client.call("noop", undefined)
+    await new Promise((resolve) => setTimeout(resolve, 30))
+
+    receive({ type: "rpc.result", result: "ok", id: 0 })
+    expect(await promise).toBe("ok")
+  })
+
   function fakeWorker() {
     const sent: unknown[] = []
     const target: {
@@ -226,6 +320,21 @@ describe("util.Rpc.listen / emit", () => {
     await (globalThis as any).onmessage({ data: JSON.stringify({ type: "rpc.request", method: "boom", input: undefined, id: 3 }) })
 
     expect(posted).toEqual([{ type: "rpc.ready" }, { type: "rpc.error", error: "kaboom", id: 3 }])
+  })
+
+  test("listen rejects inherited Object.prototype members as unknown methods", async () => {
+    const posted: unknown[] = []
+    ;(globalThis as any).postMessage = (data: string) => posted.push(JSON.parse(data))
+
+    Rpc.listen({ add: (input: { a: number; b: number }) => input.a + input.b })
+
+    // `rpc["toString"]` resolves through the prototype chain, so a bare lookup
+    // would have invoked it and replied with a bogus rpc.result.
+    await (globalThis as any).onmessage({
+      data: JSON.stringify({ type: "rpc.request", method: "toString", input: undefined, id: 4 }),
+    })
+
+    expect(posted).toEqual([{ type: "rpc.ready" }, { type: "rpc.error", error: "unknown rpc method: toString", id: 4 }])
   })
 
   test("queue() buffers requests that arrive before listen() and replays them", async () => {

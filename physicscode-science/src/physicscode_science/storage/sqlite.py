@@ -91,6 +91,10 @@ class ScienceStore:
             );
 
             create index if not exists source_object_repo_idx on source_object(repository);
+            -- search_candidates() pads each repository with "order by object_id
+            -- limit N"; without a (repository, object_id) index that sorts the
+            -- whole partition (~10s for pytorch's 750k rows) on every query.
+            create index if not exists source_object_repo_object_idx on source_object(repository, object_id);
             create index if not exists source_object_symbol_idx on source_object(symbol);
             create index if not exists source_object_hash_idx on source_object(content_hash);
             create index if not exists source_file_hash_idx on source_file(content_hash);
@@ -345,32 +349,47 @@ class ScienceStore:
             terms = sorted({term for term in tokenize(query.query) if len(term) >= 3}, key=len, reverse=True)[:8]
             rows: list[sqlite3.Row] = []
             matched_ids_by_repo: dict[str, set[str]] = {}
+            pad_repositories = query.repositories or self.distinct_repositories()
             if terms:
                 fts_query = " OR ".join(f'"{term}"' for term in terms)
+                # A common term ("method") matches tens of thousands of rows;
+                # joining every hit back to source_object before the window
+                # cost ~4s per live query. The window can return at most
+                # DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY rows per repository,
+                # so shortlisting the FTS hits to that many times the number of
+                # repositories in play, best bm25 first, loses nothing a
+                # repository could have kept and turns the join into a bounded
+                # rowid lookup. Window over (rowid, repository, rank) only and
+                # fetch the wide row for the winners.
+                shortlist = DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY * max(len(pad_repositories), 1)
                 rows = self.connection.execute(
                     f"""
                     select object_id, repository, repository_url, commit_sha, path, start_line, end_line,
                            symbol, object_type, language, license, raw_content, metadata_json
                     from (
-                        select source_object.*, row_number() over (
-                            partition by repository order by fts_match.rank asc, object_id
+                        select source_object.rowid as object_rowid, row_number() over (
+                            partition by source_object.repository
+                            order by fts_match.rank asc, source_object.object_id
                         ) as rn
-                        from source_object
-                        join (
+                        from (
                             select rowid, bm25(source_object_fts, 4.0, 4.0, 1.0) as rank
                             from source_object_fts
                             where source_object_fts match ?
-                        ) as fts_match on fts_match.rowid = source_object.rowid
+                            order by rank
+                            limit ?
+                        ) as fts_match
+                        join source_object on source_object.rowid = fts_match.rowid
                         {where}
-                    )
-                    where rn <= ?
+                    ) as winners
+                    join source_object on source_object.rowid = winners.object_rowid
+                    where winners.rn <= ?
+                    order by source_object.repository, winners.rn
                     """,
-                    (fts_query, *values, DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY),
+                    (fts_query, shortlist, *values, DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY),
                 ).fetchall()
                 for row in rows:
                     matched_ids_by_repo.setdefault(row["repository"], set()).add(row["object_id"])
 
-            pad_repositories = query.repositories or self.distinct_repositories()
             for repository in pad_repositories:
                 matched_ids = matched_ids_by_repo.get(repository, set())
                 remaining = DEFAULT_CANDIDATE_LIMIT_PER_REPOSITORY - len(matched_ids)

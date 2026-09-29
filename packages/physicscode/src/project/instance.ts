@@ -4,17 +4,12 @@ import { makeRuntime } from "@/effect/run-service"
 import { AppFileSystem } from "@physicscode-ai/core/filesystem"
 import { iife } from "@/util/iife"
 import * as Log from "@physicscode-ai/core/util/log"
-import { LocalContext } from "@/util/local-context"
 import * as Project from "./project"
+import { context, type InstanceContext } from "./instance-context"
 import { WorkspaceContext } from "@/control-plane/workspace-context"
 
-export interface InstanceContext {
-  directory: string
-  worktree: string
-  project: Project.Info
-}
+export type { InstanceContext }
 
-const context = LocalContext.create<InstanceContext>("instance")
 const cache = new Map<string, Promise<InstanceContext>>()
 const project = makeRuntime(Project.Service, Project.defaultLayer)
 

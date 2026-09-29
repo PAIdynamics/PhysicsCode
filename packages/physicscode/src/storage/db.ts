@@ -12,7 +12,7 @@ import path from "path"
 import { readFileSync, readdirSync, existsSync } from "fs"
 import { Flag } from "@physicscode-ai/core/flag/flag"
 import { InstallationChannel } from "@physicscode-ai/core/installation/version"
-import { InstanceState } from "@/effect/instance-state"
+import { InstanceBind } from "@/effect/instance-bind"
 import { iife } from "@/util/iife"
 import { init } from "#db"
 
@@ -148,7 +148,7 @@ export function use<T>(callback: (trx: TxOrDb) => T): T {
 }
 
 export function effect(fn: () => any | Promise<any>) {
-  const bound = InstanceState.bind(fn)
+  const bound = InstanceBind.bind(fn)
   try {
     ctx.use().effects.push(bound)
   } catch {
@@ -169,7 +169,7 @@ export function transaction<T>(
   } catch (err) {
     if (err instanceof LocalContext.NotFound) {
       const effects: (() => void | Promise<void>)[] = []
-      const txCallback = InstanceState.bind((tx: TxOrDb) => ctx.provide({ tx, effects }, () => callback(tx)))
+      const txCallback = InstanceBind.bind((tx: TxOrDb) => ctx.provide({ tx, effects }, () => callback(tx)))
       const result = Client().transaction(txCallback, { behavior: options?.behavior })
       for (const effect of effects) effect()
       return result as NotPromise<T>

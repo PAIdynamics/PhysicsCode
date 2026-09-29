@@ -34,6 +34,7 @@ import { pathToFileURL, fileURLToPath } from "url"
 import { Config } from "@/config/config"
 import { ConfigMarkdown } from "@/config/markdown"
 import { SessionSummary } from "./summary"
+import { SessionScience } from "./science"
 import { NamedError } from "@physicscode-ai/core/util/error"
 import { SessionProcessor } from "./processor"
 import { Tool } from "@/tool/tool"
@@ -889,6 +890,33 @@ NOTE: At any point in time through this workflow you should feel free to ask the
       return yield* provider.defaultModel()
     })
 
+    const scienceEvidence = Effect.fn("SessionPrompt.scienceEvidence")(function* (query: string) {
+      const picked = SessionScience.pickSearchTool(yield* mcp.tools())
+      const execute = picked?.[1].execute
+      if (!picked || !execute) {
+        yield* elog.warn("science mode: no science_search MCP tool connected")
+        return SessionScience.unavailable(
+          "no science MCP server is connected (log in with `physicscode account login`).",
+        )
+      }
+      const [tool] = picked
+      const result = yield* Effect.tryPromise({
+        try: () =>
+          execute({ query, top_k: SessionScience.TOP_K }, { toolCallId: ulid(), messages: [] } as ToolExecutionOptions),
+        catch: (e) => (e instanceof Error ? e : new Error(String(e))),
+      }).pipe(
+        Effect.timeout(SessionScience.TIMEOUT),
+        Effect.map((r) => ({ ok: true as const, text: SessionScience.text(r) })),
+        Effect.catch((e) => Effect.succeed({ ok: false as const, error: String(e) })),
+      )
+      if (!result.ok) {
+        yield* elog.warn("science mode: automatic search failed", { tool, error: result.error })
+        return SessionScience.unavailable(`${tool} failed: ${result.error}`)
+      }
+      yield* elog.info("science mode: injected evidence", { tool, chars: result.text.length })
+      return SessionScience.evidence({ tool, query, text: result.text || "(no results)" })
+    })
+
     const createUserMessage = Effect.fn("SessionPrompt.createUserMessage")(function* (input: PromptInput) {
       const agentName = input.agent || (yield* agents.defaultAgent())
       const ag = yield* agents.get(agentName)
@@ -1201,6 +1229,28 @@ NOTE: At any point in time through this workflow you should feel free to ask the
       const parts = yield* Effect.forEach(input.parts, resolvePart, { concurrency: "unbounded" }).pipe(
         Effect.map((x) => x.flat().map(assign)),
       )
+
+      // `science` mode (/science): search the science index for every prompt and
+      // attach the evidence, so retrieval does not depend on the model's choice.
+      if (ag.name === SessionScience.AGENT) {
+        const query = parts
+          .filter((p): p is MessageV2.TextPart => p.type === "text" && !p.synthetic && !p.ignored)
+          .map((p) => p.text)
+          .join("\n")
+          .trim()
+        if (query) {
+          const text = yield* scienceEvidence(query)
+          parts.push(
+            assign({
+              messageID: info.id,
+              sessionID: input.sessionID,
+              type: "text",
+              synthetic: true,
+              text,
+            }),
+          )
+        }
+      }
 
       yield* plugin.trigger(
         "chat.message",

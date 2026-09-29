@@ -597,8 +597,8 @@ description: Permission skill.
   }
 })
 
-test("defaultAgent returns science when no default_agent config", async () => {
-  // config.ts defaults default_agent to "science" (PhysicsCode's primary
+test("defaultAgent returns hybrid when no default_agent config", async () => {
+  // config.ts defaults default_agent to "hybrid" (PhysicsCode's primary
   // agent) when unset, so this is what physicscode actually resolves to
   // out of the box - see the "no primary visible agent found" tests below
   // for the underlying fallback-search behavior this shortcuts around.
@@ -607,7 +607,7 @@ test("defaultAgent returns science when no default_agent config", async () => {
     directory: tmp.path,
     fn: async () => {
       const agent = await load(tmp.path, (svc) => svc.defaultAgent())
-      expect(agent).toBe("science")
+      expect(agent).toBe("hybrid")
     },
   })
 })
@@ -694,11 +694,12 @@ test("defaultAgent throws when default_agent points to non-existent agent", asyn
 test("defaultAgent returns plan when build is disabled and default_agent not set", async () => {
   await using tmp = await tmpdir({
     config: {
-      // config.ts only fills in the "science" default via `??=`, which
+      // config.ts only fills in the "hybrid" default via `??=`, which
       // leaves an explicit "" alone - set it to force the same
       // no-default-configured fallback search this test is after.
       default_agent: "",
       agent: {
+        hybrid: { disable: true },
         science: { disable: true },
         build: { disable: true },
       },
@@ -708,7 +709,7 @@ test("defaultAgent returns plan when build is disabled and default_agent not set
     directory: tmp.path,
     fn: async () => {
       const agent = await load(tmp.path, (svc) => svc.defaultAgent())
-      // science and build are disabled, so it should return plan (next primary agent)
+      // hybrid, science and build are disabled, so it should return plan (next primary agent)
       expect(agent).toBe("plan")
     },
   })
@@ -719,7 +720,9 @@ test("defaultAgent throws when all primary agents are disabled", async () => {
     config: {
       default_agent: "",
       agent: {
+        hybrid: { disable: true },
         science: { disable: true },
+        "science-off": { disable: true },
         build: { disable: true },
         plan: { disable: true },
       },
@@ -728,8 +731,43 @@ test("defaultAgent throws when all primary agents are disabled", async () => {
   await Instance.provide({
     directory: tmp.path,
     fn: async () => {
-      // science, build, and plan are disabled, no primary-capable agents remain
+      // hybrid, science, science-off, build, and plan are disabled, no primary-capable agents remain
       await expect(load(tmp.path, (svc) => svc.defaultAgent())).rejects.toThrow("no primary visible agent found")
+    },
+  })
+})
+
+test("science modes: hybrid decides, science always retrieves, science-off denies science tools", async () => {
+  await using tmp = await tmpdir()
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const science = await load(tmp.path, (svc) => svc.get("hybrid"))
+      const on = await load(tmp.path, (svc) => svc.get("science"))
+      const off = await load(tmp.path, (svc) => svc.get("science-off"))
+      for (const agent of [science, on, off]) {
+        expect(agent?.mode).toBe("primary")
+        expect(agent?.native).toBe(true)
+        expect(evalPerm(agent, "edit")).toBe("allow")
+      }
+      expect(science?.prompt).toContain("HYBRID")
+      expect(on?.prompt).toContain("EVERY user prompt")
+      expect(off?.prompt).toContain("OFF")
+
+      // hybrid and on keep the science MCP + local tools available
+      for (const agent of [science, on]) {
+        expect(evalPerm(agent, "science_search")).toBe("allow")
+        expect(evalPerm(agent, "science-search")).toBe("allow")
+      }
+      // off denies them so they are dropped from the model's tool list
+      for (const tool of ["science_search", "science_get_source", "science_status", "science_project_context"]) {
+        expect(evalPerm(off, tool)).toBe("deny")
+      }
+      expect(evalPerm(off, "science-search")).toBe("deny")
+      expect(evalPerm(off, "science-source")).toBe("deny")
+      expect(Permission.disabled(["science_search", "science-search", "bash"], off!.permission)).toEqual(
+        new Set(["science_search", "science-search"]),
+      )
     },
   })
 })

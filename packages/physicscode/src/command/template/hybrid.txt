@@ -1,0 +1,4 @@
+Science retrieval mode is now HYBRID for this session: decide per prompt
+whether the PhysicsCode Science retrieval index is needed.
+
+$ARGUMENTS

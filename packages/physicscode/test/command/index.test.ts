@@ -44,6 +44,7 @@ describe("command.Command.Service", () => {
 
         expect(names).toContain(Command.Default.INIT)
         expect(names).toContain(Command.Default.REVIEW)
+        expect(names).toContain(Command.Default.HYBRID)
         expect(names).toContain(Command.Default.SCIENCE)
         expect(names).toContain(Command.Default.SCIENCE_OFF)
       }),
@@ -112,6 +113,24 @@ describe("command.Command.Service", () => {
           },
         },
       },
+    ),
+  )
+})
+
+describe("science modes", () => {
+  it.live("/hybrid, /science and /science-off switch to the hybrid, science and science-off agents", () =>
+    provideTmpdirInstance(() =>
+      Effect.gen(function* () {
+        const service = yield* Command.Service
+        const hybrid = yield* service.get(Command.Default.HYBRID)
+        const science = yield* service.get(Command.Default.SCIENCE)
+        const scienceOff = yield* service.get(Command.Default.SCIENCE_OFF)
+        expect(hybrid?.agent).toBe("hybrid")
+        expect(science?.agent).toBe("science")
+        expect(scienceOff?.agent).toBe("science-off")
+        expect(science?.subtask).toBeUndefined()
+        expect(scienceOff?.subtask).toBeUndefined()
+      }),
     ),
   )
 })

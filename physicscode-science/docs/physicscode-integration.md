@@ -1,5 +1,21 @@
 # PhysicsCode Integration
 
+## Science modes in the CLI
+
+The CLI has three science retrieval modes. Each one is a primary agent, so the
+mode is sticky for the session and shows in the prompt footer:
+
+| Mode | Agent | How to enable | Behaviour |
+| --- | --- | --- | --- |
+| Hybrid (default) | `hybrid` | default, or `/hybrid` | The agent decides per prompt whether to use science retrieval. |
+| Science | `science` | `/science` (optionally followed by a prompt) | Every prompt goes through the science index: the CLI runs `science_search` on the prompt before the model call and attaches the evidence to the message (see `packages/physicscode/src/session/science.ts`). The model may search further. |
+| Science off | `science-off` | `/science-off` (optionally followed by a prompt) | Prompts never go through the science index; the `science_*` MCP tools and local `science-*` tools are denied. |
+
+`/hybrid`, `/science` and `/science-off` with no arguments only switch the
+mode. With arguments they switch the mode and send the arguments as the first
+prompt in that mode. The session stays in the chosen mode until the user
+switches again.
+
 The `/science` flow should remain evidence-first:
 
 1. Inspect the user's project without modifying files.

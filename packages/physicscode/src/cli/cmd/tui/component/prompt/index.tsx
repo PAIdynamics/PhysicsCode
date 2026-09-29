@@ -742,27 +742,48 @@ export function Prompt(props: PromptProps) {
     if (props.disabled) return false
     if (autocomplete?.visible) return false
     if (!store.prompt.input) return false
-    const agent = local.agent.current()
-    if (!agent) return false
     const trimmed = store.prompt.input.trim()
     if (trimmed === "exit" || trimmed === "quit" || trimmed === ":q") {
       void exit()
       return true
     }
-    if (trimmed === "/science-off") {
-      local.agent.set("build")
-      input.clear()
-      setStore("prompt", {
-        input: "",
-        parts: [],
-      })
+    // /hybrid, /science and /science-off are sticky session modes: they switch
+    // the primary agent so every later prompt inherits the mode until the user
+    // changes it. With arguments the command is also sent as a prompt in that mode.
+    const scienceMode = iife(() => {
+      const word = trimmed.split(/\s/)[0]
+      if (word === "/hybrid")
+        return {
+          agent: "hybrid",
+          message: "Hybrid mode: the agent decides per prompt whether to use science retrieval.",
+        }
+      if (word === "/science")
+        return {
+          agent: "science",
+          message: "Science mode: every prompt is searched against the science index before the model answers.",
+        }
+      if (word === "/science-off")
+        return { agent: "science-off", message: "Science-off mode: prompts never go through the science index." }
+      return undefined
+    })
+    if (scienceMode) {
+      local.agent.set(scienceMode.agent)
       toast.show({
         variant: "info",
-        message: "Science workflow is off. Using the build agent.",
+        message: scienceMode.message,
         duration: 3000,
       })
-      return true
+      if (trimmed === "/hybrid" || trimmed === "/science" || trimmed === "/science-off") {
+        input.clear()
+        setStore("prompt", {
+          input: "",
+          parts: [],
+        })
+        return true
+      }
     }
+    const agent = local.agent.current()
+    if (!agent) return false
     const selectedModel = local.model.current()
     if (!selectedModel) {
       void promptModelWarning()
@@ -1320,7 +1341,11 @@ export function Prompt(props: PromptProps) {
                           if (store.mode !== "shell") dialog.replace(() => <DialogAgent />)
                         }}
                       >
-                        {store.mode === "shell" ? "Shell" : agent().name === "build" ? "↑" : Locale.titlecase(agent().name)}
+                        {store.mode === "shell"
+                          ? "Shell"
+                          : agent().name === "build"
+                            ? "↑"
+                            : Locale.titlecase(agent().name)}
                       </text>
                       <Show when={store.mode === "normal"}>
                         <box flexDirection="row" gap={1}>

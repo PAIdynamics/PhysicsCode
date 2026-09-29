@@ -12,6 +12,7 @@ import { MCP } from "../mcp"
 import { Skill } from "../skill"
 import PROMPT_INITIALIZE from "./template/initialize.txt"
 import PROMPT_REVIEW from "./template/review.txt"
+import PROMPT_HYBRID from "./template/hybrid.txt"
 import PROMPT_SCIENCE from "./template/science.txt"
 import PROMPT_SCIENCE_OFF from "./template/science-off.txt"
 
@@ -61,6 +62,7 @@ export function hints(template: string) {
 export const Default = {
   INIT: "init",
   REVIEW: "review",
+  HYBRID: "hybrid",
   SCIENCE: "science",
   SCIENCE_OFF: "science-off",
 } as const
@@ -103,9 +105,19 @@ export const layer = Layer.effect(
         subtask: true,
         hints: hints(PROMPT_REVIEW),
       }
+      commands[Default.HYBRID] = {
+        name: Default.HYBRID,
+        description: "hybrid mode: the agent decides per prompt whether to use science retrieval",
+        agent: "hybrid",
+        source: "command",
+        get template() {
+          return PROMPT_HYBRID
+        },
+        hints: hints(PROMPT_HYBRID),
+      }
       commands[Default.SCIENCE] = {
         name: Default.SCIENCE,
-        description: "evidence-backed scientific coding workflow",
+        description: "science mode: every prompt goes through science retrieval",
         agent: "science",
         source: "command",
         get template() {
@@ -115,8 +127,8 @@ export const layer = Layer.effect(
       }
       commands[Default.SCIENCE_OFF] = {
         name: Default.SCIENCE_OFF,
-        description: "turn off the science workflow for this prompt",
-        agent: "build",
+        description: "science-off mode: prompts never use science retrieval",
+        agent: "science-off",
         source: "command",
         get template() {
           return PROMPT_SCIENCE_OFF

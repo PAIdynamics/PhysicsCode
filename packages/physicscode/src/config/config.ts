@@ -621,7 +621,7 @@ export const layer = Layer.effect(
         else delete result.enabled_providers
         result.model ??= "paidynamics/pai-120b"
         result.small_model ??= result.model
-        result.default_agent ??= "science"
+        result.default_agent ??= "hybrid"
 
         const activeAccount = Option.getOrUndefined(
           yield* accountSvc.active().pipe(Effect.catch(() => Effect.succeed(Option.none()))),

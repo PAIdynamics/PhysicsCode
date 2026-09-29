@@ -1,8 +1,4 @@
-Continue this task with the standard PhysicsCode build workflow, without the
-extra Science retrieval-first workflow.
+Science retrieval mode is now OFF for this session: prompts never go through
+the PhysicsCode Science retrieval index. Use the standard build workflow.
 
 $ARGUMENTS
-
-Use normal local project inspection, planning, implementation, and validation.
-Use Science retrieval tools only if the user explicitly asks for source-backed
-scientific reference retrieval again.

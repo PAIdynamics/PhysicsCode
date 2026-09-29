@@ -10,7 +10,9 @@ import { ProviderTransform } from "@/provider/transform"
 import PROMPT_GENERATE from "./generate.txt"
 import PROMPT_COMPACTION from "./prompt/compaction.txt"
 import PROMPT_EXPLORE from "./prompt/explore.txt"
+import PROMPT_HYBRID from "./prompt/hybrid.txt"
 import PROMPT_SCIENCE from "./prompt/science.txt"
+import PROMPT_SCIENCE_OFF from "./prompt/science-off.txt"
 import PROMPT_SUMMARY from "./prompt/summary.txt"
 import PROMPT_TITLE from "./prompt/title.txt"
 import { Permission } from "@/permission"
@@ -188,10 +190,27 @@ export const layer = Layer.effect(
             mode: "subagent",
             native: true,
           },
+          hybrid: {
+            name: "hybrid",
+            description:
+              "Default mode: decides per prompt whether to use science retrieval for numerical methods, simulations, HPC libraries, and validation. Enabled with /hybrid.",
+            permission: Permission.merge(
+              defaults,
+              Permission.fromConfig({
+                question: "allow",
+                plan_enter: "allow",
+              }),
+              user,
+            ),
+            prompt: PROMPT_HYBRID,
+            options: {},
+            mode: "primary",
+            native: true,
+            color: "#22d3ee",
+          },
           science: {
             name: "science",
-            description:
-              "Evidence-backed scientific software engineering agent for numerical methods, simulations, HPC libraries, and validation.",
+            description: "Science mode: every prompt goes through the science index. Enabled with /science.",
             permission: Permission.merge(
               defaults,
               Permission.fromConfig({
@@ -205,6 +224,27 @@ export const layer = Layer.effect(
             mode: "primary",
             native: true,
             color: "#22d3ee",
+          },
+          "science-off": {
+            name: "science-off",
+            description: "Science-off mode: prompts never go through the science index. Enabled with /science-off.",
+            permission: Permission.merge(
+              defaults,
+              Permission.fromConfig({
+                question: "allow",
+                plan_enter: "allow",
+                // MCP tools are `<client>_<tool>` (science_search, ...); local
+                // custom tools are `science-search` / `science-source`.
+                "science_*": "deny",
+                "science-*": "deny",
+              }),
+              user,
+            ),
+            prompt: PROMPT_SCIENCE_OFF,
+            options: {},
+            mode: "primary",
+            native: true,
+            color: "#94a3b8",
           },
           compaction: {
             name: "compaction",

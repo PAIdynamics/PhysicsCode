@@ -393,8 +393,11 @@ Below are examples of some common MCP servers. You can submit a PR if you want t
 
 PhysicsCode Science is a provenance-aware retrieval service for scientific
 software — source-backed evidence from an indexed set of scientific
-repositories (solvers, simulation libraries, HPC codes), used by the `/science`
-command and `science` agent.
+repositories (solvers, simulation libraries, HPC codes), used by the `science`
+agents. The CLI has three sticky modes: `/hybrid` (default; the agent decides
+per prompt whether to retrieve), `/science` (the CLI searches the index for
+every prompt and attaches the evidence before the model answers) and
+`/science-off` (never retrieves, science tools denied).
 
 **In PhysicsCode itself**, this is already configured automatically once
 you're logged in (`physicscode account login`) — no setup needed, and no

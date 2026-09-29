@@ -32,6 +32,18 @@ def split_identifier(text: str) -> list[str]:
     return tokenize(pieces)
 
 
+def mentions_symbol(text: str, symbol: str) -> bool:
+    """Whether `symbol` appears in `text` as a whole identifier (case-insensitive).
+
+    A plain substring test lets a one-letter symbol like `s` or `h` "exactly"
+    match nearly any query, so require identifier boundaries on both sides.
+    """
+    if not symbol:
+        return False
+    pattern = rf"(?<![A-Za-z0-9_]){re.escape(symbol)}(?![A-Za-z0-9_])"
+    return re.search(pattern, text, re.IGNORECASE) is not None
+
+
 def significant_terms(text: str) -> list[str]:
     """Tokenize and drop stopwords, for exact-match/overlap bonus scoring only."""
     return [token for token in tokenize(text) if token not in STOPWORDS]

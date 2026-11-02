@@ -23,6 +23,7 @@ that code be copied or adapted, call science_check_license: GPL/AGPL and unknown
 licenses are reference-only. Cite repository, path and symbol for every claim \
 taken from results, and say so when results don't cover the question."""
 
+INVALID_REQUEST = -32600
 INVALID_PARAMS = -32602
 METHOD_NOT_FOUND = -32601
 INTERNAL_ERROR = -32603
@@ -34,9 +35,12 @@ class JsonRpcError(Exception):
         self.code = code
 
 
-def handle_request(db_path: str, message: dict[str, Any], remote: bool = False) -> dict[str, Any] | None:
+def handle_request(db_path: str, message: Any, remote: bool = False) -> dict[str, Any] | None:
     """Handle one JSON-RPC message. remote=True for the HTTP transport, which
     hides tools that read the host's filesystem (see LOCAL_ONLY_TOOLS)."""
+    if not isinstance(message, dict):
+        # Includes JSON-RPC batches, which 2025-06-18 dropped.
+        return {"jsonrpc": "2.0", "id": None, "error": {"code": INVALID_REQUEST, "message": "expected a JSON-RPC object"}}
     if "id" not in message:
         return None
     try:

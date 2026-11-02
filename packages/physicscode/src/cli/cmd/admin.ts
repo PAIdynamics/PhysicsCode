@@ -24,12 +24,14 @@ const adminRequest = Effect.fn("admin.request")(function* (path: string, init: R
   if (Option.isNone(active)) return yield* Effect.fail(new Error("Not logged in. Run: physicscode console login <url>"))
   const accessToken = yield* service.token(active.value.id)
   if (Option.isNone(accessToken)) return yield* Effect.fail(new Error("No access token for the active account"))
-  const response = yield* Effect.promise(() =>
-    fetch(`${active.value.url}${path}`, {
-      ...init,
-      headers: { Authorization: `Bearer ${accessToken.value}`, "Content-Type": "application/json" },
-    }),
-  )
+  const response = yield* Effect.tryPromise({
+    try: () =>
+      fetch(`${active.value.url}${path}`, {
+        ...init,
+        headers: { Authorization: `Bearer ${accessToken.value}`, "Content-Type": "application/json" },
+      }),
+    catch: (error) => new Error(`Could not reach ${active.value.url}: ${error instanceof Error ? error.message : error}`),
+  })
   const body = yield* Effect.promise(() => response.json().catch(() => ({}) as Record<string, unknown>))
   if (response.status === 403) {
     return yield* Effect.fail(new Error(`${active.value.email} is not a physicscode.ai administrator`))
@@ -55,7 +57,7 @@ const listEffect = Effect.fn("admin.model.list")(function* () {
     const marker = report.model === current ? UI.Style.TEXT_SUCCESS + " (serving)" + UI.Style.TEXT_NORMAL : ""
     const ready = report.ok ? "ready" : UI.Style.TEXT_WARNING + "not ready" + UI.Style.TEXT_NORMAL
     yield* println(`${report.model}${marker}  ${dim(`${report.footprint_gib ?? "?"} GiB`)}  ${ready}`)
-    for (const check of report.checks) {
+    for (const check of report.checks ?? []) {
       if (!check.ok || report.model !== current) yield* println(dim(`    [${check.ok ? "ok" : "FAIL"}] ${check.name}: ${check.detail}`))
     }
   }

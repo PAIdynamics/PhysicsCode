@@ -172,13 +172,13 @@ def call_tool(db_path: str, name: str, arguments: dict[str, Any], remote: bool =
             return inspect_project(str(arguments["path"]), max_files=int(arguments.get("max_files", 5000)))
         if name == "science_status":
             status = production_status(store)
-            return _public_status(status) if remote else status
+            return public_status(status) if remote else status
         raise UnknownToolError(f"unknown science tool: {name}")
     finally:
         store.close()
 
 
-def _public_status(status: dict[str, Any]) -> dict[str, Any]:
+def public_status(status: dict[str, Any]) -> dict[str, Any]:
     # Remote callers get readiness and coverage, not host paths or internal
     # service URLs.
     vector_index = status.get("vector_index", {})

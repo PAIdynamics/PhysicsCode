@@ -118,6 +118,22 @@ class ApiTest(unittest.TestCase):
             self.assertEqual(caught.exception.code, 400)
             self.assertEqual(json.load(caught.exception)["error"]["code"], -32700)
 
+            batch = _post_json(f"{url}/mcp", [{"jsonrpc": "2.0", "id": 1, "method": "ping"}])
+            self.assertEqual(json.load(batch)["error"]["code"], -32600)
+
+    def test_status_endpoints_redact_host_details_without_origin_key(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            "os.environ", {"PHYSICSCODE_SCIENCE_API_KEY": "origin-secret"}, clear=False
+        ), _running_server(str(Path(directory) / "science.sqlite")) as url:
+            for path in ("/ready", "/v1/status"):
+                anonymous = _get_json(f"{url}{path}")
+                self.assertEqual(set(anonymous["database"]), {"object_count", "repositories"})
+                self.assertNotIn("path", json.dumps(anonymous))
+                self.assertNotIn("url", json.dumps(anonymous))
+
+                full = _get_json(f"{url}{path}", token="origin-secret")
+                self.assertIn("path", full["database"])
+
 
 def _init_git_repo(repo: Path) -> None:
     subprocess.run(["git", "-C", str(repo), "init", "-b", "main"], check=True, stdout=subprocess.PIPE)
@@ -142,7 +158,16 @@ class _running_server:
         self.thread.join()
 
 
-def _post_json(url: str, payload: dict[str, object], token: str | None = None):
+def _get_json(url: str, token: str | None = None) -> dict:
+    # /ready answers 503 on an empty index; the body is the same either way.
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    try:
+        return json.load(urllib.request.urlopen(urllib.request.Request(url, headers=headers)))
+    except urllib.error.HTTPError as error:
+        return json.load(error)
+
+
+def _post_json(url: str, payload: object, token: str | None = None):
     headers = {
         "Accept": "application/json, text/event-stream",
         "Content-Type": "application/json",

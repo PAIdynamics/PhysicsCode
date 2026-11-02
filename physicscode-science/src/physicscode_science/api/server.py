@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from physicscode_science.mcp.server import handle_request
+from physicscode_science.mcp.tools import public_status
 from physicscode_science.models import SearchQuery
 from physicscode_science.production import production_status
 from physicscode_science.retrieval.search import search
@@ -27,8 +28,12 @@ def _handler(db_path: str) -> type[BaseHTTPRequestHandler]:
                 _send_json(self, 200, {"status": "ok"})
                 return
             if self.path in {"/ready", "/v1/status"}:
+                # This port is reachable through the tunnel, so without the
+                # origin key callers get the same redacted view as remote
+                # science_status: no host paths or internal service URLs.
                 payload = status_payload(db_path)
-                _send_json(self, 200 if payload["ready"] else 503, payload)
+                code = 200 if payload["ready"] else 503
+                _send_json(self, code, payload if _authorized(self) else public_status(payload))
                 return
             if self.path == "/mcp":
                 _method_not_allowed(self)

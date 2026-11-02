@@ -30,6 +30,17 @@ def _handler(db_path: str) -> type[BaseHTTPRequestHandler]:
                 payload = status_payload(db_path)
                 _send_json(self, 200 if payload["ready"] else 503, payload)
                 return
+            if self.path == "/mcp":
+                _method_not_allowed(self)
+                return
+            _send_json(self, 404, {"error": "not found"})
+
+        def do_DELETE(self) -> None:  # noqa: N802
+            # Stateless server: no SSE stream to open (GET) and no session to
+            # end (DELETE). 405 is what the Streamable HTTP spec asks for.
+            if self.path == "/mcp":
+                _method_not_allowed(self)
+                return
             _send_json(self, 404, {"error": "not found"})
 
         def do_POST(self) -> None:  # noqa: N802
@@ -40,7 +51,11 @@ def _handler(db_path: str) -> type[BaseHTTPRequestHandler]:
                 try:
                     length = int(self.headers.get("Content-Length", "0"))
                     message = json.loads(self.rfile.read(length))
-                    response = handle_request(db_path, message)
+                except (ValueError, json.JSONDecodeError):
+                    _send_json(self, 400, {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "parse error"}})
+                    return
+                try:
+                    response = handle_request(db_path, message, remote=True)
                     if response is None:
                         self.send_response(202)
                         self.send_header("Content-Length", "0")
@@ -99,6 +114,10 @@ def _query(payload: dict[str, Any]) -> SearchQuery:
         top_k=int(payload.get("top_k", 10)),
         include_content=bool(payload.get("include_content", False)),
     )
+
+
+def _method_not_allowed(handler: BaseHTTPRequestHandler) -> None:
+    _send_json(handler, 405, {"error": "method not allowed"}, {"Allow": "POST"})
 
 
 def _authorized(handler: BaseHTTPRequestHandler) -> bool:

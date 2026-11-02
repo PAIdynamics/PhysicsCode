@@ -11,7 +11,38 @@ from physicscode_science.retrieval.search import search
 from physicscode_science.storage.sqlite import ScienceStore
 
 
-def tool_definitions() -> list[dict[str, Any]]:
+# Tools that read the server's own filesystem. They only make sense when the
+# client and server share a machine (stdio); over HTTP the caller may be any
+# PhysicsCode account, and the path would resolve on the index host.
+LOCAL_ONLY_TOOLS = frozenset({"science_project_context"})
+
+# Every tool only reads the index; clients can skip per-call approval.
+READ_ONLY = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
+
+TITLES = {
+    "science_search": "Search scientific code",
+    "science_get_source": "Get source object",
+    "science_get_symbol": "Look up symbol",
+    "science_get_context": "Get context for a query",
+    "science_check_license": "Check reuse license",
+    "science_project_context": "Inspect local project",
+    "science_status": "Index status",
+}
+
+
+class UnknownToolError(ValueError):
+    pass
+
+
+def tool_definitions(remote: bool = False) -> list[dict[str, Any]]:
+    return [
+        {**tool, "title": TITLES[tool["name"]], "annotations": {"title": TITLES[tool["name"]], **READ_ONLY}}
+        for tool in _base_definitions()
+        if not (remote and tool["name"] in LOCAL_ONLY_TOOLS)
+    ]
+
+
+def _base_definitions() -> list[dict[str, Any]]:
     return [
         {
             "name": "science_search",
@@ -97,7 +128,9 @@ def tool_definitions() -> list[dict[str, Any]]:
     ]
 
 
-def call_tool(db_path: str, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+def call_tool(db_path: str, name: str, arguments: dict[str, Any], remote: bool = False) -> dict[str, Any]:
+    if name not in TITLES or (remote and name in LOCAL_ONLY_TOOLS):
+        raise UnknownToolError(f"unknown science tool: {name}")
     store = ScienceStore(db_path)
     try:
         store.migrate()
@@ -138,10 +171,29 @@ def call_tool(db_path: str, name: str, arguments: dict[str, Any]) -> dict[str, A
         if name == "science_project_context":
             return inspect_project(str(arguments["path"]), max_files=int(arguments.get("max_files", 5000)))
         if name == "science_status":
-            return production_status(store)
-        raise ValueError(f"unknown science tool: {name}")
+            status = production_status(store)
+            return _public_status(status) if remote else status
+        raise UnknownToolError(f"unknown science tool: {name}")
     finally:
         store.close()
+
+
+def _public_status(status: dict[str, Any]) -> dict[str, Any]:
+    # Remote callers get readiness and coverage, not host paths or internal
+    # service URLs.
+    vector_index = status.get("vector_index", {})
+    database = status.get("database", {})
+    return {
+        "ready": status.get("ready"),
+        "database": {
+            "object_count": database.get("object_count"),
+            "repositories": database.get("repositories"),
+        },
+        "vector_index": {
+            "configured_backend": vector_index.get("configured_backend"),
+            "dense_available": vector_index.get("dense_available"),
+        },
+    }
 
 
 def _search_query(arguments: dict[str, Any]) -> SearchQuery:

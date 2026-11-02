@@ -126,6 +126,8 @@ export const PAIDYNAMICS_MODEL_ID_ALIASES: Record<string, string> = {
   "openai/gpt-oss-120b": PAIDYNAMICS_MODEL_ID,
   "glm-4.5-air-pai": PAIDYNAMICS_MODEL_ID,
   "zai-org/GLM-4.5-Air-FP8": PAIDYNAMICS_MODEL_ID,
+  "qwen3.8-flash-next-pai": PAIDYNAMICS_MODEL_ID,
+  "nvidia/Qwen3.8-Flash-Next-FP4-Local": PAIDYNAMICS_MODEL_ID,
 }
 
 export const PAIDYNAMICS_MODEL_ALIASES: Record<string, string> = Object.fromEntries(

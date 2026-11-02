@@ -9,6 +9,7 @@ import { AgentCommand } from "./cli/cmd/agent"
 import { UpgradeCommand } from "./cli/cmd/upgrade"
 import { UninstallCommand } from "./cli/cmd/uninstall"
 import { ModelsCommand } from "./cli/cmd/models"
+import { AdminCommand } from "./cli/cmd/admin"
 import { UI } from "./cli/ui"
 import { Installation } from "./installation"
 import { InstallationVersion } from "@physicscode-ai/core/installation/version"
@@ -169,6 +170,7 @@ const cli = yargs(args)
   .command(ServeCommand)
   .command(WebCommand)
   .command(ModelsCommand)
+  .command(AdminCommand)
   .command(StatsCommand)
   .command(ExportCommand)
   .command(ImportCommand)

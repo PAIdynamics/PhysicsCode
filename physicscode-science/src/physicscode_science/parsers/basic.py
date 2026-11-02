@@ -7,7 +7,7 @@ from pathlib import Path
 from physicscode_science.models import ParsedObject, RepositoryRevision, SourceFile
 from physicscode_science.utils import sha256_text
 
-PARSER_VERSION = "basic-regex-v1"
+PARSER_VERSION = "basic-regex-v2"
 MAX_DECLARATION_LINE_CHARS = 600
 
 PYTHON_DEF = re.compile(r"^\s*(?P<signature>(?:async\s+)?def\s+(?P<name>[A-Za-z_]\w*)\s*\([^)]*\)\s*:)")
@@ -77,7 +77,13 @@ def _matches_for_language(
     if matcher is None and language not in {"c", "cpp", "cuda", "hip"}:
         return []
     objects = []
+    in_block_comment = False
     for index, line in enumerate(lines, start=1):
+        if language in {"c", "cpp", "cuda", "hip"}:
+            # Match against code only: a word before "(" in a trailing or
+            # Doxygen comment is not a symbol, and stripping "// ..." lets
+            # the ";" check below reject `T x(0.0);  // note` declarations.
+            line, in_block_comment = _strip_cpp_comments(line, in_block_comment)
         if len(line) > MAX_DECLARATION_LINE_CHARS:
             continue
         if not _could_match(language, line):
@@ -147,6 +153,46 @@ def _cpp_function_match(line: str) -> _SimpleMatch | None:
         return None
     signature = stripped[: stripped.find(")") + 1]
     return _SimpleMatch({"name": raw_name, "signature": signature})
+
+
+def _strip_cpp_comments(line: str, in_block_comment: bool) -> tuple[str, bool]:
+    """Remove // and /* */ comments from one C-family line.
+
+    Returns the code portion and whether a /* block is still open at the end
+    of the line. Comment markers inside string/char literals are kept.
+    """
+    code: list[str] = []
+    quote = ""
+    index = 0
+    while index < len(line):
+        pair = line[index : index + 2]
+        char = line[index]
+        if in_block_comment:
+            if pair == "*/":
+                in_block_comment = False
+                code.append(" ")
+                index += 2
+            else:
+                index += 1
+            continue
+        if quote:
+            code.append(line[index : index + 2] if char == "\\" else char)
+            if char == quote:
+                quote = ""
+            index += 2 if char == "\\" else 1
+            continue
+        if pair == "//":
+            break
+        if pair == "/*":
+            in_block_comment = True
+            index += 2
+            continue
+        # A ' after an alphanumeric is a C++14 digit separator (1'000), not a char literal.
+        if char == '"' or (char == "'" and not (index and line[index - 1].isalnum())):
+            quote = char
+        code.append(char)
+        index += 1
+    return "".join(code), in_block_comment
 
 
 def _could_match(language: str, line: str) -> bool:

@@ -3,7 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from physicscode_science.models import SearchCandidate
-from physicscode_science.retrieval.tokenize import STOPWORDS, significant_terms, split_identifier, tokenize
+from physicscode_science.retrieval.tokenize import (
+    STOPWORDS,
+    mentions_symbol,
+    significant_terms,
+    split_identifier,
+    tokenize,
+)
 from physicscode_science.retrieval.views import generated_view_text, scientific_metadata_text
 
 
@@ -96,7 +102,7 @@ def _exact_symbol_bonus(query_terms: set[str], symbol: str) -> float:
     symbol_terms = set(split_identifier(symbol))
     if not symbol_terms:
         return 0.0
-    if symbol.lower() in " ".join(sorted(query_terms)):
+    if mentions_symbol(" ".join(sorted(query_terms)), symbol):
         return 0.18
     if symbol_terms and symbol_terms <= query_terms:
         return 0.14

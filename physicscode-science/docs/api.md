@@ -47,6 +47,11 @@ Readiness endpoints:
 - `GET /ready`
 - `GET /v1/status`
 
+When `PHYSICSCODE_SCIENCE_API_KEY` (or `PHYSICSCODE_SCIENCE_API_KEY_FILE`) is
+set, `POST /mcp` and `POST /v1/search` require `Authorization: Bearer <key>`,
+and `/ready` and `/v1/status` return host paths and internal service URLs only
+to requests carrying that key; everyone else gets readiness and coverage.
+
 `science_get_context` accepts:
 
 ```json

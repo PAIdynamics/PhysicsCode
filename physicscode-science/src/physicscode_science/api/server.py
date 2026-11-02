@@ -73,6 +73,9 @@ def _handler(db_path: str) -> type[BaseHTTPRequestHandler]:
             if self.path != "/v1/search":
                 _send_json(self, 404, {"error": "not found"})
                 return
+            if not _authorized(self):
+                _send_json(self, 401, {"error": "unauthorized"}, {"WWW-Authenticate": "Bearer"})
+                return
             try:
                 payload = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
                 _send_json(self, 200, search_payload(db_path, payload))

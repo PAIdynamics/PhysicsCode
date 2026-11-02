@@ -121,6 +121,19 @@ class ApiTest(unittest.TestCase):
             batch = _post_json(f"{url}/mcp", [{"jsonrpc": "2.0", "id": 1, "method": "ping"}])
             self.assertEqual(json.load(batch)["error"]["code"], -32600)
 
+    def test_http_search_requires_configured_origin_key(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            "os.environ", {"PHYSICSCODE_SCIENCE_API_KEY": "origin-secret"}, clear=False
+        ), _running_server(str(Path(directory) / "science.sqlite")) as url:
+            payload = {"query": "poisson solver", "top_k": 1}
+            for token in (None, "wrong"):
+                with self.assertRaises(urllib.error.HTTPError) as caught:
+                    _post_json(f"{url}/v1/search", payload, token=token)
+                self.assertEqual(caught.exception.code, 401)
+
+            response = _post_json(f"{url}/v1/search", payload, token="origin-secret")
+            self.assertEqual(json.load(response)["results"], [])
+
     def test_status_endpoints_redact_host_details_without_origin_key(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict(
             "os.environ", {"PHYSICSCODE_SCIENCE_API_KEY": "origin-secret"}, clear=False

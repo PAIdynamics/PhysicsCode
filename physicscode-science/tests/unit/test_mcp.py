@@ -64,6 +64,48 @@ class McpTest(unittest.TestCase):
             self.assertEqual(payload["database"]["object_count"], 1)
             self.assertTrue(payload["vector_index"]["present"])
 
+    def test_initialize_negotiates_protocol_version(self):
+        def initialize(version):
+            return handle_request(
+                "unused.sqlite",
+                {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": version}},
+            )["result"]
+
+        self.assertEqual(initialize("2025-06-18")["protocolVersion"], "2025-06-18")
+        self.assertEqual(initialize("2024-11-05")["protocolVersion"], "2024-11-05")
+        self.assertEqual(initialize("1999-01-01")["protocolVersion"], "2025-06-18")
+        result = initialize("2025-06-18")
+        self.assertIn("science_search", result["instructions"])
+        self.assertEqual(result["serverInfo"]["title"], "PhysicsCode Science")
+
+    def test_ping_and_unknown_method(self):
+        self.assertEqual(handle_request("unused.sqlite", {"jsonrpc": "2.0", "id": 1, "method": "ping"})["result"], {})
+        unknown = handle_request("unused.sqlite", {"jsonrpc": "2.0", "id": 2, "method": "resources/list"})
+        self.assertEqual(unknown["error"]["code"], -32601)
+
+    def test_tools_are_annotated_read_only(self):
+        tools = handle_request("unused.sqlite", {"jsonrpc": "2.0", "id": 1, "method": "tools/list"})["result"]["tools"]
+        for tool in tools:
+            self.assertTrue(tool["title"])
+            self.assertTrue(tool["annotations"]["readOnlyHint"])
+        self.assertIn("science_project_context", {tool["name"] for tool in tools})
+
+    def test_tool_failures_are_results_the_model_can_read(self):
+        with tempfile.TemporaryDirectory() as directory:
+            db = _index_fixture(Path(directory))
+            missing_arg = handle_request(
+                str(db),
+                {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "science_get_source", "arguments": {}}},
+            )
+            self.assertTrue(missing_arg["result"]["isError"])
+            self.assertIn("object_id", missing_arg["result"]["content"][0]["text"])
+
+            unknown = handle_request(
+                str(db),
+                {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "nope", "arguments": {}}},
+            )
+            self.assertEqual(unknown["error"]["code"], -32602)
+
     def test_mcp_stdio_framing_round_trips(self):
         stream = BytesIO()
         _write_message(stream, {"jsonrpc": "2.0", "id": 1, "result": {"ok": True}})

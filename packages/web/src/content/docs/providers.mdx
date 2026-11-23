@@ -71,11 +71,13 @@ bringing your own vendor API key — billed against your PhysicsCode account
 credit at the vendor's real pricing instead. [Learn more](/docs/go).
 
 1. Log in with `physicscode account login` (or `/connect` in the TUI).
-2. Select `PhysicsCode Credit (OpenAI)` or `PhysicsCode Credit (Anthropic)` —
-   no separate API key to paste, it uses your logged-in account.
-3. Run `/models` to see what's available
-   (`physicscode-openai/gpt-5.6`, `physicscode-anthropic/claude-opus-4-8`,
-   etc).
+2. Pick a model with `/models` or `-m` — for example
+   `physicscode-openai/gpt-5.6` or `physicscode-anthropic/claude-opus-4-8`.
+   There's no separate API key; these providers appear as soon as you're
+   logged in and use your account.
+
+They are never picked as the default model, so credit is only spent when you
+choose one of them.
 
 Requests stop once your credit balance reaches zero, and a single request
 estimated to cost more than the configured per-request limit is rejected

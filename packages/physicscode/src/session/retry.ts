@@ -59,6 +59,10 @@ export function retryable(error: Err) {
     // 5xx errors are transient server failures and should always be retried,
     // even when the provider SDK doesn't explicitly mark them as retryable.
     if (!error.data.isRetryable && !(status !== undefined && status >= 500)) return undefined
+    // The physicscode.ai proxy answers 503 provider_not_configured when the
+    // server has no vendor key for a PhysicsCode-credit provider. That won't
+    // change between retries, so fail fast instead of backing off for minutes.
+    if (error.data.responseBody?.includes('"provider_not_configured"')) return undefined
     if (error.data.responseBody?.includes("FreeUsageLimitError")) return GO_UPSELL_MESSAGE
     return error.data.message.includes("Overloaded") ? "Provider is overloaded" : error.data.message
   }

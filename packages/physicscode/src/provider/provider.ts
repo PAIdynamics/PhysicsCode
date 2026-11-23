@@ -346,14 +346,18 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
     "physicscode-openai": Effect.fnUntraced(function* (input: Info) {
       const apiKey = yield* dep.accountToken()
       return {
-        // Requires an explicit choice, unlike paidynamics's free hosted
-        // model - this spends real PhysicsCode credit at real vendor
-        // pricing, so it shouldn't become the default just because the
-        // user is logged in.
-        autoload: false,
+        // Available (selectable with -m or /models) whenever the user is
+        // logged in - there's no separate key to add. It still spends real
+        // PhysicsCode credit at real vendor pricing, so it is kept out of
+        // default-model selection (see isAccountCreditProvider in
+        // defaultModel) and only runs when explicitly chosen.
+        autoload: Boolean(apiKey),
         async getModel(sdk: any, modelID: string) {
           const freshApiKey = await dep.promise(dep.accountToken())
           if (!freshApiKey) throw new LoadAPIKeyError({ message: PAIDYNAMICS_LOGIN_REQUIRED_MESSAGE })
+          // @ai-sdk/openai-compatible has no .chat(); languageModel() is its
+          // chat-completions model.
+          if (useLanguageModel(sdk)) return sdk.languageModel(modelID)
           return sdk.chat(modelID)
         },
         options: {
@@ -364,7 +368,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
     "physicscode-anthropic": Effect.fnUntraced(function* (input: Info) {
       const apiKey = yield* dep.accountToken()
       return {
-        autoload: false,
+        autoload: Boolean(apiKey),
         async getModel(sdk: any, modelID: string) {
           const freshApiKey = await dep.promise(dep.accountToken())
           if (!freshApiKey) throw new LoadAPIKeyError({ message: PAIDYNAMICS_LOGIN_REQUIRED_MESSAGE })
@@ -1160,7 +1164,7 @@ interface State {
   modelLoaders: Record<string, CustomModelLoader>
   varsLoaders: Record<string, CustomVarsLoader>
   // Captured when this (per-directory) state was built, so deferred async
-  // callbacks elsewhere (resolveSDK's paidynamicsRuntimeApiKey, etc.) can
+  // callbacks elsewhere (resolveSDK's runtimeApiKey, etc.) can
   // bridge back into Effect/instance context correctly instead of using a
   // context-less Effect.runPromise - see CustomDep.promise above.
   bridge: EffectBridge.Shape
@@ -1313,7 +1317,7 @@ export function fromModelsDevProvider(provider: ModelsDev.Provider): Info {
   }
 }
 
-const layer: Layer.Layer<
+export const layer: Layer.Layer<
   Service,
   never,
   Config.Service | Auth.Service | Account.Service | Plugin.Service | AppFileSystem.Service | Env.Service
@@ -1730,7 +1734,12 @@ const layer: Layer.Layer<
         const chunkTimeout = options["chunkTimeout"]
         delete options["chunkTimeout"]
 
-        const paidynamicsRuntimeApiKey = async () => {
+        // Account tokens are short-lived and refreshed by the Account
+        // service, so providers authenticated by the PhysicsCode login read
+        // the current token on every request instead of the one captured
+        // when the provider state was built.
+        const runtimeApiKey = async () => {
+          if (isAccountCreditProvider(model.providerID)) return (await s.bridge.promise(accountToken())) || undefined
           if (model.providerID !== ModelsDev.PAIDYNAMICS_PROVIDER_ID) return undefined
           const freshEnv = await s.bridge.promise(env.all())
           const freshConfig = await s.bridge.promise(config.get())
@@ -1743,12 +1752,13 @@ const layer: Layer.Layer<
           )
         }
 
-        if (model.providerID === ModelsDev.PAIDYNAMICS_PROVIDER_ID) {
-          const runtimeApiKey = await paidynamicsRuntimeApiKey()
-          if (runtimeApiKey) options["apiKey"] = runtimeApiKey
+        if (model.providerID === ModelsDev.PAIDYNAMICS_PROVIDER_ID || isAccountCreditProvider(model.providerID)) {
+          const key = await runtimeApiKey()
+          if (key) options["apiKey"] = key
         }
 
-        const cacheable = model.providerID !== ModelsDev.PAIDYNAMICS_PROVIDER_ID
+        const cacheable =
+          model.providerID !== ModelsDev.PAIDYNAMICS_PROVIDER_ID && !isAccountCreditProvider(model.providerID)
         const key = Hash.fast(
           JSON.stringify({
             providerID: model.providerID,
@@ -1762,10 +1772,13 @@ const layer: Layer.Layer<
         options["fetch"] = async (input: any, init?: BunFetchRequestInit) => {
           const fetchFn = customFetch ?? fetch
           const opts = init ?? {}
-          const runtimeApiKey = await paidynamicsRuntimeApiKey()
-          if (runtimeApiKey) {
+          const freshKey = await runtimeApiKey()
+          if (freshKey) {
             const headers = new Headers(opts.headers)
-            headers.set("authorization", `Bearer ${runtimeApiKey}`)
+            // The PhysicsCode proxy authenticates with a Bearer token for
+            // every provider; @ai-sdk/anthropic would otherwise send the
+            // key only as x-api-key, which the proxy rejects.
+            headers.set("authorization", `Bearer ${freshKey}`)
             opts.headers = headers
           }
           const chunkAbortCtl = typeof chunkTimeout === "number" && chunkTimeout > 0 ? new AbortController() : undefined
@@ -2027,7 +2040,11 @@ const layer: Layer.Layer<
         return { providerID: entry.providerID, modelID: entry.modelID }
       }
 
-      const provider = Object.values(s.providers).find((p) => !cfg.provider || Object.keys(cfg.provider).includes(p.id))
+      // Never fall back to a provider that bills PhysicsCode credit at
+      // vendor prices; those only run when the user picks them.
+      const provider = Object.values(s.providers).find(
+        (p) => !isAccountCreditProvider(p.id) && (!cfg.provider || Object.keys(cfg.provider).includes(p.id)),
+      )
       if (!provider) throw new Error("no providers found")
       const [model] = sort(Object.values(provider.models))
       if (!model) throw new Error("no models found")
@@ -2070,6 +2087,15 @@ export function parseModel(model: string) {
   }
 }
 
+// Providers that proxy real OpenAI/Anthropic models through physicscode.ai,
+// authenticated by the PhysicsCode login and billed against account credit.
+export function isAccountCreditProvider(providerID: string) {
+  return (
+    providerID === ModelsDev.PHYSICSCODE_OPENAI_PROVIDER_ID ||
+    providerID === ModelsDev.PHYSICSCODE_ANTHROPIC_PROVIDER_ID
+  )
+}
+
 export function credentialedProviderIDs(input: {
   providers: Record<string, { env?: string[] }>
   config: Config.Info
@@ -2091,7 +2117,10 @@ export function credentialedProviderIDs(input: {
       result.push(providerID)
       continue
     }
-    if (providerID === ModelsDev.PAIDYNAMICS_PROVIDER_ID && input.accountToken) {
+    if (
+      (providerID === ModelsDev.PAIDYNAMICS_PROVIDER_ID || isAccountCreditProvider(providerID)) &&
+      input.accountToken
+    ) {
       result.push(providerID)
       continue
     }

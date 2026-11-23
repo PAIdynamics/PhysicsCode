@@ -379,7 +379,9 @@ function curatedAnthropic(provider: Provider | undefined) {
 export const PHYSICSCODE_OPENAI_PROVIDER_ID = "physicscode-openai"
 export const PHYSICSCODE_OPENAI_BASE_URL = "https://www.physicscode.ai/openai/v1"
 export const PHYSICSCODE_ANTHROPIC_PROVIDER_ID = "physicscode-anthropic"
-export const PHYSICSCODE_ANTHROPIC_BASE_URL = "https://www.physicscode.ai/anthropic"
+// @ai-sdk/anthropic appends "/messages" to its base URL (its own default ends
+// in /v1), and the physicscode.ai proxy serves /anthropic/v1/messages.
+export const PHYSICSCODE_ANTHROPIC_BASE_URL = "https://www.physicscode.ai/anthropic/v1"
 
 function rebrandFrontierProvider(
   source: Provider,

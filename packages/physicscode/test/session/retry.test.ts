@@ -207,6 +207,20 @@ describe("session.retry.retryable", () => {
     expect(SessionRetry.retryable(error)).toBe("Service unavailable")
   })
 
+  test("does not retry a PhysicsCode-credit provider the server hasn't configured", () => {
+    const error = MessageV2.APIError.Schema.parse(
+      new MessageV2.APIError({
+        message: "Service unavailable",
+        isRetryable: true,
+        statusCode: 503,
+        responseBody:
+          '{"error":{"message":"PhysicsCode-funded openai access isn\'t configured on this server yet.","type":"provider_not_configured"}}',
+      }).toObject(),
+    )
+
+    expect(SessionRetry.retryable(error)).toBeUndefined()
+  })
+
   test("does not retry 4xx errors when isRetryable is false", () => {
     const error = MessageV2.APIError.Schema.parse(
       new MessageV2.APIError({
